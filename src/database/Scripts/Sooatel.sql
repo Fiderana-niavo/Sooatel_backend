@@ -21,12 +21,21 @@ CREATE TABLE role(
    UNIQUE(label)
 );
 
+CREATE TABLE permission_category(
+   id_category UUID DEFAULT uuid_generate_v4(),
+   name VARCHAR(100) NOT NULL UNIQUE, -- ex: "Vente & Caisse", "Stocks"
+   code VARCHAR(50) NOT NULL UNIQUE,  -- ex: "SALE", "STOCK" 
+   PRIMARY KEY(id_category)
+);
+
 CREATE TABLE Permission(
    id_permission UUID DEFAULT uuid_generate_v4(),
    permission_name VARCHAR(50)  NOT NULL,
    description VARCHAR(100) ,
+   id_category UUID NOT NULL,
    PRIMARY KEY(id_permission),
-   UNIQUE(permission_name)
+   UNIQUE(permission_name),
+   FOREIGN KEY(id_category) REFERENCES permission_category(id_category)
 );
 
 CREATE TABLE Item_type(
@@ -127,6 +136,16 @@ CREATE TABLE Employees(
    UNIQUE(employee_code),
    CONSTRAINT chk_name_or_lastname 
    CHECK (name IS NOT NULL OR lastname IS NOT NULL)
+);
+
+CREATE TABLE Internship(
+   id_internship UUID DEFAULT uuid_generate_v4() ,
+   school_name VARCHAR(100) ,
+   academic_supervisor_name VARCHAR(255) ,
+   professionnal_supervisor_name VARCHAR(255) ,
+   id_employee UUID NOT NULL,
+   PRIMARY KEY(id_internship),
+   FOREIGN KEY(id_employee) REFERENCES Employees(id_employee)
 );
 
 CREATE SEQUENCE user_ref_seq;
@@ -571,6 +590,7 @@ CREATE TABLE User_permission(
    id_user_permission UUID DEFAULT uuid_generate_v4(),
    id_user UUID NOT NULL,
    id_permission UUID NOT NULL,
+   is_allowed BOOLEAN NOT NULL,
    PRIMARY KEY(id_user_permission),
    FOREIGN KEY(id_user) REFERENCES Users(id_user),
    FOREIGN KEY(id_permission) REFERENCES Permission(id_permission)
@@ -593,4 +613,17 @@ CREATE TABLE Role_permission(
    PRIMARY KEY(id_role_permission),
    FOREIGN KEY(id_role) REFERENCES role(id_role),
    FOREIGN KEY(id_permission) REFERENCES Permission(id_permission)
+);
+-- for the unique use keys when we want to chnage the password for example
+CREATE TABLE User_tokens(
+   id_token UUID DEFAULT uuid_generate_v4() ,
+   token UUID DEFAULT uuid_generate_v4() NOT NULL ,
+   token_type_ VARCHAR(30) ,
+   expires_at TIMESTAMPTZ NOT NULL,
+   used BOOLEAN,
+   created_at TIMESTAMPTZ,
+   id_user UUID NOT NULL,
+   PRIMARY KEY(id_token),
+   UNIQUE(token),
+   FOREIGN KEY(id_user) REFERENCES Users(id_user)
 );
