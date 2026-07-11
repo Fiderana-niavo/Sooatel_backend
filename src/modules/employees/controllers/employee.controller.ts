@@ -7,6 +7,8 @@ import {
   EmployeeCreateOrUpdateDto,
   EmployeeDto,
   EmployeeSearchOptions,
+  EmployeeTeamDto,
+  EmployeeAvailabilityDto,
 } from "../type/employee.type";
 import { EmployeeService } from "../services/employee.service";
 
@@ -76,6 +78,68 @@ export class EmployeeController extends CrudController<
       res.json(ApiResponse.success(null));
     } catch (err: unknown) {
       console.error("changeJob error:", err);
+      if (err instanceof Error) {
+        res.status(500).json(ApiResponse.error(err.message));
+      } else {
+        res.status(500).json(ApiResponse.error("Une erreur inconnue est survenue"));
+      }
+    }
+  };
+
+  setTeam = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const id = req.params["id"] as string;
+      const dto = req.body as EmployeeTeamDto;
+      await (this.service as EmployeeService).setTeam(id, dto.idTeam);
+      res.json(ApiResponse.success(null));
+    } catch (err: unknown) {
+      console.error("setTeam error:", err);
+      if (err instanceof Error) {
+        res.status(500).json(ApiResponse.error(err.message));
+      } else {
+        res.status(500).json(ApiResponse.error("Une erreur inconnue est survenue"));
+      }
+    }
+  };
+
+  deleteTeam = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const id = req.params["id"] as string;
+      await (this.service as EmployeeService).deleteTeam(id);
+      res.json(ApiResponse.success(null));
+    } catch (err: unknown) {
+      console.error("deleteTeam error:", err);
+      if (err instanceof Error) {
+        res.status(500).json(ApiResponse.error(err.message));
+      } else {
+        res.status(500).json(ApiResponse.error("Une erreur inconnue est survenue"));
+      }
+    }
+  };
+
+  setAvailabilities = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const id = req.params["id"] as string;
+      const dtos = req.body as EmployeeAvailabilityDto[];
+      await (this.service as EmployeeService).setAvailabilities(id, dtos);
+      res.json(ApiResponse.success(null));
+    } catch (err: unknown) {
+      console.error("setAvailabilities error:", err);
+      if (err instanceof Error) {
+        res.status(500).json(ApiResponse.error(err.message));
+      } else {
+        res.status(500).json(ApiResponse.error("Une erreur inconnue est survenue"));
+      }
+    }
+  };
+
+  deleteAvailabilities = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const id = req.params["id"] as string;
+      await (this.service as EmployeeService).deleteAvailabilities(id);
+      res.json(ApiResponse.success(null));
+    } catch (err: unknown) {
+      console.error("deleteAvailabilities error:", err);
       if (err instanceof Error) {
         res.status(500).json(ApiResponse.error(err.message));
       } else {

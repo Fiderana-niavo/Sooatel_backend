@@ -2,6 +2,10 @@ import { IsNull, Repository } from "typeorm";
 import AppDataSource from "../../../database/data-source";
 import { Employee } from "../../../database/Entities/Employee";
 import { EmployeeJob } from "../../../database/Entities/EmployeeJob";
+import { EmployeeTeam } from "../../../database/Entities/EmployeeTeam";
+import { EmployeeAvailability } from "../../../database/Entities/EmployeeAvailability";
+import { Team } from "../../../database/Entities/Team";
+import { ShiftType } from "../../../database/Entities/ShiftType";
 import { Internship } from "../../../database/Entities/Internship";
 import { JobTitle } from "../../../database/Entities/JobTitle";
 import { User } from "../../../database/Entities/User";
@@ -18,6 +22,9 @@ import {
   EmployeeListItem,
   EmployeeSearchOptions,
   InternshipInfo,
+  EmployeeTeamInfo,
+  EmployeeAvailabilityInfo,
+  EmployeeAvailabilityDto,
 } from "../type/employee.type";
 
 export class EmployeeService extends CrudService<
@@ -112,6 +119,34 @@ export class EmployeeService extends CrudService<
       .where("intern.id_employee = :id", { id })
       .getRawOne<InternshipInfo>();
 
+    const team = await AppDataSource.getRepository(EmployeeTeam)
+      .createQueryBuilder("et")
+      .leftJoin(Team, "t", "t.id_team = et.id_team")
+      .select([
+        'et.id_employee_team AS "idEmployeeTeam"',
+        'et.id_team AS "idTeam"',
+        't.team_name AS "teamName"',
+      ])
+      .where("et.id_employee = :id", { id })
+      .getRawOne<EmployeeTeamInfo>();
+
+    let availabilities: EmployeeAvailabilityInfo[] = [];
+    if (empJob) {
+      availabilities = await AppDataSource.getRepository(EmployeeAvailability)
+        .createQueryBuilder("ea")
+        .leftJoin(ShiftType, "st", "st.id_shift_type = ea.id_shift_type")
+        .select([
+          'ea.id_availability AS "idAvailability"',
+          'ea.day_of_week AS "dayOfWeek"',
+          'ea.custom_start_time AS "customStartTime"',
+          'ea.custom_end_time AS "customEndTime"',
+          'ea.id_shift_type AS "idShiftType"',
+          'st.label AS "shiftLabel"',
+        ])
+        .where("ea.id_emp_job = :idEmpJob", { idEmpJob: empJob.idEmpJob })
+        .getRawMany<EmployeeAvailabilityInfo>();
+    }
+
     const detail: EmployeeDetail = {
       idEmployee: employee.idEmployee,
       employeeCode: employee.employeeCode,
@@ -126,6 +161,8 @@ export class EmployeeService extends CrudService<
       notes: employee.notes ?? null,
       job: empJob ?? null,
       internship: internship ?? null,
+      team: team ?? null,
+      availabilities: availabilities,
     };
 
     return detail;
@@ -322,6 +359,57 @@ export class EmployeeService extends CrudService<
         await manager.delete(User, existingUser.idUser);
       }
     });
+  }
+
+  async setTeam(idEmployee: string, idTeam: string): Promise<void> {
+    await AppDataSource.transaction(async (manager) => {
+      await manager.delete(EmployeeTeam, { idEmployee });
+      await manager.save(
+        EmployeeTeam,
+        manager.create(EmployeeTeam, { idEmployee, idTeam }),
+      );
+    });
+  }
+
+  async deleteTeam(idEmployee: string): Promise<void> {
+    await AppDataSource.getRepository(EmployeeTeam).delete({ idEmployee });
+  }
+
+  async setAvailabilities(idEmployee: string, dtos: EmployeeAvailabilityDto[]): Promise<void> {
+    await AppDataSource.transaction(async (manager) => {
+      const activeJob = await manager.findOne(EmployeeJob, {
+        where: { idEmployee },
+        order: { assignmentDate: "DESC" },
+      });
+      if (!activeJob) {
+        throw new Error("Cet employé n'a aucun emploi actif pour enregistrer des disponibilités.");
+      }
+      
+      await manager.delete(EmployeeAvailability, { idEmpJob: activeJob.idEmpJob });
+
+      for (const dto of dtos) {
+        await manager.save(
+          EmployeeAvailability,
+          manager.create(EmployeeAvailability, {
+            idEmpJob: activeJob.idEmpJob,
+            dayOfWeek: dto.dayOfWeek,
+            customStartTime: dto.customStartTime ?? undefined,
+            customEndTime: dto.customEndTime ?? undefined,
+            idShiftType: dto.idShiftType ?? undefined,
+          }),
+        );
+      }
+    });
+  }
+
+  async deleteAvailabilities(idEmployee: string): Promise<void> {
+    const activeJob = await AppDataSource.getRepository(EmployeeJob).findOne({
+      where: { idEmployee },
+      order: { assignmentDate: "DESC" },
+    });
+    if (activeJob) {
+      await AppDataSource.getRepository(EmployeeAvailability).delete({ idEmpJob: activeJob.idEmpJob });
+    }
   }
 
   async changeJob(id: string, dto: ChangeJobDto): Promise<void> {

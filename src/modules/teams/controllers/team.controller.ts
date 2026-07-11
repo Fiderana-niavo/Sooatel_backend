@@ -1,0 +1,33 @@
+import { Request, Response } from "express";
+import { Team } from "../../../database/Entities/Team";
+import { CrudController } from "../../../shared/crud/controllers/CrudController";
+import { ApiResponse } from "../../../shared/types/ApiResponse";
+import { TeamDto, TeamSearchOptions } from "../type/team.type";
+import { TeamService } from "../services/team.service";
+
+export class TeamController extends CrudController<Team, TeamDto, TeamDto> {
+  constructor(service: TeamService) {
+    super(service);
+  }
+
+  findAll = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const result = await (this.service as TeamService).findAll({
+        page: Number(req.query.page ?? 1),
+        limit: Number(req.query.limit ?? 10),
+        search: req.query.search as string | undefined,
+      });
+
+      res.json(ApiResponse.success(result));
+    } catch (err: unknown) {
+      console.error("findAll error:", err);
+      if (err instanceof Error) {
+        res.status(500).json(ApiResponse.error(err.message));
+      } else {
+        res.status(500).json(ApiResponse.error("Une erreur inconnue est survenue"));
+      }
+    }
+  };
+}
+
+export const teamController = new TeamController(new TeamService());

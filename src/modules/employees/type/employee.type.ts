@@ -35,6 +35,32 @@ export interface EmployeeJobInfo {
   jobTitle: string | null;
 }
 
+export interface EmployeeTeamDto {
+  idTeam: string;
+}
+
+export interface EmployeeTeamInfo {
+  idEmployeeTeam: string;
+  idTeam: string;
+  teamName: string | null;
+}
+
+export interface EmployeeAvailabilityDto {
+  dayOfWeek: number;
+  customStartTime: string | null;
+  customEndTime: string | null;
+  idShiftType: string | null;
+}
+
+export interface EmployeeAvailabilityInfo {
+  idAvailability: string;
+  dayOfWeek: number;
+  customStartTime: string | null;
+  customEndTime: string | null;
+  idShiftType: string | null;
+  shiftLabel: string | null;
+}
+
 export interface EmployeeDetail {
   idEmployee: string;
   employeeCode: string;
@@ -47,6 +73,8 @@ export interface EmployeeDetail {
   notes: string | null;
   job: EmployeeJobInfo | null;
   internship: InternshipInfo | null;
+  team: EmployeeTeamInfo | null;
+  availabilities: EmployeeAvailabilityInfo[];
 }
 
 export interface EmployeeDto {
