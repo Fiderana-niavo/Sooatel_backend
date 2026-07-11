@@ -13,9 +13,6 @@ export class RolePermission extends BaseEntity {
   @Column({ type: "uuid", name: "id_permission" })
   idPermission: string;
 
-  @Column({ type: "boolean", nullable: true, name: "is_granted" })
-  isGranted: boolean;
-
   @ManyToOne(() => Role)
   @JoinColumn({ name: "id_role" })
   role: Role;
