@@ -11,6 +11,7 @@ import {
 } from "./modules/permissions/routes/permission.router";
 import teamRouter from "./modules/teams/routes/team.router";
 import shiftTypeRouter from "./modules/shift-types/routes/shift-type.router";
+import authRouter from "./modules/auth/routes/auth.router";
 
 configDotenv();
 
@@ -33,6 +34,7 @@ AppDataSource.initialize()
     app.use("/api/permission-categories", permissionCategoryRouter);
     app.use("/api/teams", teamRouter);
     app.use("/api/shift-types", shiftTypeRouter);
+    app.use("/api/auth", authRouter);
 
     const PORT = Number(process.env["PORT"] ?? 3000);
     app.listen(PORT, () => {

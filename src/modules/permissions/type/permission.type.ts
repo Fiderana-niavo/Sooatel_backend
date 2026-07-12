@@ -37,3 +37,8 @@ export interface PermissionSearchOptions {
   sortBy?: "permissionName";
   sortOrder?: "ASC" | "DESC";
 }
+
+export interface PermissionItem {
+  idPermission: string;
+  permissionName: string;
+}
