@@ -36,7 +36,7 @@ export interface EmployeeJobInfo {
 }
 
 export interface EmployeeTeamDto {
-  idTeam: string;
+  idTeam: string | null;
 }
 
 export interface EmployeeTeamInfo {
@@ -130,6 +130,11 @@ export interface ChangeJobDto {
   assignmentDate: string;
   endDate: string | null;
   hasFixedSchedule: boolean;
+  lastJobEndDate?: string;
+}
+
+export interface EndJobDto {
+  endDate: string;
 }
 
 export interface EmployeeSearchOptions {

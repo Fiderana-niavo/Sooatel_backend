@@ -20,12 +20,15 @@ export class Employee extends BaseEntity {
   @Column({ type: "varchar", length: 255, nullable: true, name: "address" })
   address: string;
 
-  @Column({ type: "varchar", length: 254, nullable: true, name: "email_contact" })
+  @Column({ type: "varchar", length: 254, nullable: true, unique: true, name: "email_contact" })
   emailContact: string;
 
-  @Column({ type: "varchar", length: 20, nullable: true, name: "phone_number" })
+  @Column({ type: "varchar", length: 20, nullable: true, unique: true, name: "phone_number" })
   phoneNumber: string;
 
   @Column({ type: "varchar", length: 255, nullable: true, name: "notes" })
   notes: string;
+
+  @Column({ type: "integer", default: 0, name: "active_status" })
+  activeStatus: number;
 }

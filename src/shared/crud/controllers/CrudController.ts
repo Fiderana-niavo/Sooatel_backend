@@ -3,9 +3,10 @@ import { BaseEntity } from "typeorm";
 import { ApiResponse } from "../../types/ApiResponse";
 import { Paginated } from "../../types/Paginated";
 import { CrudService } from "../services/CrudService";
+import { handleCrudError } from "../utils/handleError";
 
 export class CrudController<T extends BaseEntity, CreateDto = Partial<T>, UpdateDto = Partial<T>> {
-  constructor(public service: CrudService<T, CreateDto, UpdateDto>) {}
+  constructor(public service: CrudService<T, CreateDto, UpdateDto>) { }
 
   findAll = async (req: Request, res: Response, _next?: NextFunction) => {
     try {
@@ -14,11 +15,7 @@ export class CrudController<T extends BaseEntity, CreateDto = Partial<T>, Update
       const entities = await this.service.findAll({ page, limit });
       res.json(ApiResponse.success<Paginated<T>>(entities));
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        res.status(500).json(ApiResponse.error(error.message));
-      } else {
-        res.status(500).json(ApiResponse.error("Une erreur inconnue est survenue"));
-      }
+      handleCrudError(res, error);
     }
   };
 
@@ -32,11 +29,7 @@ export class CrudController<T extends BaseEntity, CreateDto = Partial<T>, Update
         res.status(404).json(ApiResponse.error("Entity not found"));
       }
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        res.status(500).json(ApiResponse.error(error.message));
-      } else {
-        res.status(500).json(ApiResponse.error("Une erreur inconnue est survenue"));
-      }
+      handleCrudError(res, error);
     }
   };
 
@@ -46,11 +39,7 @@ export class CrudController<T extends BaseEntity, CreateDto = Partial<T>, Update
       const saved = await this.service.create(entity);
       res.status(201).json(ApiResponse.success<T>(saved));
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        res.status(500).json(ApiResponse.error(error.message));
-      } else {
-        res.status(500).json(ApiResponse.error("Une erreur inconnue est survenue"));
-      }
+      handleCrudError(res, error);
     }
   };
 
@@ -61,11 +50,7 @@ export class CrudController<T extends BaseEntity, CreateDto = Partial<T>, Update
       await this.service.update(id, entity);
       res.json(ApiResponse.success<null>(null, "Entity updated successfully"));
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        res.status(500).json(ApiResponse.error(error.message));
-      } else {
-        res.status(500).json(ApiResponse.error("Une erreur inconnue est survenue"));
-      }
+      handleCrudError(res, error);
     }
   };
 
@@ -75,11 +60,7 @@ export class CrudController<T extends BaseEntity, CreateDto = Partial<T>, Update
       await this.service.delete(id);
       res.json(ApiResponse.success<null>(null, "Entity deleted successfully"));
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        res.status(500).json(ApiResponse.error(error.message));
-      } else {
-        res.status(500).json(ApiResponse.error("Une erreur inconnue est survenue"));
-      }
+      handleCrudError(res, error);
     }
   };
 }

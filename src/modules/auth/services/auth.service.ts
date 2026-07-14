@@ -26,17 +26,20 @@ import { Employee } from "../../../database/Entities/Employee";
 const SECRET = new TextEncoder().encode(process.env["JWT_SECRET"] ?? "sooatel_secret_key");
 const ACCESS_EXPIRY = "1h";
 const REFRESH_EXPIRY = "7d";
-// In-memory refresh token store (as per Lumos doc pattern)
+
 const activeRefreshTokens: string[] = [];
 
 export class AuthService {
-  // ─────────────────────────────────────────────
-  // LOGIN
-  // ─────────────────────────────────────────────
   async login(dto: LoginDto): Promise<LoginPayload> {
     const userRepo = AppDataSource.getRepository(User);
 
-    const user = await userRepo.findOne({ where: { username: dto.username } });
+    const user = await userRepo
+      .createQueryBuilder("user")
+      .leftJoinAndSelect("user.employee", "employee")
+      .where("user.username = :identifier", { identifier: dto.username })
+      .orWhere("employee.email_contact = :identifier", { identifier: dto.username })
+      .getOne();
+
     if (!user) throw new Error("Identifiants invalides.");
 
     const match = await bcrypt.compare(dto.password, user.passwordHash);
@@ -63,6 +66,8 @@ export class AuthService {
       ref: user.ref,
       username: user.username,
       idEmployee: user.idEmployee,
+      name: user.employee?.name,
+      lastname: user.employee?.lastname,
     };
 
     return { accessToken, refreshToken, user: authUser, permissions };
@@ -96,10 +101,22 @@ export class AuthService {
     const user = await userRepo.findOne({ where: { idUser } });
     if (!user) throw new Error("Utilisateur introuvable.");
 
+    const existingToken = await tokenRepo
+      .createQueryBuilder("ut")
+      .where("ut.id_user = :idUser", { idUser })
+      .andWhere("ut.token_type_ = :type", { type })
+      .andWhere("ut.used = false")
+      .andWhere("ut.expires_at > NOW()")
+      .getOne();
+
+    if (existingToken) {
+      return { token: existingToken.token, expiresAt: existingToken.expiresAt };
+    }
+
     const token = randomUUID();
 
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 30);
+    expiresAt.setHours(expiresAt.getHours() + 48);
 
     const record = tokenRepo.create({
       token,
@@ -123,7 +140,13 @@ export class AuthService {
     const tokenRepo = AppDataSource.getRepository(UserToken);
     const empRepo = AppDataSource.getRepository(Employee);
 
-    const user = await userRepo.findOne({ where: { username: dto.username } });
+    const user = await userRepo
+      .createQueryBuilder("user")
+      .leftJoin("user.employee", "employee")
+      .where("user.username = :identifier", { identifier: dto.username })
+      .orWhere("employee.email_contact = :identifier", { identifier: dto.username })
+      .getOne();
+
     if (!user) throw new Error("Utilisateur introuvable.");
 
     // Invalidate previous unused PWD_RESET tokens for this user
@@ -165,6 +188,7 @@ export class AuthService {
 
   async validateResetKey(dto: ValidateResetKeyDto): Promise<void> {
     const tokenRepo = AppDataSource.getRepository(UserToken);
+    const userRepo = AppDataSource.getRepository(User);
 
     const record = await tokenRepo.findOne({
       where: { token: dto.key, tokenType_: "PWD_RESET" },
@@ -173,10 +197,16 @@ export class AuthService {
     if (!record) throw new Error("Clé incorrecte.");
     if (record.used) throw new Error("Cette clé a déjà été utilisée.");
     if (record.expiresAt < new Date()) throw new Error("Cette clé a expiré.");
+
+    const user = await userRepo.findOne({ where: { idUser: record.idUser } });
+    if (!user || user.username !== dto.username) {
+      throw new Error("Cette clé n'appartient pas à ce nom d'utilisateur.");
+    }
   }
 
   async changePassword(dto: ChangePasswordDto): Promise<void> {
     const tokenRepo = AppDataSource.getRepository(UserToken);
+    const userRepo = AppDataSource.getRepository(User);
 
     const record = await tokenRepo.findOne({
       where: { token: dto.key, tokenType_: "PWD_RESET" },
@@ -185,6 +215,11 @@ export class AuthService {
     if (!record) throw new Error("Clé incorrecte.");
     if (record.used) throw new Error("Cette clé a déjà été utilisée.");
     if (record.expiresAt < new Date()) throw new Error("Cette clé a expiré.");
+
+    const user = await userRepo.findOne({ where: { idUser: record.idUser } });
+    if (!user || user.username !== dto.username) {
+      throw new Error("Cette clé n'appartient pas à ce nom d'utilisateur.");
+    }
 
     const hashed = await bcrypt.hash(dto.newPassword, 12);
 
@@ -203,30 +238,23 @@ export class AuthService {
   }
 
   private async resolvePermissions(idUser: string): Promise<PermissionItem[]> {
-    const userPerms = await AppDataSource.getRepository(UserPermission).find({
-      where: { idUser, isAllowed: true },
-    });
-    const userRoles = await AppDataSource.getRepository(UserRole).find({ where: { idUser } });
-    const idRoles = userRoles.map((ur) => ur.idRole);
-
-    let rolePermIds: string[] = [];
-    if (idRoles.length > 0) {
-      const rolePerms = await AppDataSource.getRepository(RolePermission)
-        .createQueryBuilder("rp")
-        .where("rp.id_role IN (:...ids)", { ids: idRoles })
-        .andWhere("rp.is_granted = true")
-        .getMany();
-      rolePermIds = rolePerms.map((rp) => rp.idPermission);
-    }
-
-    const allIds = [...new Set([...userPerms.map((up) => up.idPermission), ...rolePermIds])];
-
-    if (allIds.length === 0) return [];
-
     const perms = await AppDataSource.getRepository(Permission)
       .createQueryBuilder("p")
       .select(["p.id_permission AS \"idPermission\"", "p.permission_name AS \"permissionName\""])
-      .where("p.id_permission IN (:...ids)", { ids: allIds })
+      .where(`p.id_permission IN (
+        SELECT up.id_permission FROM user_permission up WHERE up.id_user = :idUser AND up.is_allowed = true
+      )`)
+      .orWhere(`
+        p.id_permission IN (
+          SELECT rp.id_permission FROM role_permission rp
+          JOIN user_role ur ON ur.id_role = rp.id_role
+          WHERE ur.id_user = :idUser
+        ) 
+        AND p.id_permission NOT IN (
+          SELECT up.id_permission FROM user_permission up WHERE up.id_user = :idUser AND up.is_allowed = false
+        )
+      `)
+      .setParameter("idUser", idUser)
       .getRawMany<PermissionItem>();
 
     return perms;

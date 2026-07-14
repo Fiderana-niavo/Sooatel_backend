@@ -44,7 +44,8 @@ export class AuthController {
   generateToken = async (req: Request, res: Response): Promise<void> => {
     try {
       const idUser = req.params["id"] as string;
-      const result = await authService.generateUserToken(idUser);
+      const { type } = req.body as { type?: string };
+      const result = await authService.generateUserToken(idUser, type);
       res.json(ApiResponse.success(result));
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -90,8 +91,8 @@ export class AuthController {
   validateResetKey = async (req: Request, res: Response): Promise<void> => {
     try {
       const dto = req.body as ValidateResetKeyDto;
-      if (!dto.key) {
-        res.status(400).json(ApiResponse.error("La clé est requise."));
+      if (!dto.key || !dto.username) {
+        res.status(400).json(ApiResponse.error("La clé et le nom d'utilisateur sont requis."));
         return;
       }
       await authService.validateResetKey(dto);
@@ -108,8 +109,8 @@ export class AuthController {
   changePassword = async (req: Request, res: Response): Promise<void> => {
     try {
       const dto = req.body as ChangePasswordDto;
-      if (!dto.key || !dto.newPassword) {
-        res.status(400).json(ApiResponse.error("La clé et le nouveau mot de passe sont requis."));
+      if (!dto.key || !dto.newPassword || !dto.username) {
+        res.status(400).json(ApiResponse.error("La clé, le nom d'utilisateur et le nouveau mot de passe sont requis."));
         return;
       }
       await authService.changePassword(dto);

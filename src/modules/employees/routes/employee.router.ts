@@ -6,10 +6,11 @@ const employeeRouter = Router();
 
 employeeRouter.get("/:id", employeeController.getById);
 employeeRouter.post("/:id/change-job", employeeController.changeJob);
+employeeRouter.post("/:id/end-job", employeeController.endJob);
 employeeRouter.post("/:id/team", employeeController.setTeam);
-employeeRouter.delete("/:id/team", employeeController.deleteTeam);
+
 employeeRouter.post("/:id/availabilities", employeeController.setAvailabilities);
-employeeRouter.delete("/:id/availabilities", employeeController.deleteAvailabilities);
+
 generateCrudRoutes(employeeRouter, employeeController);
 
 export default employeeRouter;

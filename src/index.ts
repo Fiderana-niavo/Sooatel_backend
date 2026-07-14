@@ -12,6 +12,8 @@ import {
 import teamRouter from "./modules/teams/routes/team.router";
 import shiftTypeRouter from "./modules/shift-types/routes/shift-type.router";
 import authRouter from "./modules/auth/routes/auth.router";
+import jobTitleRouter from "./modules/job-titles/routes/job-title.router";
+import employmentTypeRouter from "./modules/job-titles/routes/employment-type.router";
 
 configDotenv();
 
@@ -35,6 +37,8 @@ AppDataSource.initialize()
     app.use("/api/teams", teamRouter);
     app.use("/api/shift-types", shiftTypeRouter);
     app.use("/api/auth", authRouter);
+    app.use("/api/job-titles", jobTitleRouter);
+    app.use("/api/employment-types", employmentTypeRouter);
 
     const PORT = Number(process.env["PORT"] ?? 3000);
     app.listen(PORT, () => {

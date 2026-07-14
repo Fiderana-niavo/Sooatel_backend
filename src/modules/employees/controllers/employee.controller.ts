@@ -9,6 +9,7 @@ import {
   EmployeeSearchOptions,
   EmployeeTeamDto,
   EmployeeAvailabilityDto,
+  EndJobDto,
 } from "../type/employee.type";
 import { EmployeeService } from "../services/employee.service";
 
@@ -102,13 +103,20 @@ export class EmployeeController extends CrudController<
     }
   };
 
-  deleteTeam = async (req: Request, res: Response): Promise<void> => {
+  endJob = async (req: Request, res: Response): Promise<void> => {
     try {
       const id = req.params["id"] as string;
-      await (this.service as EmployeeService).deleteTeam(id);
+      const dto = req.body as EndJobDto;
+      
+      if (!dto || !dto.endDate) {
+        res.status(400).json(ApiResponse.error("Le corps de la requête (body) est vide ou mal formaté. Vérifiez que vous envoyez du JSON valide avec un Content-Type: application/json."));
+        return;
+      }
+      
+      await (this.service as EmployeeService).endJob(id, dto);
       res.json(ApiResponse.success(null));
     } catch (err: unknown) {
-      console.error("deleteTeam error:", err);
+      console.error("endJob error:", err);
       if (err instanceof Error) {
         res.status(500).json(ApiResponse.error(err.message));
       } else {
@@ -116,6 +124,8 @@ export class EmployeeController extends CrudController<
       }
     }
   };
+
+
 
   setAvailabilities = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -133,20 +143,7 @@ export class EmployeeController extends CrudController<
     }
   };
 
-  deleteAvailabilities = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const id = req.params["id"] as string;
-      await (this.service as EmployeeService).deleteAvailabilities(id);
-      res.json(ApiResponse.success(null));
-    } catch (err: unknown) {
-      console.error("deleteAvailabilities error:", err);
-      if (err instanceof Error) {
-        res.status(500).json(ApiResponse.error(err.message));
-      } else {
-        res.status(500).json(ApiResponse.error("Une erreur inconnue est survenue"));
-      }
-    }
-  };
+
 }
 
 export const employeeController = new EmployeeController(new EmployeeService());

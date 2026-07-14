@@ -1,20 +1,20 @@
 import { Request, Response } from "express";
-import { Team } from "../../../database/Entities/Team";
+import { JobTitle } from "../../../database/Entities/JobTitle";
 import { CrudController } from "../../../shared/crud/controllers/CrudController";
 import { ApiResponse } from "../../../shared/types/ApiResponse";
-import { TeamDto, TeamSearchOptions } from "../type/team.type";
-import { TeamService } from "../services/team.service";
+import { JobTitleDto } from "../type/job-title.type";
+import { JobTitleService } from "../services/job-title.service";
 
-export class TeamController extends CrudController<Team, TeamDto, TeamDto> {
-  constructor(service: TeamService) {
+export class JobTitleController extends CrudController<JobTitle, JobTitleDto, JobTitleDto> {
+  constructor(service: JobTitleService) {
     super(service);
   }
 
   findAll = async (req: Request, res: Response): Promise<void> => {
     try {
-      const result = await (this.service as TeamService).findAll({
+      const result = await (this.service as JobTitleService).findAll({
         page: Number(req.query.page ?? 1),
-        limit: Number(req.query.limit ?? 20),
+        limit: Number(req.query.limit ?? 10),
         search: req.query.search as string | undefined,
       });
 
@@ -30,4 +30,4 @@ export class TeamController extends CrudController<Team, TeamDto, TeamDto> {
   };
 }
 
-export const teamController = new TeamController(new TeamService());
+export const jobTitleController = new JobTitleController(new JobTitleService());

@@ -12,14 +12,14 @@ const transporter = nodemailer.createTransport({
 
 export const MailerService = {
   sendPasswordReset: async (to: string, key: string, username: string): Promise<void> => {
-    const resetLink = `${process.env["FRONTEND_URL"] ?? "http://localhost:5173"}/reset-password?key=${key}`;
+    const resetLink = `${process.env["FRONTEND_URL"] ?? "http://localhost:5173"}/login?key=${key}&username=${encodeURIComponent(username)}`;
 
     await transporter.sendMail({
       from: process.env["SMTP_FROM"] ?? "noreply@sooatel.com",
       to,
       subject: "Réinitialisation de votre mot de passe — Sooatel",
       html: `
-        <div style="font-family: sans-serif; max-width: 520px; margin: auto; padding: 32px; border: 1px solid #e2e8f0; border-radius: 12px;">
+        <div style="font-family: sans-serif; max-width: 520px; padding: 32px; border: 1px solid #e2e8f0; border-radius: 12px; margin-left: 0; text-align: left;">
           <h2 style="color: #223c56; margin-bottom: 8px;">Réinitialisation du mot de passe</h2>
           <p style="color: #64748b;">Bonjour <strong>${username}</strong>,</p>
           <p style="color: #64748b;">

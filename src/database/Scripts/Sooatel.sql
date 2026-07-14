@@ -132,8 +132,11 @@ CREATE TABLE Employees(
    email_contact VARCHAR(254) ,
    phone_number VARCHAR(20) ,
    notes VARCHAR(255) ,
+   active_status INTEGER DEFAULT 0,
    PRIMARY KEY(id_employee),
    UNIQUE(employee_code),
+   UNIQUE(email_contact),
+   UNIQUE(phone_number),
    CONSTRAINT chk_name_or_lastname 
    CHECK (name IS NOT NULL OR lastname IS NOT NULL)
 );

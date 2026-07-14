@@ -4,6 +4,7 @@ import { Permission } from "../../../database/Entities/Permission";
 import { PermissionCategory } from "../../../database/Entities/PermissionCategory";
 import { Role } from "../../../database/Entities/Role";
 import { RolePermission } from "../../../database/Entities/RolePermission";
+import { UserRole } from "../../../database/Entities/UserRole";
 import { CrudService } from "../../../shared/crud/services/CrudService";
 import { Paginated } from "../../../shared/types/Paginated";
 import {
@@ -69,7 +70,8 @@ export class RoleService extends CrudService<Role, RoleCreateOrUpdateDto, RoleCr
       const saved = await manager.save(Role, role);
 
       // Assign permissions
-      for (const idPermission of dto.permissionIds) {
+      const permissionIds = dto.permissionIds || [];
+      for (const idPermission of permissionIds) {
         await manager.save(
           RolePermission,
           manager.create(RolePermission, {
@@ -93,7 +95,8 @@ export class RoleService extends CrudService<Role, RoleCreateOrUpdateDto, RoleCr
 
       // Sync permissions
       await manager.delete(RolePermission, { idRole: id });
-      for (const idPermission of dto.permissionIds) {
+      const permissionIds = dto.permissionIds || [];
+      for (const idPermission of permissionIds) {
         await manager.save(
           RolePermission,
           manager.create(RolePermission, {
@@ -107,6 +110,11 @@ export class RoleService extends CrudService<Role, RoleCreateOrUpdateDto, RoleCr
 
   async delete(id: string): Promise<void> {
     await AppDataSource.transaction(async (manager) => {
+      const usersCount = await manager.count(UserRole, { where: { idRole: id } });
+      if (usersCount > 0) {
+        throw new Error(`Impossible de supprimer ce rôle car il est encore assigné à ${usersCount} utilisateur(s).`);
+      }
+
       await manager.delete(RolePermission, { idRole: id });
       await manager.delete(Role, id);
     });
