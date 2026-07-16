@@ -1,14 +1,22 @@
 import { Response } from "express";
 import { ApiResponse } from "../../types/ApiResponse";
+import { AppError } from "../../errors/AppError";
 
 export function handleCrudError(res: Response, error: unknown) {
-  if (error && typeof error === "object" && "code" in error) {
-    const dbError = error as { code: string; detail?: string; message?: string };
+  if (error instanceof AppError) {
+    return res.status(error.statusCode).json(ApiResponse.error(error.message));
+  }
+  let dbError: any = error;
+  if (error && typeof error === "object" && "driverError" in error) {
+    dbError = (error as any).driverError;
+  }
+  
+  if (dbError && typeof dbError === "object" && "code" in dbError) {
     switch (dbError.code) {
       case "23505": {
         let fieldName = "cette valeur";
+        const dbErrorAny = dbError as any;
         if (dbError.detail) {
-          // Fonctionne pour "Key (email)=(" et "La clé (email) = ("
           const match = dbError.detail.match(/\((.*?)\)\s*=\s*\(/);
           if (match && match[1]) {
             const rawCol = match[1];
@@ -23,6 +31,11 @@ export function handleCrudError(res: Response, error: unknown) {
             };
             fieldName = `le champ '${translations[rawCol] || rawCol}'`;
           }
+        } else if (dbErrorAny.constraint) {
+           if (dbErrorAny.constraint.includes('phone')) fieldName = "le champ 'numéro de téléphone'";
+           else if (dbErrorAny.constraint.includes('email')) fieldName = "le champ 'adresse e-mail'";
+           else if (dbErrorAny.constraint.includes('code')) fieldName = "le champ 'code employé'";
+           else if (dbErrorAny.constraint.includes('username')) fieldName = "le champ 'nom d'utilisateur'";
         }
         return res.status(400).json(ApiResponse.error(`Un enregistrement avec ${fieldName} existe déjà.`));
       }

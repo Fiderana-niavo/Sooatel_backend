@@ -19,11 +19,11 @@ export class Attendance extends BaseEntity {
   @Column({ type: "uuid", name: "id_employee" })
   idEmployee: string;
 
-  @ManyToOne(() => Schedule)
+  @ManyToOne(() => Schedule, (s) => s.attendances)
   @JoinColumn({ name: "id_schedule" })
   schedule: Schedule;
 
-  @ManyToOne(() => Employee)
+  @ManyToOne(() => Employee, (e) => e.attendances)
   @JoinColumn({ name: "id_employee" })
   employee: Employee;
 }

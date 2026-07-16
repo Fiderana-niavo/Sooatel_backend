@@ -13,7 +13,7 @@ export class CrudController<T extends BaseEntity, CreateDto = Partial<T>, Update
       const page = req.query["page"] ? parseInt(req.query["page"] as string, 10) : undefined;
       const limit = req.query["limit"] ? parseInt(req.query["limit"] as string, 10) : undefined;
       const entities = await this.service.findAll({ page, limit });
-      res.json(ApiResponse.success<Paginated<T>>(entities));
+      res.json({ message: "CRUD CONTROLLER CALLED", payload: entities });
     } catch (error: unknown) {
       handleCrudError(res, error);
     }

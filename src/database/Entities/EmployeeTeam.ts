@@ -13,11 +13,11 @@ export class EmployeeTeam extends BaseEntity {
   @Column({ type: "uuid", unique: true, name: "id_employee" })
   idEmployee: string;
 
-  @ManyToOne(() => Team)
+  @ManyToOne(() => Team, (t) => t.employeeTeams)
   @JoinColumn({ name: "id_team" })
   team: Team;
 
-  @ManyToOne(() => Employee)
+  @ManyToOne(() => Employee, (e) => e.employeeTeams)
   @JoinColumn({ name: "id_employee" })
   employee: Employee;
 }

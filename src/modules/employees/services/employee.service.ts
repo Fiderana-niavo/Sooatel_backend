@@ -1,5 +1,6 @@
-import { IsNull, Repository } from "typeorm";
+import { IsNull, Repository, Not } from "typeorm";
 import bcrypt from "bcrypt";
+import { z } from "zod";
 import AppDataSource from "../../../database/data-source";
 import { Employee } from "../../../database/Entities/Employee";
 import { EmployeeJob } from "../../../database/Entities/EmployeeJob";
@@ -12,6 +13,8 @@ import { JobTitle } from "../../../database/Entities/JobTitle";
 import { User } from "../../../database/Entities/User";
 import { UserPermission } from "../../../database/Entities/UserPermission";
 import { UserRole } from "../../../database/Entities/UserRole";
+import { Role } from "../../../database/Entities/Role";
+import { AppError } from "../../../shared/errors/AppError";
 import { CrudService } from "../../../shared/crud/services/CrudService";
 import { Paginated } from "../../../shared/types/Paginated";
 import {
@@ -45,26 +48,19 @@ export class EmployeeService extends CrudService<
     const sortBy = options.sortBy ?? "name";
     const sortOrder = options.sortOrder ?? "ASC";
 
-    const qb = AppDataSource.getRepository(Employee)
-      .createQueryBuilder("employee")
-      .leftJoin(EmployeeJob, "ej", "ej.id_employee = employee.id_employee AND ej.end_date IS NULL")
-      .leftJoin(JobTitle, "jt", "jt.id_job_title = ej.id_job_title")
-      .leftJoin(Internship, "intern", "intern.id_employee = employee.id_employee")
-      .leftJoin(User, "u", "u.id_employee = employee.id_employee")
-      .select([
-        'employee.id_employee AS "idEmployee"',
-        'employee.employee_code AS "employeeCode"',
-        "employee.name AS name",
-        "employee.lastname AS lastname",
-        'jt.title AS "jobTitle"',
-        'CASE WHEN intern.id_internship IS NOT NULL THEN true ELSE false END AS "isInternship"',
-        'CASE WHEN u.id_user IS NOT NULL THEN true ELSE false END AS "hasAccount"',
-      ])
-      .skip((pageNum - 1) * limitNum)
-      .take(limitNum)
-      .orderBy(`employee.${sortBy}`, sortOrder);
+    const repo = AppDataSource.getRepository(Employee);
 
-    qb.where("employee.active_status = 0 OR employee.active_status IS NULL");
+    const qb = repo.createQueryBuilder("employee")
+      .leftJoinAndSelect("employee.employeeJobs", "ej", "ej.end_date IS NULL")
+      .leftJoinAndSelect("ej.jobTitle", "jt")
+      .leftJoinAndSelect("employee.internships", "intern")
+      .leftJoinAndSelect("employee.users", "u");
+
+    if (options.status === "former") {
+      qb.where("employee.active_status = -1");
+    } else {
+      qb.where("(employee.active_status = 0 OR employee.active_status IS NULL)");
+    }
 
     if (search) {
       qb.andWhere(
@@ -89,8 +85,20 @@ export class EmployeeService extends CrudService<
       qb.andWhere("intern.id_internship IS NULL");
     }
 
-    const records = await qb.getRawMany<EmployeeListItem>();
-    const total = await qb.getCount();
+    qb.orderBy(`employee.${sortBy}`, sortOrder as "ASC" | "DESC");
+    qb.skip((pageNum - 1) * limitNum).take(limitNum);
+
+    const [employees, total] = await qb.getManyAndCount();
+
+    const records: EmployeeListItem[] = employees.map(emp => ({
+      idEmployee: emp.idEmployee,
+      employeeCode: emp.employeeCode,
+      name: emp.name,
+      lastname: emp.lastname,
+      jobTitle: emp.employeeJobs?.[0]?.jobTitle?.title || null,
+      isInternship: emp.internships && emp.internships.length > 0,
+      hasAccount: emp.users && emp.users.length > 0,
+    }));
 
     return new Paginated<Employee>(records as unknown as Employee[], total, pageNum, limitNum);
   }
@@ -104,12 +112,15 @@ export class EmployeeService extends CrudService<
       .leftJoin(JobTitle, "jt", "jt.id_job_title = ej.id_job_title")
       .select([
         'ej.id_emp_job AS "idEmpJob"',
+        'ej.id_job_title AS "idJobTitle"',
+        'ej.id_employment_type AS "idEmploymentType"',
         'ej.assignment_date AS "assignmentDate"',
         'ej.end_date AS "endDate"',
         'ej.has_fixed_schedule AS "hasFixedSchedule"',
         'jt.title AS "jobTitle"',
       ])
       .where("ej.id_employee = :id", { id })
+      .orderBy("ej.assignment_date", "DESC")
       .getRawOne<EmployeeJobInfo>();
 
     const internship = await AppDataSource.getRepository(Internship)
@@ -150,15 +161,41 @@ export class EmployeeService extends CrudService<
         .where("ea.id_emp_job = :idEmpJob", { idEmpJob: empJob.idEmpJob })
         .getRawMany<EmployeeAvailabilityInfo>();
     }
+    let userAccount: any = null;
+    const user = await AppDataSource.getRepository(User).findOneBy({ idEmployee: id });
+    if (user) {
+      const userRoles = await AppDataSource.getRepository(UserRole).find({ where: { idUser: user.idUser } });
+      const roles = [];
+      for (const ur of userRoles) {
+        const roleObj = await AppDataSource.getRepository(Role).findOneBy({ idRole: ur.idRole });
+        if (roleObj) {
+          roles.push({
+            idRole: roleObj.idRole,
+            label: roleObj.label,
+            description: roleObj.description,
+          });
+        }
+      }
+      const userPerms = await AppDataSource.getRepository(UserPermission).find({ where: { idUser: user.idUser } });
+      userAccount = {
+        idUser: user.idUser,
+        username: user.username,
+        roles: roles,
+        permissionsOverrides: userPerms.map(up => ({
+          idPermission: up.idPermission,
+          overrideType: up.isAllowed ? "grant" : "deny"
+        }))
+      };
+    }
 
     const detail: EmployeeDetail = {
       idEmployee: employee.idEmployee,
       employeeCode: employee.employeeCode,
       name: employee.name ?? null,
       lastname: employee.lastname ?? null,
-      birthdate: (employee.birthdate instanceof Date
-        ? employee.birthdate.toISOString().split("T")[0]
-        : null) as string | null,
+      birthdate: employee.birthdate
+        ? (new Date(employee.birthdate).toISOString().split("T")[0] ?? null)
+        : null,
       address: employee.address ?? null,
       emailContact: employee.emailContact ?? null,
       phoneNumber: employee.phoneNumber ?? null,
@@ -167,20 +204,56 @@ export class EmployeeService extends CrudService<
       internship: internship ?? null,
       team: team ?? null,
       availabilities: availabilities,
+      userAccount: userAccount,
     };
 
     return detail;
   }
 
   async create(dto: EmployeeCreateOrUpdateDto): Promise<Employee> {
-    if (dto.birthdate) {
-      const birthdate = new Date(dto.birthdate);
-      const ageDifMs = Date.now() - birthdate.getTime();
-      const ageDate = new Date(ageDifMs);
-      const age = Math.abs(ageDate.getUTCFullYear() - 1970);
-      if (age < 18) {
-        throw new Error("L'employé doit avoir au moins 18 ans.");
-      }
+    const erreurs: string[] = [];
+
+    const schema = z.object({
+      name: z.string().min(1, "Le nom est requis."),
+      lastname: z.string().min(1, "Le prénom est requis."),
+      birthdate: z.string().optional().nullable().refine((val: string | null | undefined) => {
+        if (!val) return true;
+        const birthdate = new Date(val);
+        const ageDifMs = Date.now() - birthdate.getTime();
+        const ageDate = new Date(ageDifMs);
+        return Math.abs(ageDate.getUTCFullYear() - 1970) >= 18;
+      }, "L'employé doit avoir au moins 18 ans."),
+      emailContact: z.string().email("Format d'email invalide.").or(z.literal("")).optional().nullable(),
+      phoneNumber: z.string().min(5, "Le numéro de téléphone est trop court.").or(z.literal("")).optional().nullable(),
+    });
+
+    const parsed = schema.safeParse({
+      name: dto.name,
+      lastname: dto.lastname,
+      birthdate: dto.birthdate,
+      emailContact: dto.emailContact,
+      phoneNumber: dto.phoneNumber
+    });
+
+    if (!parsed.success) {
+      parsed.error.issues.forEach((issue: any) => erreurs.push(issue.message));
+    }
+
+    if (dto.phoneNumber) {
+      const existingPhone = await AppDataSource.getRepository(Employee).findOneBy({ phoneNumber: dto.phoneNumber });
+      if (existingPhone) erreurs.push("Ce numéro de téléphone est déjà pris.");
+    }
+    if (dto.emailContact) {
+      const existingEmail = await AppDataSource.getRepository(Employee).findOneBy({ emailContact: dto.emailContact });
+      if (existingEmail) erreurs.push("Cette adresse e-mail est déjà prise.");
+    }
+    if (dto.userAccount?.username) {
+      const existingUser = await AppDataSource.getRepository(User).findOneBy({ username: dto.userAccount.username });
+      if (existingUser) erreurs.push("Ce nom d'utilisateur est déjà pris.");
+    }
+
+    if (erreurs.length > 0) {
+      throw new AppError(erreurs.join(" | "), 400);
     }
 
     return AppDataSource.transaction(async (manager) => {
@@ -266,14 +339,49 @@ export class EmployeeService extends CrudService<
   }
 
   async update(id: string, dto: EmployeeCreateOrUpdateDto): Promise<void> {
-    if (dto.birthdate) {
-      const birthdate = new Date(dto.birthdate);
-      const ageDifMs = Date.now() - birthdate.getTime();
-      const ageDate = new Date(ageDifMs);
-      const age = Math.abs(ageDate.getUTCFullYear() - 1970);
-      if (age < 18) {
-        throw new Error("L'employé doit avoir au moins 18 ans.");
-      }
+    const erreurs: string[] = [];
+
+    const schema = z.object({
+      name: z.string().min(1, "Le nom est requis."),
+      lastname: z.string().min(1, "Le prénom est requis."),
+      birthdate: z.string().optional().nullable().refine((val) => {
+        if (!val) return true;
+        const birthdate = new Date(val);
+        const ageDifMs = Date.now() - birthdate.getTime();
+        const ageDate = new Date(ageDifMs);
+        return Math.abs(ageDate.getUTCFullYear() - 1970) >= 18;
+      }, "L'employé doit avoir au moins 18 ans."),
+      emailContact: z.string().email("Format d'email invalide.").or(z.literal("")).optional().nullable(),
+      phoneNumber: z.string().min(5, "Le numéro de téléphone est trop court.").or(z.literal("")).optional().nullable(),
+    });
+
+    const parsed = schema.safeParse({
+      name: dto.name,
+      lastname: dto.lastname,
+      birthdate: dto.birthdate,
+      emailContact: dto.emailContact,
+      phoneNumber: dto.phoneNumber
+    });
+
+    if (!parsed.success) {
+      parsed.error.issues.forEach(issue => erreurs.push(issue.message));
+    }
+
+    if (dto.phoneNumber) {
+      const existingPhone = await AppDataSource.getRepository(Employee).findOneBy({ phoneNumber: dto.phoneNumber, idEmployee: Not(id) });
+      if (existingPhone) erreurs.push("Ce numéro de téléphone est déjà pris.");
+    }
+    if (dto.emailContact) {
+      const existingEmail = await AppDataSource.getRepository(Employee).findOneBy({ emailContact: dto.emailContact, idEmployee: Not(id) });
+      if (existingEmail) erreurs.push("Cette adresse e-mail est déjà prise.");
+    }
+    if (dto.userAccount?.username) {
+      const existingUser = await AppDataSource.getRepository(User).findOneBy({ username: dto.userAccount.username, idEmployee: Not(id) });
+      if (existingUser) erreurs.push("Ce nom d'utilisateur est déjà pris.");
+    }
+
+    if (erreurs.length > 0) {
+      throw new AppError(erreurs.join(" | "), 400);
     }
 
     await AppDataSource.transaction(async (manager) => {
@@ -436,12 +544,18 @@ export class EmployeeService extends CrudService<
         order: { assignmentDate: "DESC" },
       });
       if (!activeJob) {
-        throw new Error("Cet employé n'a aucun emploi actif pour enregistrer des disponibilités.");
+        throw new AppError("Cet employé n'a aucun emploi actif pour enregistrer des disponibilités.");
       }
 
       await manager.delete(EmployeeAvailability, { idEmpJob: activeJob.idEmpJob });
 
+      const seenDays = new Set<number>();
       for (const dto of dtos) {
+        if (seenDays.has(dto.dayOfWeek)) {
+          throw new AppError("Conflit détecté : Il n'est pas possible de définir plusieurs disponibilités pour un même jour.");
+        }
+        seenDays.add(dto.dayOfWeek);
+        
         await manager.save(
           EmployeeAvailability,
           manager.create(EmployeeAvailability, {
@@ -472,14 +586,14 @@ export class EmployeeService extends CrudService<
         const oldAssignment = new Date(activeJob.assignmentDate);
 
         if (newAssignment < oldAssignment) {
-          throw new Error("La date de début du nouveau poste doit être  ultérieure à la date de début du poste précédent.");
+          throw new AppError("La date de début du nouveau poste doit être ultérieure à la date de début du poste précédent.");
         }
 
         let closingDate: Date;
         if (dto.lastJobEndDate) {
           closingDate = new Date(dto.lastJobEndDate);
           if (closingDate < oldAssignment) {
-            throw new Error("La date de fin de l'ancien poste ne peut pas être antérieure à sa date de début.");
+            throw new AppError("La date de fin de l'ancien poste ne peut pas être antérieure à sa date de début.");
           }
         } else {
           closingDate = new Date(newAssignment);
@@ -505,6 +619,26 @@ export class EmployeeService extends CrudService<
     });
   }
 
+  async renewContract(id: string, dto: ChangeJobDto): Promise<void> {
+    await AppDataSource.transaction(async (manager) => {
+      // 1. Create the new job entry
+      await manager.save(
+        EmployeeJob,
+        manager.create(EmployeeJob, {
+          idEmployee: id,
+          idJobTitle: dto.idJobTitle,
+          idEmploymentType: dto.idEmploymentType,
+          assignmentDate: new Date(dto.assignmentDate),
+          endDate: dto.endDate ? new Date(dto.endDate) : undefined,
+          hasFixedSchedule: dto.hasFixedSchedule,
+        }),
+      );
+
+      // 2. Reactivate the employee
+      await manager.update(Employee, id, { activeStatus: 0 });
+    });
+  }
+
   async endJob(idEmployee: string, dto: EndJobDto): Promise<void> {
     await AppDataSource.transaction(async (manager) => {
       const activeJob = await manager.findOne(EmployeeJob, {
@@ -513,22 +647,39 @@ export class EmployeeService extends CrudService<
       });
 
       if (!activeJob) {
-        throw new Error("Cet employé n'a aucun poste actif à clôturer.");
+        throw new AppError("Cet employé n'a aucun poste actif à clôturer.");
       }
 
       const closingDate = new Date(dto.endDate);
       const oldAssignment = new Date(activeJob.assignmentDate);
+      const today = new Date();
+      
       if (closingDate < oldAssignment) {
-        throw new Error("La date de fin de contrat ne peut pas être antérieure à sa date de début.");
+        throw new AppError("La date de fin de contrat ne peut pas être antérieure à sa date de début.");
+      }
+      
+      if (closingDate > today) {
+        throw new AppError("La date de fin de contrat ne peut pas être ultérieure à la date d'aujourd'hui.");
       }
 
       await manager.update(EmployeeJob, activeJob.idEmpJob, { endDate: closingDate });
+      await manager.update(Employee, idEmployee, { activeStatus: -1 });
     });
   }
 
   async delete(id: string): Promise<void> {
-    // Soft delete: status passe à -3
-    await this.repository.update(id, { activeStatus: -3 });
+    await AppDataSource.transaction(async (manager) => {
+      const activeJob = await manager.findOne(EmployeeJob, {
+        where: { idEmployee: id },
+        order: { assignmentDate: "DESC" },
+      });
+
+      if (activeJob && !activeJob.endDate) {
+        await manager.update(EmployeeJob, activeJob.idEmpJob, { endDate: new Date() });
+      }
+
+      await manager.update(Employee, id, { activeStatus: -3 });
+    });
   }
 }
 

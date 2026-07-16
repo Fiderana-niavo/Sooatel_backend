@@ -1,4 +1,5 @@
-import { BaseEntity, Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { BaseEntity, Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { EmployeeTeam } from "./EmployeeTeam";
 
 @Entity("team")
 export class Team extends BaseEntity {
@@ -10,4 +11,7 @@ export class Team extends BaseEntity {
 
   @Column({ type: "varchar", length: 100, nullable: true, name: "description" })
   description: string;
+
+  @OneToMany(() => EmployeeTeam, (et) => et.team)
+  employeeTeams: EmployeeTeam[];
 }

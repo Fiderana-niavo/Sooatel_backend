@@ -1,5 +1,6 @@
-import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Employee } from "./Employee";
+import { EmployeeAvailability } from "./EmployeeAvailability";
 import { EmploymentType } from "./EmploymentType";
 import { JobTitle } from "./JobTitle";
 
@@ -30,11 +31,14 @@ export class EmployeeJob extends BaseEntity {
   @JoinColumn({ name: "id_employment_type" })
   employmentType: EmploymentType;
 
-  @ManyToOne(() => Employee)
+  @ManyToOne(() => Employee, (emp) => emp.employeeJobs)
   @JoinColumn({ name: "id_employee" })
   employee: Employee;
 
-  @ManyToOne(() => JobTitle)
+  @ManyToOne(() => JobTitle, (jt) => jt.employeeJobs)
   @JoinColumn({ name: "id_job_title" })
   jobTitle: JobTitle;
+
+  @OneToMany(() => EmployeeAvailability, (ea) => ea.empJob)
+  availabilities: EmployeeAvailability[];
 }

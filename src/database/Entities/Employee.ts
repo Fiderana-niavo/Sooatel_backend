@@ -1,4 +1,13 @@
-import { BaseEntity, Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { BaseEntity, Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Attendance } from "./Attendance";
+import { EmployeeJob } from "./EmployeeJob";
+import { EmployeeLeaveBalance } from "./EmployeeLeaveBalance";
+import { EmployeeTeam } from "./EmployeeTeam";
+import { Internship } from "./Internship";
+import { Leave } from "./Leave";
+import { LeaveTransaction } from "./LeaveTransaction";
+import { Schedule } from "./Schedule";
+import { User } from "./User";
 
 @Entity("employees")
 export class Employee extends BaseEntity {
@@ -31,4 +40,31 @@ export class Employee extends BaseEntity {
 
   @Column({ type: "integer", default: 0, name: "active_status" })
   activeStatus: number;
+
+  @OneToMany(() => EmployeeJob, (ej) => ej.employee)
+  employeeJobs: EmployeeJob[];
+
+  @OneToMany(() => Internship, (intern) => intern.employee)
+  internships: Internship[];
+
+  @OneToMany(() => User, (user) => user.employee)
+  users: User[];
+
+  @OneToMany(() => EmployeeTeam, (et) => et.employee)
+  employeeTeams: EmployeeTeam[];
+
+  @OneToMany(() => Leave, (l) => l.employee)
+  leaves: Leave[];
+
+  @OneToMany(() => EmployeeLeaveBalance, (elb) => elb.employee)
+  leaveBalances: EmployeeLeaveBalance[];
+
+  @OneToMany(() => Attendance, (a) => a.employee)
+  attendances: Attendance[];
+
+  @OneToMany(() => Schedule, (s) => s.employee)
+  schedules: Schedule[];
+
+  @OneToMany(() => LeaveTransaction, (lt) => lt.employee)
+  leaveTransactions: LeaveTransaction[];
 }

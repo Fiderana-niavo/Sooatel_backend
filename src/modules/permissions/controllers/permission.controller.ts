@@ -4,6 +4,7 @@ import { CrudController } from "../../../shared/crud/controllers/CrudController"
 import { ApiResponse } from "../../../shared/types/ApiResponse";
 import { PermissionDto, PermissionSearchOptions } from "../type/permission.type";
 import { PermissionService } from "../services/permission.service";
+import { handleCrudError } from "../../../shared/crud/utils/handleError";
 
 export class PermissionController extends CrudController<Permission, PermissionDto, PermissionDto> {
   constructor(service: PermissionService) {
@@ -12,8 +13,6 @@ export class PermissionController extends CrudController<Permission, PermissionD
 
   findAll = async (req: Request, res: Response): Promise<void> => {
     try {
-      console.log("QUERY PARAMS =>", req.query);
-
       const result = await (this.service as PermissionService).findAll({
         page: Number(req.query.page ?? 1),
         limit: Number(req.query.limit ?? 10),
@@ -26,12 +25,7 @@ export class PermissionController extends CrudController<Permission, PermissionD
 
       res.json(ApiResponse.success(result));
     } catch (err: unknown) {
-      console.error("findAll error:", err);
-      if (err instanceof Error) {
-        res.status(500).json(ApiResponse.error(err.message));
-      } else {
-        res.status(500).json(ApiResponse.error("Une erreur inconnue est survenue"));
-      }
+      handleCrudError(res, err);
     }
   };
 }

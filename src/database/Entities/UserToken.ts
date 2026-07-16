@@ -9,8 +9,8 @@ export class UserToken extends BaseEntity {
   @Column({ type: "uuid", unique: true, name: "token" })
   token: string;
 
-  @Column({ type: "varchar", length: 30, nullable: true, name: "token_type_" })
-  tokenType_: string;
+  @Column({ type: "varchar", length: 30, nullable: true, name: "token_type" })
+  tokenType: string;
 
   @Column({ type: "timestamptz", name: "expires_at" })
   expiresAt: Date;

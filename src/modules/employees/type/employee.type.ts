@@ -29,6 +29,8 @@ export interface InternshipInfo {
 
 export interface EmployeeJobInfo {
   idEmpJob: string;
+  idJobTitle: string | null;
+  idEmploymentType: string | null;
   assignmentDate: string | null;
   endDate: string | null;
   hasFixedSchedule: boolean | null;
@@ -75,6 +77,7 @@ export interface EmployeeDetail {
   internship: InternshipInfo | null;
   team: EmployeeTeamInfo | null;
   availabilities: EmployeeAvailabilityInfo[];
+  userAccount?: any;
 }
 
 export interface EmployeeDto {
@@ -146,4 +149,5 @@ export interface EmployeeSearchOptions {
   isInternship?: "yes" | "no";
   sortBy?: "name" | "lastname" | "employeeCode";
   sortOrder?: "ASC" | "DESC";
+  status?: "active" | "former";
 }

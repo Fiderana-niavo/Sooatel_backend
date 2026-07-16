@@ -44,7 +44,7 @@ export class AuthController {
   generateToken = async (req: Request, res: Response): Promise<void> => {
     try {
       const idUser = req.params["id"] as string;
-      const { type } = req.body as { type?: string };
+      const { type } = (req.body || {}) as { type?: string };
       const result = await authService.generateUserToken(idUser, type);
       res.json(ApiResponse.success(result));
     } catch (err: unknown) {

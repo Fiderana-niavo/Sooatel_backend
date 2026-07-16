@@ -1,4 +1,5 @@
-import { BaseEntity, Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { BaseEntity, Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Permission } from "./Permission";
 
 @Entity("permission_category")
 export class PermissionCategory extends BaseEntity {
@@ -10,4 +11,7 @@ export class PermissionCategory extends BaseEntity {
 
   @Column({ type: "varchar", length: 50, unique: true, name: "code" })
   code: string;
+
+  @OneToMany(() => Permission, (p) => p.category)
+  permissions: Permission[];
 }

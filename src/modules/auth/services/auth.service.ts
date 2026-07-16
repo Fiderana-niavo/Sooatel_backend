@@ -104,7 +104,7 @@ export class AuthService {
     const existingToken = await tokenRepo
       .createQueryBuilder("ut")
       .where("ut.id_user = :idUser", { idUser })
-      .andWhere("ut.token_type_ = :type", { type })
+      .andWhere("ut.token_type = :type", { type })
       .andWhere("ut.used = false")
       .andWhere("ut.expires_at > NOW()")
       .getOne();
@@ -120,7 +120,7 @@ export class AuthService {
 
     const record = tokenRepo.create({
       token,
-      tokenType_: type,
+      tokenType: type,
       expiresAt,
       used: false,
       createdAt: new Date(),
@@ -154,7 +154,7 @@ export class AuthService {
       .createQueryBuilder()
       .update(UserToken)
       .set({ used: true })
-      .where("id_user = :id AND token_type_ = :type AND used = false", {
+      .where("id_user = :id AND token_type = :type AND used = false", {
         id: user.idUser,
         type: "PWD_RESET",
       })
@@ -166,7 +166,7 @@ export class AuthService {
 
     const record = tokenRepo.create({
       token: key,
-      tokenType_: "PWD_RESET",
+      tokenType: "PWD_RESET",
       expiresAt,
       used: false,
       createdAt: new Date(),
@@ -191,7 +191,7 @@ export class AuthService {
     const userRepo = AppDataSource.getRepository(User);
 
     const record = await tokenRepo.findOne({
-      where: { token: dto.key, tokenType_: "PWD_RESET" },
+      where: { token: dto.key, tokenType: "PWD_RESET" },
     });
 
     if (!record) throw new Error("Clé incorrecte.");
@@ -209,7 +209,7 @@ export class AuthService {
     const userRepo = AppDataSource.getRepository(User);
 
     const record = await tokenRepo.findOne({
-      where: { token: dto.key, tokenType_: "PWD_RESET" },
+      where: { token: dto.key, tokenType: "PWD_RESET" },
     });
 
     if (!record) throw new Error("Clé incorrecte.");

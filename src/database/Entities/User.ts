@@ -1,5 +1,7 @@
-import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Employee } from "./Employee";
+import { UserRole } from "./UserRole";
+import { UserPermission } from "./UserPermission";
 
 @Entity("users")
 export class User extends BaseEntity {
@@ -30,7 +32,13 @@ export class User extends BaseEntity {
   @Column({ type: "uuid", name: "id_employee" })
   idEmployee: string;
 
-  @ManyToOne(() => Employee)
+  @ManyToOne(() => Employee, (emp) => emp.users)
   @JoinColumn({ name: "id_employee" })
   employee: Employee;
+
+  @OneToMany(() => UserRole, (ur) => ur.user)
+  userRoles: UserRole[];
+
+  @OneToMany(() => UserPermission, (up) => up.user)
+  userPermissions: UserPermission[];
 }

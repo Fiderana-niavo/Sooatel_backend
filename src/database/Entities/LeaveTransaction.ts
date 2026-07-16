@@ -22,11 +22,11 @@ export class LeaveTransaction extends BaseEntity {
   @Column({ type: "uuid", name: "id_employee" })
   idEmployee: string;
 
-  @ManyToOne(() => LeaveType)
+  @ManyToOne(() => LeaveType, (lt) => lt.leaveTransactions)
   @JoinColumn({ name: "id_leave_type" })
   leaveType: LeaveType;
 
-  @ManyToOne(() => Employee)
+  @ManyToOne(() => Employee, (e) => e.leaveTransactions)
   @JoinColumn({ name: "id_employee" })
   employee: Employee;
 }

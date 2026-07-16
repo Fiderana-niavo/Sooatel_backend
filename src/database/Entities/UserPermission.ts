@@ -1,4 +1,4 @@
-import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Permission } from "./Permission";
 import { User } from "./User";
 
@@ -16,11 +16,11 @@ export class UserPermission extends BaseEntity {
   @Column({ type: "boolean", name: "is_allowed" })
   isAllowed: boolean;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, (u) => u.userPermissions)
   @JoinColumn({ name: "id_user" })
   user: User;
 
-  @ManyToOne(() => Permission)
+  @ManyToOne(() => Permission, (p) => p.userPermissions)
   @JoinColumn({ name: "id_permission" })
   permission: Permission;
 }

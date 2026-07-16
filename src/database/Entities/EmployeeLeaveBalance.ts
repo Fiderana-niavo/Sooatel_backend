@@ -19,11 +19,11 @@ export class EmployeeLeaveBalance extends BaseEntity {
   @Column({ type: "uuid", name: "id_leave_type" })
   idLeaveType: string;
 
-  @ManyToOne(() => Employee)
+  @ManyToOne(() => Employee, (e) => e.leaveBalances)
   @JoinColumn({ name: "id_employee" })
   employee: Employee;
 
-  @ManyToOne(() => LeaveType)
+  @ManyToOne(() => LeaveType, (lt) => lt.leaveBalances)
   @JoinColumn({ name: "id_leave_type" })
   leaveType: LeaveType;
 }

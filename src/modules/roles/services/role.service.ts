@@ -35,7 +35,19 @@ export class RoleService extends CrudService<Role, RoleCreateOrUpdateDto, RoleCr
     }
 
     const [records, total] = await qb.getManyAndCount();
-    return new Paginated<Role>(records, total, pageNum, limitNum);
+    
+    const recordsWithPerms = [];
+    for (const role of records) {
+      const permissions = await this.buildPermissions(role.idRole);
+      recordsWithPerms.push({
+        idRole: role.idRole,
+        label: role.label,
+        description: role.description ?? null,
+        permissions,
+      });
+    }
+
+    return new Paginated<Role>(recordsWithPerms as unknown as Role[], total, pageNum, limitNum);
   }
 
   async findOne(id: string): Promise<Role | null> {

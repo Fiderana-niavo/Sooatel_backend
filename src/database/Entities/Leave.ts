@@ -28,11 +28,11 @@ export class Leave extends BaseEntity {
   @Column({ type: "integer", nullable: true, name: "status" })
   status: number;
 
-  @ManyToOne(() => Employee)
+  @ManyToOne(() => Employee, (e) => e.leaves)
   @JoinColumn({ name: "id_employee" })
   employee: Employee;
 
-  @ManyToOne(() => LeaveType)
+  @ManyToOne(() => LeaveType, (lt) => lt.leaves)
   @JoinColumn({ name: "id_leave_type" })
   leaveType: LeaveType;
 }

@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { Employee } from "../../../database/Entities/Employee";
 import { CrudController } from "../../../shared/crud/controllers/CrudController";
 import { ApiResponse } from "../../../shared/types/ApiResponse";
+import { handleCrudError } from "../../../shared/crud/utils/handleError";
 import {
   ChangeJobDto,
   EmployeeCreateOrUpdateDto,
@@ -22,33 +23,22 @@ export class EmployeeController extends CrudController<
     super(service);
   }
 
-  findAll = async (req: Request, res: Response): Promise<void> => {
+  getAllEmployees = async (req: Request, res: Response): Promise<void> => {
     try {
-      console.log("QUERY PARAMS =>", req.query);
-
       const result = await (this.service as EmployeeService).findAll({
         page: Number(req.query.page ?? 1),
         limit: Number(req.query.limit ?? 10),
         search: req.query.search as string | undefined,
-        // we say that only value in EmployeeSearchOptions can be in the sortBy
         sortBy: req.query.sortBy as NonNullable<EmployeeSearchOptions["sortBy"]> | undefined,
-        sortOrder: req.query.sortOrder as
-          NonNullable<EmployeeSearchOptions["sortOrder"]> | undefined,
+        sortOrder: req.query.sortOrder as NonNullable<EmployeeSearchOptions["sortOrder"]> | undefined,
         idJobTitle: req.query.idJobTitle as string | undefined,
-        hasUserAccount: req.query.hasUserAccount as
-          NonNullable<EmployeeSearchOptions["hasUserAccount"]> | undefined,
-        isInternship: req.query.isInternship as
-          NonNullable<EmployeeSearchOptions["isInternship"]> | undefined,
+        hasUserAccount: req.query.hasUserAccount as NonNullable<EmployeeSearchOptions["hasUserAccount"]> | undefined,
+        isInternship: req.query.isInternship as NonNullable<EmployeeSearchOptions["isInternship"]> | undefined,
+        status: req.query.status as NonNullable<EmployeeSearchOptions["status"]> | undefined,
       });
-
       res.json(ApiResponse.success(result));
     } catch (err: unknown) {
-      console.error("findAll error:", err);
-      if (err instanceof Error) {
-        res.status(500).json(ApiResponse.error(err.message));
-      } else {
-        res.status(500).json(ApiResponse.error("Une erreur inconnue est survenue"));
-      }
+      handleCrudError(res, err);
     }
   };
 
@@ -62,12 +52,7 @@ export class EmployeeController extends CrudController<
       }
       res.json(ApiResponse.success(result));
     } catch (err: unknown) {
-      console.error("getById error:", err);
-      if (err instanceof Error) {
-        res.status(500).json(ApiResponse.error(err.message));
-      } else {
-        res.status(500).json(ApiResponse.error("Une erreur inconnue est survenue"));
-      }
+      handleCrudError(res, err);
     }
   };
 
@@ -78,12 +63,7 @@ export class EmployeeController extends CrudController<
       await (this.service as EmployeeService).changeJob(id, dto);
       res.json(ApiResponse.success(null));
     } catch (err: unknown) {
-      console.error("changeJob error:", err);
-      if (err instanceof Error) {
-        res.status(500).json(ApiResponse.error(err.message));
-      } else {
-        res.status(500).json(ApiResponse.error("Une erreur inconnue est survenue"));
-      }
+      handleCrudError(res, err);
     }
   };
 
@@ -94,12 +74,7 @@ export class EmployeeController extends CrudController<
       await (this.service as EmployeeService).setTeam(id, dto.idTeam);
       res.json(ApiResponse.success(null));
     } catch (err: unknown) {
-      console.error("setTeam error:", err);
-      if (err instanceof Error) {
-        res.status(500).json(ApiResponse.error(err.message));
-      } else {
-        res.status(500).json(ApiResponse.error("Une erreur inconnue est survenue"));
-      }
+      handleCrudError(res, err);
     }
   };
 
@@ -107,25 +82,29 @@ export class EmployeeController extends CrudController<
     try {
       const id = req.params["id"] as string;
       const dto = req.body as EndJobDto;
-      
+
       if (!dto || !dto.endDate) {
-        res.status(400).json(ApiResponse.error("Le corps de la requête (body) est vide ou mal formaté. Vérifiez que vous envoyez du JSON valide avec un Content-Type: application/json."));
+        res.status(400).json(ApiResponse.error("La date de fin de contrat est requise."));
         return;
       }
-      
+
       await (this.service as EmployeeService).endJob(id, dto);
       res.json(ApiResponse.success(null));
     } catch (err: unknown) {
-      console.error("endJob error:", err);
-      if (err instanceof Error) {
-        res.status(500).json(ApiResponse.error(err.message));
-      } else {
-        res.status(500).json(ApiResponse.error("Une erreur inconnue est survenue"));
-      }
+      handleCrudError(res, err);
     }
   };
 
-
+  renewContract = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const id = req.params["id"] as string;
+      const dto = req.body as ChangeJobDto;
+      await (this.service as EmployeeService).renewContract(id, dto);
+      res.json(ApiResponse.success(null));
+    } catch (err: unknown) {
+      handleCrudError(res, err);
+    }
+  };
 
   setAvailabilities = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -134,16 +113,9 @@ export class EmployeeController extends CrudController<
       await (this.service as EmployeeService).setAvailabilities(id, dtos);
       res.json(ApiResponse.success(null));
     } catch (err: unknown) {
-      console.error("setAvailabilities error:", err);
-      if (err instanceof Error) {
-        res.status(500).json(ApiResponse.error(err.message));
-      } else {
-        res.status(500).json(ApiResponse.error("Une erreur inconnue est survenue"));
-      }
+      handleCrudError(res, err);
     }
   };
-
-
 }
 
 export const employeeController = new EmployeeController(new EmployeeService());

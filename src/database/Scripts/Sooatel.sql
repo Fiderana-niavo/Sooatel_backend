@@ -621,7 +621,7 @@ CREATE TABLE Role_permission(
 CREATE TABLE User_tokens(
    id_token UUID DEFAULT uuid_generate_v4() ,
    token UUID DEFAULT uuid_generate_v4() NOT NULL ,
-   token_type_ VARCHAR(30) ,
+   token_type VARCHAR(30) ,
    expires_at TIMESTAMPTZ NOT NULL,
    used BOOLEAN,
    created_at TIMESTAMPTZ,

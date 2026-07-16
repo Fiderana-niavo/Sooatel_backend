@@ -18,7 +18,7 @@ export class Internship extends BaseEntity {
   @Column({ type: "uuid", name: "id_employee" })
   idEmployee: string;
 
-  @ManyToOne(() => Employee)
+  @ManyToOne(() => Employee, (emp) => emp.internships)
   @JoinColumn({ name: "id_employee" })
   employee: Employee;
 }

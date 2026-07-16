@@ -1,6 +1,6 @@
-import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
-import { Permission } from "./Permission";
+import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Role } from "./Role";
+import { Permission } from "./Permission";
 
 @Entity("role_permission")
 export class RolePermission extends BaseEntity {
@@ -13,11 +13,11 @@ export class RolePermission extends BaseEntity {
   @Column({ type: "uuid", name: "id_permission" })
   idPermission: string;
 
-  @ManyToOne(() => Role)
+  @ManyToOne(() => Role, (r) => r.rolePermissions)
   @JoinColumn({ name: "id_role" })
   role: Role;
 
-  @ManyToOne(() => Permission)
+  @ManyToOne(() => Permission, (p) => p.rolePermissions)
   @JoinColumn({ name: "id_permission" })
   permission: Permission;
 }

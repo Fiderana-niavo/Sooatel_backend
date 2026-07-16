@@ -1,6 +1,7 @@
-import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
-import { EmployeeJob } from "./EmployeeJob";
+import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Employee } from "./Employee";
 import { ShiftType } from "./ShiftType";
+import { EmployeeJob } from "./EmployeeJob";
 
 @Entity("employee_availabilities")
 export class EmployeeAvailability extends BaseEntity {
@@ -26,7 +27,7 @@ export class EmployeeAvailability extends BaseEntity {
   @JoinColumn({ name: "id_shift_type" })
   shiftType: ShiftType;
 
-  @ManyToOne(() => EmployeeJob)
+  @ManyToOne(() => EmployeeJob, (ej) => ej.availabilities)
   @JoinColumn({ name: "id_emp_job" })
   empJob: EmployeeJob;
 }

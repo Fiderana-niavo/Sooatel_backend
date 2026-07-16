@@ -1,4 +1,4 @@
-import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Role } from "./Role";
 import { User } from "./User";
 
@@ -13,11 +13,11 @@ export class UserRole extends BaseEntity {
   @Column({ type: "uuid", name: "id_role" })
   idRole: string;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, (u) => u.userRoles)
   @JoinColumn({ name: "id_user" })
   user: User;
 
-  @ManyToOne(() => Role)
+  @ManyToOne(() => Role, (r) => r.userRoles)
   @JoinColumn({ name: "id_role" })
   role: Role;
 }

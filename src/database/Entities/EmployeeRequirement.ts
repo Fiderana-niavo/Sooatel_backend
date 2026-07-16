@@ -19,11 +19,11 @@ export class EmployeeRequirement extends BaseEntity {
   @Column({ type: "uuid", name: "id_job_title" })
   idJobTitle: string;
 
-  @ManyToOne(() => ShiftType)
+  @ManyToOne(() => ShiftType, (st) => st.employeeRequirements)
   @JoinColumn({ name: "id_shift_type" })
   shiftType: ShiftType;
 
-  @ManyToOne(() => JobTitle)
+  @ManyToOne(() => JobTitle, (jt) => jt.employeeRequirements)
   @JoinColumn({ name: "id_job_title" })
   jobTitle: JobTitle;
 }

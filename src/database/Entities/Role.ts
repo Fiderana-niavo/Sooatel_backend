@@ -1,4 +1,6 @@
-import { BaseEntity, Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { BaseEntity, Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { RolePermission } from "./RolePermission";
+import { UserRole } from "./UserRole";
 
 @Entity("role")
 export class Role extends BaseEntity {
@@ -10,4 +12,10 @@ export class Role extends BaseEntity {
 
   @Column({ type: "varchar", length: 255, nullable: true, name: "description" })
   description: string;
+
+  @OneToMany(() => RolePermission, (rp) => rp.role)
+  rolePermissions: RolePermission[];
+
+  @OneToMany(() => UserRole, (ur) => ur.role)
+  userRoles: UserRole[];
 }
