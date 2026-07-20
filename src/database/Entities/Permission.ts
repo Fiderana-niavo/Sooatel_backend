@@ -8,10 +8,13 @@ export class Permission extends BaseEntity {
   @PrimaryGeneratedColumn("uuid", { name: "id_permission" })
   idPermission: string;
 
-  @Column({ type: "varchar", length: 50, unique: true, name: "permission_name" })
-  permissionName: string;
+  @Column({ type: "varchar", length: 100, name: "name" })
+  name: string;
 
-  @Column({ type: "varchar", length: 100, nullable: true, name: "description" })
+  @Column({ type: "varchar", length: 50, unique: true, name: "code" })
+  code: string;
+
+  @Column({ type: "varchar", length: 255, nullable: true, name: "description" })
   description: string;
 
   @Column({ type: "uuid", name: "id_category" })

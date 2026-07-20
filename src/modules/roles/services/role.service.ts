@@ -146,7 +146,8 @@ export class RoleService extends CrudService<Role, RoleCreateOrUpdateDto, RoleCr
       .leftJoin(PermissionCategory, "cat", "cat.id_category = p.id_category")
       .select([
         'p.id_permission AS "idPermission"',
-        'p.permission_name AS "permissionName"',
+        'p.name AS "name"',
+        'p.code AS "code"',
         'p.description AS "description"',
         'cat.name AS "categoryLabel"',
       ])

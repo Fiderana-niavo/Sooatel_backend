@@ -1,10 +1,9 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { PermissionCategory } from "../../../database/Entities/PermissionCategory";
 import { CrudController } from "../../../shared/crud/controllers/CrudController";
 import { ApiResponse } from "../../../shared/types/ApiResponse";
 import { PermissionCategoryDto, PermissionCategorySearchOptions } from "../type/permission.type";
 import { PermissionCategoryService } from "../services/permissionCategory.service";
-import { handleCrudError } from "../../../shared/crud/utils/handleError";
 
 export class PermissionCategoryController extends CrudController<
   PermissionCategory,
@@ -15,7 +14,7 @@ export class PermissionCategoryController extends CrudController<
     super(service);
   }
 
-  findAll = async (req: Request, res: Response): Promise<void> => {
+  findAll = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const result = await (this.service as PermissionCategoryService).findAll({
         page: Number(req.query.page ?? 1),
@@ -29,7 +28,7 @@ export class PermissionCategoryController extends CrudController<
 
       res.json(ApiResponse.success(result));
     } catch (err: unknown) {
-      handleCrudError(res, err);
+      next(err);
     }
   };
 }

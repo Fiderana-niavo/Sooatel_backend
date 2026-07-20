@@ -10,6 +10,7 @@ import { UserRole } from "../../../database/Entities/UserRole";
 import { Permission } from "../../../database/Entities/Permission";
 import {
   AuthUser,
+  ChangeAuthenticatedPasswordDto,
   ChangePasswordDto,
   GeneratedToken,
   LoginDto,
@@ -229,6 +230,19 @@ export class AuthService {
     });
   }
 
+  async changeAuthenticatedPassword(dto: ChangeAuthenticatedPasswordDto): Promise<void> {
+    const userRepo = AppDataSource.getRepository(User);
+
+    const user = await userRepo.findOne({ where: { idUser: dto.idUser } });
+    if (!user) throw new Error("Utilisateur introuvable.");
+
+    const match = await bcrypt.compare(dto.currentPassword, user.passwordHash);
+    if (!match) throw new Error("Mot de passe actuel incorrect.");
+
+    const hashed = await bcrypt.hash(dto.newPassword, 12);
+    await userRepo.update({ idUser: dto.idUser }, { passwordHash: hashed });
+  }
+
   private async signToken(payload: TokenPayload, expiry: string): Promise<string> {
     return new SignJWT(payload as unknown as Record<string, unknown>)
       .setProtectedHeader({ alg: "HS256" })
@@ -240,7 +254,7 @@ export class AuthService {
   private async resolvePermissions(idUser: string): Promise<PermissionItem[]> {
     const perms = await AppDataSource.getRepository(Permission)
       .createQueryBuilder("p")
-      .select(["p.id_permission AS \"idPermission\"", "p.permission_name AS \"permissionName\""])
+      .select(["p.id_permission AS \"idPermission\"", "p.code AS code", "p.name AS name"])
       .where(`p.id_permission IN (
         SELECT up.id_permission FROM user_permission up WHERE up.id_user = :idUser AND up.is_allowed = true
       )`)

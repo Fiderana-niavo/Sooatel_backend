@@ -30,11 +30,12 @@ CREATE TABLE permission_category(
 
 CREATE TABLE Permission(
    id_permission UUID DEFAULT uuid_generate_v4(),
-   permission_name VARCHAR(50)  NOT NULL,
-   description VARCHAR(100) ,
+   name VARCHAR(100) NOT NULL,
+   code VARCHAR(50) NOT NULL,
+   description VARCHAR(255),
    id_category UUID NOT NULL,
    PRIMARY KEY(id_permission),
-   UNIQUE(permission_name),
+   UNIQUE(code),
    FOREIGN KEY(id_category) REFERENCES permission_category(id_category)
 );
 

@@ -14,7 +14,17 @@ import shiftTypeRouter from "./modules/shift-types/routes/shift-type.router";
 import authRouter from "./modules/auth/routes/auth.router";
 import jobTitleRouter from "./modules/job-titles/routes/job-title.router";
 import employmentTypeRouter from "./modules/job-titles/routes/employment-type.router";
+import eventRouter from "./modules/events/routes/event.router";
+import roomRouter from "./modules/rooms/routes/room.router";
+import roomTypeRouter from "./modules/rooms/routes/room-type.router";
+import itemRouter from "./modules/items/routes/item.router";
+import itemTypeRouter from "./modules/items/routes/item-type.router";
+import unitOfMeasureRouter from "./modules/items/routes/unit-of-measure.router";
+import menuItemRouter from "./modules/menus/routes/menu-item.router";
+import menuCategoryRouter from "./modules/menus/routes/menu-category.router";
+import productPriceRouter from "./modules/menus/routes/product-price.router";
 import { startTokenPurgeJob } from "./shared/jobs/tokenPurge.job";
+import { globalErrorMiddleware } from "./shared/middlewares/error.middleware";
 
 configDotenv();
 
@@ -40,6 +50,18 @@ AppDataSource.initialize()
     app.use("/api/auth", authRouter);
     app.use("/api/job-titles", jobTitleRouter);
     app.use("/api/employment-types", employmentTypeRouter);
+
+    app.use("/api/events", eventRouter);
+    app.use("/api/rooms", roomRouter);
+    app.use("/api/room-types", roomTypeRouter);
+    app.use("/api/items", itemRouter);
+    app.use("/api/item-types", itemTypeRouter);
+    app.use("/api/unit-of-measures", unitOfMeasureRouter);
+    app.use("/api/menu-items", menuItemRouter);
+    app.use("/api/menu-categories", menuCategoryRouter);
+    app.use("/api/product-prices", productPriceRouter);
+
+    app.use(globalErrorMiddleware);
 
     const PORT = Number(process.env["PORT"] ?? 3000);
     app.listen(PORT, () => {

@@ -1,8 +1,7 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { Employee } from "../../../database/Entities/Employee";
 import { CrudController } from "../../../shared/crud/controllers/CrudController";
 import { ApiResponse } from "../../../shared/types/ApiResponse";
-import { handleCrudError } from "../../../shared/crud/utils/handleError";
 import {
   ChangeJobDto,
   EmployeeCreateOrUpdateDto,
@@ -23,7 +22,7 @@ export class EmployeeController extends CrudController<
     super(service);
   }
 
-  getAllEmployees = async (req: Request, res: Response): Promise<void> => {
+  getAllEmployees = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const result = await (this.service as EmployeeService).findAll({
         page: Number(req.query.page ?? 1),
@@ -38,11 +37,11 @@ export class EmployeeController extends CrudController<
       });
       res.json(ApiResponse.success(result));
     } catch (err: unknown) {
-      handleCrudError(res, err);
+      next(err);
     }
   };
 
-  getById = async (req: Request, res: Response): Promise<void> => {
+  getById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const id = req.params["id"] as string;
       const result = await (this.service as EmployeeService).getById(id);
@@ -52,33 +51,33 @@ export class EmployeeController extends CrudController<
       }
       res.json(ApiResponse.success(result));
     } catch (err: unknown) {
-      handleCrudError(res, err);
+      next(err);
     }
   };
 
-  changeJob = async (req: Request, res: Response): Promise<void> => {
+  changeJob = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const id = req.params["id"] as string;
       const dto = req.body as ChangeJobDto;
       await (this.service as EmployeeService).changeJob(id, dto);
       res.json(ApiResponse.success(null));
     } catch (err: unknown) {
-      handleCrudError(res, err);
+      next(err);
     }
   };
 
-  setTeam = async (req: Request, res: Response): Promise<void> => {
+  setTeam = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const id = req.params["id"] as string;
       const dto = req.body as EmployeeTeamDto;
       await (this.service as EmployeeService).setTeam(id, dto.idTeam);
       res.json(ApiResponse.success(null));
     } catch (err: unknown) {
-      handleCrudError(res, err);
+      next(err);
     }
   };
 
-  endJob = async (req: Request, res: Response): Promise<void> => {
+  endJob = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const id = req.params["id"] as string;
       const dto = req.body as EndJobDto;
@@ -91,29 +90,29 @@ export class EmployeeController extends CrudController<
       await (this.service as EmployeeService).endJob(id, dto);
       res.json(ApiResponse.success(null));
     } catch (err: unknown) {
-      handleCrudError(res, err);
+      next(err);
     }
   };
 
-  renewContract = async (req: Request, res: Response): Promise<void> => {
+  renewContract = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const id = req.params["id"] as string;
       const dto = req.body as ChangeJobDto;
       await (this.service as EmployeeService).renewContract(id, dto);
       res.json(ApiResponse.success(null));
     } catch (err: unknown) {
-      handleCrudError(res, err);
+      next(err);
     }
   };
 
-  setAvailabilities = async (req: Request, res: Response): Promise<void> => {
+  setAvailabilities = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const id = req.params["id"] as string;
       const dtos = req.body as EmployeeAvailabilityDto[];
       await (this.service as EmployeeService).setAvailabilities(id, dtos);
       res.json(ApiResponse.success(null));
     } catch (err: unknown) {
-      handleCrudError(res, err);
+      next(err);
     }
   };
 }

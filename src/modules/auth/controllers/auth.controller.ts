@@ -1,126 +1,114 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { ApiResponse } from "../../../shared/types/ApiResponse";
 import {
+  ChangeAuthenticatedPasswordDto,
   ChangePasswordDto,
   LoginDto,
   PasswordResetRequestDto,
   ValidateResetKeyDto,
 } from "../type/auth.type";
 import { authService } from "../services/auth.service";
+import { BadRequestError } from "../../../shared/errors/AppError";
 
 export class AuthController {
-  login = async (req: Request, res: Response): Promise<void> => {
+  login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const dto = req.body as LoginDto;
       const result = await authService.login(dto);
       res.json(ApiResponse.success(result));
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        res.status(401).json(ApiResponse.error(err.message));
-      } else {
-        res.status(401).json(ApiResponse.error("Authentification échouée."));
-      }
+      next(err);
     }
   };
 
-  refreshToken = async (req: Request, res: Response): Promise<void> => {
+  refreshToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { token } = req.body as { token: string };
       if (!token) {
-        res.status(400).json(ApiResponse.error("Token manquant."));
+        next(new BadRequestError("Token manquant."));
         return;
       }
       const result = await authService.refresh(token);
       res.json(ApiResponse.success(result));
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        res.status(401).json(ApiResponse.error(err.message));
-      } else {
-        res.status(401).json(ApiResponse.error("Refresh token invalide."));
-      }
+      next(err);
     }
   };
 
-  generateToken = async (req: Request, res: Response): Promise<void> => {
+  generateToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const idUser = req.params["id"] as string;
       const { type } = (req.body || {}) as { type?: string };
       const result = await authService.generateUserToken(idUser, type);
       res.json(ApiResponse.success(result));
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        res.status(400).json(ApiResponse.error(err.message));
-      } else {
-        res.status(500).json(ApiResponse.error("Erreur lors de la génération du token."));
-      }
+      next(err);
     }
   };
 
-  getToken = async (req: Request, res: Response): Promise<void> => {
+  getToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const idUser = req.params["id"] as string;
       const result = await authService.getTokenForUser(idUser);
       res.json(ApiResponse.success(result));
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        res.status(400).json(ApiResponse.error(err.message));
-      } else {
-        res.status(500).json(ApiResponse.error("Erreur lors de la récupération du token."));
-      }
+      next(err);
     }
   };
 
-  requestPasswordReset = async (req: Request, res: Response): Promise<void> => {
+  requestPasswordReset = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const dto = req.body as PasswordResetRequestDto;
       if (!dto.username) {
-        res.status(400).json(ApiResponse.error("Le nom d'utilisateur est requis."));
+        next(new BadRequestError("Le nom d'utilisateur est requis."));
         return;
       }
       const result = await authService.requestPasswordReset(dto);
       res.json(ApiResponse.success(result));
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        res.status(400).json(ApiResponse.error(err.message));
-      } else {
-        res.status(500).json(ApiResponse.error("Erreur lors de la demande de réinitialisation."));
-      }
+      next(err);
     }
   };
 
-  validateResetKey = async (req: Request, res: Response): Promise<void> => {
+  validateResetKey = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const dto = req.body as ValidateResetKeyDto;
       if (!dto.key || !dto.username) {
-        res.status(400).json(ApiResponse.error("La clé et le nom d'utilisateur sont requis."));
+        next(new BadRequestError("La clé et le nom d'utilisateur sont requis."));
         return;
       }
       await authService.validateResetKey(dto);
       res.json(ApiResponse.success({ valid: true }));
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        res.status(400).json(ApiResponse.error(err.message));
-      } else {
-        res.status(500).json(ApiResponse.error("Erreur de validation de la clé."));
-      }
+      next(err);
     }
   };
 
-  changePassword = async (req: Request, res: Response): Promise<void> => {
+  changePassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const dto = req.body as ChangePasswordDto;
       if (!dto.key || !dto.newPassword || !dto.username) {
-        res.status(400).json(ApiResponse.error("La clé, le nom d'utilisateur et le nouveau mot de passe sont requis."));
+        next(new BadRequestError("La clé, le nom d'utilisateur et le nouveau mot de passe sont requis."));
         return;
       }
       await authService.changePassword(dto);
       res.json(ApiResponse.success({ success: true }));
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        res.status(400).json(ApiResponse.error(err.message));
-      } else {
-        res.status(500).json(ApiResponse.error("Erreur lors du changement de mot de passe."));
+      next(err);
+    }
+  };
+
+  changeAuthenticatedPassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const dto = req.body as ChangeAuthenticatedPasswordDto;
+      if (!dto.idUser || !dto.currentPassword || !dto.newPassword) {
+        next(new BadRequestError("L'identifiant utilisateur, le mot de passe actuel et le nouveau mot de passe sont requis."));
+        return;
       }
+      await authService.changeAuthenticatedPassword(dto);
+      res.json(ApiResponse.success({ success: true }));
+    } catch (err: unknown) {
+      next(err);
     }
   };
 }

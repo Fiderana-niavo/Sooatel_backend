@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { JobTitle } from "../../../database/Entities/JobTitle";
 import { CrudController } from "../../../shared/crud/controllers/CrudController";
 import { ApiResponse } from "../../../shared/types/ApiResponse";
@@ -10,7 +10,7 @@ export class JobTitleController extends CrudController<JobTitle, JobTitleDto, Jo
     super(service);
   }
 
-  findAll = async (req: Request, res: Response): Promise<void> => {
+  findAll = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const result = await (this.service as JobTitleService).findAll({
         page: Number(req.query.page ?? 1),
@@ -20,12 +20,7 @@ export class JobTitleController extends CrudController<JobTitle, JobTitleDto, Jo
 
       res.json(ApiResponse.success(result));
     } catch (err: unknown) {
-      console.error("findAll error:", err);
-      if (err instanceof Error) {
-        res.status(500).json(ApiResponse.error(err.message));
-      } else {
-        res.status(500).json(ApiResponse.error("Une erreur inconnue est survenue"));
-      }
+      next(err);
     }
   };
 }

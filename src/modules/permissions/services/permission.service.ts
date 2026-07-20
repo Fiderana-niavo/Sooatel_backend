@@ -14,7 +14,7 @@ export class PermissionService extends CrudService<Permission, PermissionDto, Pe
     const pageNum = options.page ?? 1;
     const limitNum = options.limit ?? 10;
     const search = options.search ?? "";
-    const sortBy = options.sortBy ?? "permissionName";
+    const sortBy = options.sortBy ?? "name";
     const sortOrder = options.sortOrder ?? "ASC";
 
     const qb = this.repository
@@ -25,7 +25,7 @@ export class PermissionService extends CrudService<Permission, PermissionDto, Pe
       .orderBy(`permission.${sortBy}`, sortOrder);
 
     if (search) {
-      qb.andWhere("permission.permission_name ILIKE :s", { s: `%${search}%` });
+      qb.andWhere("(permission.name ILIKE :s OR permission.code ILIKE :s)", { s: `%${search}%` });
     }
 
     if (options?.idCategory) {
@@ -47,11 +47,12 @@ export class PermissionService extends CrudService<Permission, PermissionDto, Pe
 
   async create(dto: PermissionDto): Promise<Permission> {
     const existing = await this.repository.findOne({
-      where: { permissionName: dto.permissionName },
+      where: [{ name: dto.name }, { code: dto.code }],
     });
-    if (existing) throw new Error("Une permission avec ce nom existe déjà.");
+    if (existing) throw new Error("Une permission avec ce nom ou ce code existe déjà.");
     const permission = this.repository.create({
-      permissionName: dto.permissionName,
+      name: dto.name,
+      code: dto.code,
       description: dto.description,
       idCategory: dto.idCategory,
     });
@@ -60,7 +61,8 @@ export class PermissionService extends CrudService<Permission, PermissionDto, Pe
 
   async update(id: string, dto: PermissionDto): Promise<void> {
     await this.repository.update(id, {
-      permissionName: dto.permissionName,
+      name: dto.name,
+      code: dto.code,
       description: dto.description,
       idCategory: dto.idCategory,
     });

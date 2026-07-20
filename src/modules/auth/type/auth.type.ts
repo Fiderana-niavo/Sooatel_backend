@@ -48,6 +48,12 @@ export interface ChangePasswordDto {
   newPassword: string;
 }
 
+export interface ChangeAuthenticatedPasswordDto {
+  idUser: string;
+  currentPassword: string;
+  newPassword: string;
+}
+
 export type PasswordResetResult =
   | { method: "email"; message: string; expiresAt: Date }
   | { method: "manual"; token: string; expiresAt: Date };

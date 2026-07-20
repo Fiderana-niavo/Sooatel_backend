@@ -17,14 +17,16 @@ export interface PermissionCategorySearchOptions {
 
 export interface PermissionResponse {
   idPermission: string;
-  permissionName: string;
+  name: string;
+  code: string;
   description: string | null;
   idCategory: string;
   category?: PermissionCategoryResponse;
 }
 
 export interface PermissionDto {
-  permissionName: string;
+  name: string;
+  code: string;
   description?: string;
   idCategory: string;
 }
@@ -34,11 +36,12 @@ export interface PermissionSearchOptions {
   limit?: number;
   search?: string;
   idCategory?: string;
-  sortBy?: "permissionName";
+  sortBy?: "name" | "code";
   sortOrder?: "ASC" | "DESC";
 }
 
 export interface PermissionItem {
   idPermission: string;
-  permissionName: string;
+  code: string;
+  name: string;
 }

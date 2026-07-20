@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { Role } from "../../../database/Entities/Role";
 import { CrudController } from "../../../shared/crud/controllers/CrudController";
 import { ApiResponse } from "../../../shared/types/ApiResponse";
@@ -14,7 +14,7 @@ export class RoleController extends CrudController<
     super(service);
   }
 
-  findAll = async (req: Request, res: Response): Promise<void> => {
+  findAll = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const result = await (this.service as RoleService).findAll({
         page: Number(req.query.page ?? 1),
@@ -32,16 +32,11 @@ export class RoleController extends CrudController<
 
       res.json(ApiResponse.success({ ...result, first }));
     } catch (err: unknown) {
-      console.error("findAll error:", err);
-      if (err instanceof Error) {
-        res.status(500).json(ApiResponse.error(err.message));
-      } else {
-        res.status(500).json(ApiResponse.error("Une erreur inconnue est survenue"));
-      }
+      next(err);
     }
   };
 
-  getOne = async (req: Request, res: Response): Promise<void> => {
+  getOne = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const id = req.params["id"] as string;
       const result = await (this.service as RoleService).findOneWithPermissions(id);
@@ -51,12 +46,7 @@ export class RoleController extends CrudController<
       }
       res.json(ApiResponse.success(result));
     } catch (err: unknown) {
-      console.error("getOne error:", err);
-      if (err instanceof Error) {
-        res.status(500).json(ApiResponse.error(err.message));
-      } else {
-        res.status(500).json(ApiResponse.error("Une erreur inconnue est survenue"));
-      }
+      next(err);
     }
   };
 }
