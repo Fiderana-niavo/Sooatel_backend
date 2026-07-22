@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { ShiftType } from "../../../database/Entities/ShiftType";
 import { CrudController } from "../../../shared/crud/controllers/CrudController";
 import { ApiResponse } from "../../../shared/types/ApiResponse";
-import { ShiftTypeDto, ShiftTypeSearchOptions } from "../type/shift-type.type";
+import { ShiftTypeDto } from "../type/shift-type.type";
 import { ShiftTypeService } from "../services/shift-type.service";
 
 export class ShiftTypeController extends CrudController<ShiftType, ShiftTypeDto, ShiftTypeDto> {

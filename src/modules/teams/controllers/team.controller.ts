@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { Team } from "../../../database/Entities/Team";
 import { CrudController } from "../../../shared/crud/controllers/CrudController";
 import { ApiResponse } from "../../../shared/types/ApiResponse";
-import { TeamDto, TeamSearchOptions } from "../type/team.type";
+import { TeamDto } from "../type/team.type";
 import { TeamService } from "../services/team.service";
 
 export class TeamController extends CrudController<Team, TeamDto, TeamDto> {

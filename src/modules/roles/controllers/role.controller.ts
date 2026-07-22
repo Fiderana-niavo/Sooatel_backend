@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { Role } from "../../../database/Entities/Role";
 import { CrudController } from "../../../shared/crud/controllers/CrudController";
 import { ApiResponse } from "../../../shared/types/ApiResponse";
-import { RoleCreateOrUpdateDto, RoleSearchOptions } from "../type/role.type";
+import { RoleCreateOrUpdateDto } from "../type/role.type";
 import { RoleService } from "../services/role.service";
 
 export class RoleController extends CrudController<

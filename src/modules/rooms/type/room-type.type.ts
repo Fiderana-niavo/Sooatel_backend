@@ -1,6 +1,6 @@
 export interface RoomTypeDto {
   label: string;
-  Description?: string;
+  description?: string;
 }
 
 export interface RoomTypeSearchOptions {

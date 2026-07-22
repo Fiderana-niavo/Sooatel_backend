@@ -36,7 +36,7 @@ export class RoomTypeService extends CrudService<RoomType, RoomTypeDto, RoomType
   async create(dto: RoomTypeDto): Promise<RoomType> {
     const entity = this.repository.create({
       label: dto.label,
-      Description: dto.Description,
+      description: dto.description,
     });
     return this.repository.save(entity);
   }
@@ -44,7 +44,7 @@ export class RoomTypeService extends CrudService<RoomType, RoomTypeDto, RoomType
   async update(id: string, dto: RoomTypeDto): Promise<void> {
     await this.repository.update(id, {
       label: dto.label,
-      Description: dto.Description,
+      description: dto.description,
     } as any);
   }
 

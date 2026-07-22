@@ -22,8 +22,8 @@ export class MenuItemService extends CrudService<MenuItem, MenuItemDto, MenuItem
     if (search) {
       qb.andWhere("entity.ref ILIKE :s", { s: `%${search}%` });
     }
-    if (options.categoryId) {
-      qb.andWhere("entity.idCategory = :categoryId", { categoryId: options.categoryId });
+    if (options.idCategory) {
+      qb.andWhere("entity.idCategory = :idCategory", { idCategory: options.idCategory });
     }
 
     const [records, total] = await qb.getManyAndCount();

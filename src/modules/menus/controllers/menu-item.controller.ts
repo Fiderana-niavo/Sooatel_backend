@@ -16,7 +16,7 @@ export class MenuItemController extends CrudController<MenuItem, MenuItemDto, Me
         page: Number(req.query.page ?? 1),
         limit: Number(req.query.limit ?? 10),
         search: req.query.search as string | undefined,
-        categoryId: req.query.categoryId as string | undefined,
+        idCategory: req.query.idCategory as string | undefined,
       });
 
       res.json(ApiResponse.success(result));

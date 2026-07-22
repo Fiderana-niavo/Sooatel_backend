@@ -13,7 +13,6 @@ export class ProductPriceService extends CrudService<ProductPrice, ProductPriceD
   async findAll(options: ProductPriceSearchOptions = {}): Promise<Paginated<ProductPrice>> {
     const pageNum = options.page ?? 1;
     const limitNum = options.limit ?? 10;
-    const search = options.search ?? "";
 
     const qb = this.repository
       .createQueryBuilder("entity")

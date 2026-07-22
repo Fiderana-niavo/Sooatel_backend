@@ -10,5 +10,5 @@ export interface MenuItemSearchOptions {
   page?: number;
   limit?: number;
   search?: string;
-  categoryId?: string;
+  idCategory?: string;
 }
