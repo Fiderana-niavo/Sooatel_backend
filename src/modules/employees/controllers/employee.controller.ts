@@ -22,6 +22,15 @@ export class EmployeeController extends CrudController<
     super(service);
   }
 
+  getSalers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const salers = await (this.service as EmployeeService).getSalers();
+      res.json(ApiResponse.success(salers));
+    } catch (error) {
+      next(error);
+    }
+  };
+
   getAllEmployees = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const result = await (this.service as EmployeeService).findAll({

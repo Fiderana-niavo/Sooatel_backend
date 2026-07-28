@@ -9,6 +9,8 @@ const employeeRouter = Router();
 // All employee routes require authentication
 employeeRouter.use(authMiddleware);
 
+employeeRouter.get("/salers", employeeController.getSalers);
+
 employeeRouter.get("/", authorize("employee.read"), employeeController.getAllEmployees);
 employeeRouter.get("/:id", authorize("employee.read"), employeeController.getById);
 

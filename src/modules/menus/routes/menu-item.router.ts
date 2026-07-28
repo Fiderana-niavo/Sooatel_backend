@@ -6,6 +6,7 @@ import { authMiddleware } from "../../../shared/middlewares/auth.middleware";
 const menuItemRouter = Router();
 
 menuItemRouter.use(authMiddleware);
+menuItemRouter.get("/select", menuItemController.getCustomSelect);
 generateCrudRoutes(menuItemRouter, menuItemController);
 
 export default menuItemRouter;

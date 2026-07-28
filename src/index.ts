@@ -23,6 +23,8 @@ import unitOfMeasureRouter from "./modules/items/routes/unit-of-measure.router";
 import menuItemRouter from "./modules/menus/routes/menu-item.router";
 import menuCategoryRouter from "./modules/menus/routes/menu-category.router";
 import productPriceRouter from "./modules/menus/routes/product-price.router";
+import saleRouter from "./modules/sales/routes/sale.router";
+import paymentMethodRouter from "./modules/payment-methods/routes/payment-method.router";
 import { startTokenPurgeJob } from "./shared/jobs/tokenPurge.job";
 import { globalErrorMiddleware } from "./shared/middlewares/error.middleware";
 
@@ -60,6 +62,8 @@ AppDataSource.initialize()
     app.use("/api/menu-items", menuItemRouter);
     app.use("/api/menu-categories", menuCategoryRouter);
     app.use("/api/product-prices", productPriceRouter);
+    app.use("/api/sales", saleRouter);
+    app.use("/api/payment-methods", paymentMethodRouter);
 
     app.use(globalErrorMiddleware);
 

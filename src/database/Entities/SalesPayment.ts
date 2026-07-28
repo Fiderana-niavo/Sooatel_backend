@@ -19,8 +19,12 @@ export class SalesPayment extends BaseEntity {
   @Column({ type: "numeric", precision: 15, scale: 2, name: "amount" })
   amount: number;
 
+  @Column({ type: "varchar", length: 20, name: "type", default: "PAYMENT" })
+  type: "PAYMENT" | "REFUND" | "ADJUSTMENT";
+
   @Column({ type: "uuid", name: "id_payment_method" })
   idPaymentMethod: string;
+
 
   @ManyToOne(() => PaymentMethod)
   @JoinColumn({ name: "id_payment_method" })

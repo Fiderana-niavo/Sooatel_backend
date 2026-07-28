@@ -1,6 +1,9 @@
-import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from "typeorm";
 import { Employee } from "./Employee";
 import { Room } from "./Room";
+import { SaleItem } from "./SaleItem";
+import { User } from "./User";
+import { SalesPayment } from "./SalesPayment";
 
 @Entity("sales")
 export class Sale extends BaseEntity {
@@ -14,22 +17,43 @@ export class Sale extends BaseEntity {
   saleDate: Date;
 
   @Column({ type: "numeric", precision: 15, scale: 2, nullable: true, name: "total_amount" })
-  totalAmount: number;
+  totalAmount: number | null;
 
   @Column({ type: "numeric", precision: 15, scale: 2, nullable: true, name: "balance_due" })
-  balanceDue: number;
+  balanceDue: number | null;
 
   @Column({ type: "integer", nullable: true, name: "table_number" })
-  tableNumber: number;
+  tableNumber: number | null;
 
   @Column({ type: "boolean", nullable: true, name: "charge_to_room" })
-  chargeToRoom: boolean;
+  chargeToRoom: boolean | null;
 
   @Column({ type: "uuid", nullable: true, name: "id_room" })
-  idRoom: string;
+  idRoom: string | null;
 
   @Column({ type: "uuid", name: "id_saler" })
   idSaler: string;
+
+  @Column({ type: "varchar", length: 20, unique: true, name: "invoice_number" })
+  invoiceNumber: string;
+
+  @Column({ type: "integer", nullable: true, name: "status" })
+  status: number | null;
+
+  @Column({ type: "uuid", nullable: true, name: "created_by" })
+  createdBy: string | null;
+
+  @Column({ type: "uuid", nullable: true, name: "updated_by" })
+  updatedBy: string | null;
+
+  @CreateDateColumn({ type: "timestamptz", name: "created_at" })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: "timestamptz", nullable: true, name: "updated_at" })
+  updatedAt: Date;
+
+  @OneToMany(() => SaleItem, (item) => item.sale)
+  saleItems: SaleItem[];
 
   @ManyToOne(() => Room)
   @JoinColumn({ name: "id_room" })
@@ -38,4 +62,15 @@ export class Sale extends BaseEntity {
   @ManyToOne(() => Employee)
   @JoinColumn({ name: "id_saler" })
   saler: Employee;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: "created_by" })
+  creator: User;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: "updated_by" })
+  updatedByUser: User;
+
+  @OneToMany(() => SalesPayment, (payment) => payment.sale)
+  payments: SalesPayment[];
 }

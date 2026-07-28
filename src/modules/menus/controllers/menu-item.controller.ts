@@ -10,6 +10,15 @@ export class MenuItemController extends CrudController<MenuItem, MenuItemDto, Me
     super(service);
   }
 
+  getCustomSelect = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const options = await (this.service as MenuItemService).getMenuSelectOptions();
+      res.json(ApiResponse.success(options));
+    } catch (error: unknown) {
+      if (next) next(error);
+    }
+  };
+
   findAll = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const result = await (this.service as MenuItemService).findAll({

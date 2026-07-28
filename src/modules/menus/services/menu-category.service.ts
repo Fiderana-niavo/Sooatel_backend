@@ -1,4 +1,5 @@
-import { Repository } from "typeorm";
+import { Repository, FindOptionsWhere } from "typeorm";
+import { QueryDeepPartialEntity } from "typeorm/query-builder/QueryPartialEntity";
 import AppDataSource from "../../../database/data-source";
 import { MenuCategory } from "../../../database/Entities/MenuCategory";
 import { CrudService } from "../../../shared/crud/services/CrudService";
@@ -29,7 +30,7 @@ export class MenuCategoryService extends CrudService<MenuCategory, MenuCategoryD
 
   async findOne(id: string): Promise<MenuCategory | null> {
     return this.repository.findOne({
-      where: { idCategory: id } as any,
+      where: { idCategory: id } as FindOptionsWhere<MenuCategory>,
     });
   }
 
@@ -45,7 +46,7 @@ export class MenuCategoryService extends CrudService<MenuCategory, MenuCategoryD
     await this.repository.update(id, {
       label: dto.label,
       description: dto.description,
-    } as any);
+    } as QueryDeepPartialEntity<MenuCategory>);
   }
 
   async delete(id: string): Promise<void> {

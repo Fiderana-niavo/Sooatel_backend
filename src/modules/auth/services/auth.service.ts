@@ -102,25 +102,22 @@ export class AuthService {
     const user = await userRepo.findOne({ where: { idUser } });
     if (!user) throw new Error("Utilisateur introuvable.");
 
-    const existingToken = await tokenRepo
-      .createQueryBuilder("ut")
-      .where("ut.id_user = :idUser", { idUser })
-      .andWhere("ut.token_type = :type", { type })
-      .andWhere("ut.used = false")
-      .andWhere("ut.expires_at > NOW()")
-      .getOne();
-
-    if (existingToken) {
-      return { token: existingToken.token, expiresAt: existingToken.expiresAt };
-    }
+    // Invalidate existing unused tokens of this type
+    await tokenRepo
+      .createQueryBuilder()
+      .update(UserToken)
+      .set({ used: true })
+      .where("id_user = :idUser AND token_type = :type AND used = false", { idUser, type })
+      .execute();
 
     const token = randomUUID();
+    const hashedToken = await bcrypt.hash(token, 10);
 
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 48);
 
     const record = tokenRepo.create({
-      token,
+      token: hashedToken,
       tokenType: type,
       expiresAt,
       used: false,
@@ -162,11 +159,12 @@ export class AuthService {
       .execute();
 
     const key = randomUUID();
+    const hashedKey = await bcrypt.hash(key, 10);
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 24);
 
     const record = tokenRepo.create({
-      token: key,
+      token: hashedKey,
       tokenType: "PWD_RESET",
       expiresAt,
       used: false,
@@ -191,42 +189,66 @@ export class AuthService {
     const tokenRepo = AppDataSource.getRepository(UserToken);
     const userRepo = AppDataSource.getRepository(User);
 
-    const record = await tokenRepo.findOne({
-      where: { token: dto.key, tokenType: "PWD_RESET" },
+    const user = await userRepo
+      .createQueryBuilder("user")
+      .leftJoin("user.employee", "employee")
+      .where("user.username = :identifier", { identifier: dto.username })
+      .orWhere("employee.email_contact = :identifier", { identifier: dto.username })
+      .getOne();
+
+    if (!user) throw new Error("Utilisateur introuvable.");
+
+    const records = await tokenRepo.find({
+      where: { idUser: user.idUser, tokenType: "PWD_RESET", used: false },
     });
 
-    if (!record) throw new Error("Clé incorrecte.");
-    if (record.used) throw new Error("Cette clé a déjà été utilisée.");
-    if (record.expiresAt < new Date()) throw new Error("Cette clé a expiré.");
-
-    const user = await userRepo.findOne({ where: { idUser: record.idUser } });
-    if (!user || user.username !== dto.username) {
-      throw new Error("Cette clé n'appartient pas à ce nom d'utilisateur.");
+    let validRecord = null;
+    for (const record of records) {
+      const match = await bcrypt.compare(dto.key, record.token);
+      if (match) {
+        validRecord = record;
+        break;
+      }
     }
+
+    if (!validRecord) throw new Error("Clé incorrecte ou déjà utilisée.");
+    if (validRecord.expiresAt < new Date()) throw new Error("Cette clé a expiré.");
   }
 
   async changePassword(dto: ChangePasswordDto): Promise<void> {
     const tokenRepo = AppDataSource.getRepository(UserToken);
     const userRepo = AppDataSource.getRepository(User);
 
-    const record = await tokenRepo.findOne({
-      where: { token: dto.key, tokenType: "PWD_RESET" },
+    const user = await userRepo
+      .createQueryBuilder("user")
+      .leftJoin("user.employee", "employee")
+      .where("user.username = :identifier", { identifier: dto.username })
+      .orWhere("employee.email_contact = :identifier", { identifier: dto.username })
+      .getOne();
+
+    if (!user) throw new Error("Utilisateur introuvable.");
+
+    const records = await tokenRepo.find({
+      where: { idUser: user.idUser, tokenType: "PWD_RESET", used: false },
     });
 
-    if (!record) throw new Error("Clé incorrecte.");
-    if (record.used) throw new Error("Cette clé a déjà été utilisée.");
-    if (record.expiresAt < new Date()) throw new Error("Cette clé a expiré.");
-
-    const user = await userRepo.findOne({ where: { idUser: record.idUser } });
-    if (!user || user.username !== dto.username) {
-      throw new Error("Cette clé n'appartient pas à ce nom d'utilisateur.");
+    let validRecord = null;
+    for (const record of records) {
+      const match = await bcrypt.compare(dto.key, record.token);
+      if (match) {
+        validRecord = record;
+        break;
+      }
     }
+
+    if (!validRecord) throw new Error("Clé incorrecte ou déjà utilisée.");
+    if (validRecord.expiresAt < new Date()) throw new Error("Cette clé a expiré.");
 
     const hashed = await bcrypt.hash(dto.newPassword, 12);
 
     await AppDataSource.transaction(async (manager) => {
-      await manager.update(User, { idUser: record.idUser }, { passwordHash: hashed });
-      await manager.update(UserToken, { idToken: record.idToken }, { used: true });
+      await manager.update(User, { idUser: validRecord.idUser }, { passwordHash: hashed });
+      await manager.update(UserToken, { idToken: validRecord.idToken }, { used: true });
     });
   }
 

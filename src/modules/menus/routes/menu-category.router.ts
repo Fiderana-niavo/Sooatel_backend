@@ -6,6 +6,6 @@ import { authMiddleware } from "../../../shared/middlewares/auth.middleware";
 const menuCategoryRouter = Router();
 
 menuCategoryRouter.use(authMiddleware);
-generateCrudRoutes(menuCategoryRouter, menuCategoryController);
+generateCrudRoutes(menuCategoryRouter, menuCategoryController, { valueField: "idCategory", labelField: "label" });
 
 export default menuCategoryRouter;

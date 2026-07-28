@@ -246,7 +246,7 @@ CREATE TABLE Purchases(
    id_purchase UUID DEFAULT uuid_generate_v4(),
    ref VARCHAR(20) NOT NULL DEFAULT 'ACH' || to_char(nextval('purchase_ref_seq'), 'fm0000'),
    purchase_date DATE NOT NULL,
-   total_amount NUMERIC(15,2),
+   total_amount NUMERIC(15,2) CHECK (total_amount >= 0),
    balance_due NUMERIC(15,2),
    id_supplier UUID NOT NULL,
    id_purchaser UUID NOT NULL,
@@ -262,7 +262,7 @@ CREATE TABLE Purchase_details(
    id_supplier_product UUID NOT NULL,
    quantity NUMERIC(10,2)   NOT NULL,
    unit_price NUMERIC(15,2),
-   total_amount NUMERIC(15,2),
+   total_amount NUMERIC(15,2) CHECK (total_amount >= 0),
    PRIMARY KEY(id_purchase_detail),
    FOREIGN KEY(id_supplier_product) REFERENCES Supplier_products(id_supplier_product),
    FOREIGN KEY(id_purchase) REFERENCES Purchases(id_purchase)
@@ -322,7 +322,7 @@ CREATE SEQUENCE cash_outflow_ref_seq;
 CREATE TABLE Cash_outflows(
    id_cash_outflows UUID DEFAULT uuid_generate_v4(),
    ref VARCHAR(20) NOT NULL DEFAULT 'DEP' || to_char(nextval('cash_outflow_ref_seq'), 'fm0000'),
-   amount NUMERIC(15,2) NOT NULL,
+   amount NUMERIC(15,2) NOT NULL CHECK (amount >= 0),
    outflow_date DATE,
    reason VARCHAR(255) ,
    invoice_reference VARCHAR(100) ,
@@ -532,16 +532,24 @@ CREATE TABLE Sales(
    id_sale UUID DEFAULT uuid_generate_v4(),
    ref VARCHAR(20) NOT NULL DEFAULT 'VTE' || to_char(nextval('sale_ref_seq'), 'fm0000'),
    sale_date DATE NOT NULL DEFAULT CURRENT_DATE,
-   total_amount NUMERIC(15,2),
+   total_amount NUMERIC(15,2) CHECK (total_amount >= 0),
    balance_due NUMERIC(15,2),
    table_number INTEGER ,
    charge_to_room BOOLEAN,
    id_room UUID,
    id_saler UUID NOT NULL,
+   invoice_number VARCHAR(20) UNIQUE NOT NULL,
+   status INTEGER,
+   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+   created_by UUID,
+   updated_at TIMESTAMP WITH TIME ZONE,
+   updated_by UUID,
    PRIMARY KEY(id_sale),
    UNIQUE(ref),
    FOREIGN KEY(id_room) REFERENCES Room(id_room),
-   FOREIGN KEY(id_saler) REFERENCES Employees(id_employee)
+   FOREIGN KEY(id_saler) REFERENCES Employees(id_employee),
+   FOREIGN KEY(created_by) REFERENCES Users(id_user),
+   FOREIGN KEY(updated_by) REFERENCES Users(id_user)
 --    CONSTRAINT chk_sales_location CHECK (
 --       (table_number IS NOT NULL AND id_room IS NULL) OR
 --       (table_number IS NULL AND id_room IS NOT NULL)
@@ -552,9 +560,9 @@ CREATE TABLE Sale_items(
    id_sale_item UUID DEFAULT uuid_generate_v4(),
    id_menu UUID NOT NULL,
    id_sale UUID NOT NULL,
-   quantity INTEGER,
-   unit_price NUMERIC(15,2) NOT NULL,
-   total_amount NUMERIC(15,2),
+   quantity INTEGER CHECK (quantity >= 1),
+   unit_price NUMERIC(15,2) NOT NULL CHECK (unit_price >= 0),
+   total_amount NUMERIC(15,2) CHECK (total_amount >= 0),
    PRIMARY KEY(id_sale_item),
    FOREIGN KEY(id_menu) REFERENCES Menu_Items(id_menu),
    FOREIGN KEY(id_sale) REFERENCES Sales(id_sale)
@@ -566,7 +574,7 @@ CREATE TABLE Sales_payment(
    ref VARCHAR(20) NOT NULL DEFAULT 'REG_VTE' || to_char(nextval('sales_payment_ref_seq'), 'fm0000'),
    id_sale UUID NOT NULL,
    payment_date DATE NOT NULL,
-   amount NUMERIC(15,2) NOT NULL,
+   amount NUMERIC(15,2) NOT NULL CHECK (amount >= 0),
    id_payment_method UUID NOT NULL,
    PRIMARY KEY(id_sale_payment),
    UNIQUE(ref),
@@ -621,7 +629,7 @@ CREATE TABLE Role_permission(
 -- for the unique use keys when we want to chnage the password for example
 CREATE TABLE User_tokens(
    id_token UUID DEFAULT uuid_generate_v4() ,
-   token UUID DEFAULT uuid_generate_v4() NOT NULL ,
+   token VARCHAR(255) NOT NULL ,
    token_type VARCHAR(30) ,
    expires_at TIMESTAMPTZ NOT NULL,
    used BOOLEAN,
@@ -631,3 +639,23 @@ CREATE TABLE User_tokens(
    UNIQUE(token),
    FOREIGN KEY(id_user) REFERENCES Users(id_user)
 );
+
+CREATE TABLE Audit_logs(
+   id_audit UUID DEFAULT uuid_generate_v4(),
+   entity_name VARCHAR(100) NOT NULL,
+   entity_id UUID NOT NULL,
+   action VARCHAR(50) NOT NULL,
+   old_value JSONB,
+   new_value JSONB,
+   id_user UUID NOT NULL,
+   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+   PRIMARY KEY(id_audit),
+   FOREIGN KEY(id_user) REFERENCES Users(id_user)
+);
+
+
+-- Seeding payment methods
+INSERT INTO payment_method (id_payment_method, label, description) VALUES
+('c460cf61-0000-0000-0000-000000000001', 'Espèces', 'Paiement en espèces'),
+('c460cf61-0000-0000-0000-000000000002', 'Carte Bancaire', 'Paiement par CB'),
+('c460cf61-0000-0000-0000-000000000003', 'Mobile Money', 'Paiement via mobile');

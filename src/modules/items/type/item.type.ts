@@ -1,5 +1,5 @@
 export interface ItemDto {
-  ref: string;
+  ref?: string;
   label: string;
   isProduced?: boolean;
   minimumStockLevel: number;

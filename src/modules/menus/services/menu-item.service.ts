@@ -1,4 +1,5 @@
-import { Repository } from "typeorm";
+import { Repository, FindOptionsWhere } from "typeorm";
+import { QueryDeepPartialEntity } from "typeorm/query-builder/QueryPartialEntity";
 import AppDataSource from "../../../database/data-source";
 import { MenuItem } from "../../../database/Entities/MenuItem";
 import { CrudService } from "../../../shared/crud/services/CrudService";
@@ -10,6 +11,17 @@ export class MenuItemService extends CrudService<MenuItem, MenuItemDto, MenuItem
     super(repository);
   }
 
+  async getMenuSelectOptions(): Promise<{ value: string | number; label: string; salePrice: number }[]> {
+    const qb = this.repository.createQueryBuilder("entity");
+    qb.leftJoin("entity.item", "item");
+    qb.select([
+      "entity.idMenu AS value", 
+      "item.label AS label",
+      "entity.salePrice AS \"salePrice\""
+    ]);
+    return await qb.getRawMany();
+  }
+
   async findAll(options: MenuItemSearchOptions = {}): Promise<Paginated<MenuItem>> {
     const pageNum = options.page ?? 1;
     const limitNum = options.limit ?? 10;
@@ -17,6 +29,7 @@ export class MenuItemService extends CrudService<MenuItem, MenuItemDto, MenuItem
 
     const qb = this.repository
       .createQueryBuilder("entity")
+      .leftJoinAndSelect("entity.item", "item")
       .skip((pageNum - 1) * limitNum)
       .take(limitNum);
     if (search) {
@@ -32,7 +45,7 @@ export class MenuItemService extends CrudService<MenuItem, MenuItemDto, MenuItem
 
   async findOne(id: string): Promise<MenuItem | null> {
     return this.repository.findOne({
-      where: { idMenu: id } as any,
+      where: { idMenu: id } as FindOptionsWhere<MenuItem>,
     });
   }
 
@@ -44,7 +57,7 @@ export class MenuItemService extends CrudService<MenuItem, MenuItemDto, MenuItem
       recipeCost: dto.recipeCost,
       idCategory: dto.idCategory,
     });
-    return this.repository.save(entity);
+    return await this.repository.save(entity);
   }
 
   async update(id: string, dto: MenuItemDto): Promise<void> {
@@ -54,7 +67,7 @@ export class MenuItemService extends CrudService<MenuItem, MenuItemDto, MenuItem
       salePrice: dto.salePrice,
       recipeCost: dto.recipeCost,
       idCategory: dto.idCategory,
-    } as any);
+    } as QueryDeepPartialEntity<MenuItem>);
   }
 
   async delete(id: string): Promise<void> {

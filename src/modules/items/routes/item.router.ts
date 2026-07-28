@@ -6,6 +6,6 @@ import { authMiddleware } from "../../../shared/middlewares/auth.middleware";
 const itemRouter = Router();
 
 itemRouter.use(authMiddleware);
-generateCrudRoutes(itemRouter, itemController);
+generateCrudRoutes(itemRouter, itemController, { valueField: "idItem", labelField: "label" });
 
 export default itemRouter;

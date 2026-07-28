@@ -1,4 +1,5 @@
-import { Repository } from "typeorm";
+import { Repository, FindOptionsWhere } from "typeorm";
+import { QueryDeepPartialEntity } from "typeorm/query-builder/QueryPartialEntity";
 import AppDataSource from "../../../database/data-source";
 import { ItemType } from "../../../database/Entities/ItemType";
 import { CrudService } from "../../../shared/crud/services/CrudService";
@@ -29,7 +30,7 @@ export class ItemTypeService extends CrudService<ItemType, ItemTypeDto, ItemType
 
   async findOne(id: string): Promise<ItemType | null> {
     return this.repository.findOne({
-      where: { idProductType: id } as any,
+      where: { idProductType: id } as FindOptionsWhere<ItemType>,
     });
   }
 
@@ -45,7 +46,7 @@ export class ItemTypeService extends CrudService<ItemType, ItemTypeDto, ItemType
     await this.repository.update(id, {
       label: dto.label,
       description: dto.description,
-    } as any);
+    } as QueryDeepPartialEntity<ItemType>);
   }
 
   async delete(id: string): Promise<void> {

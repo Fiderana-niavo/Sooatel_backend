@@ -681,7 +681,27 @@ export class EmployeeService extends CrudService<
       await manager.update(Employee, id, { activeStatus: -3 });
     });
   }
+
+  async getSalers(): Promise<{ value: string; label: string }[]> {
+    const qb = this.repository.createQueryBuilder("employee");
+    qb.select(["employee.idEmployee", "employee.name", "employee.lastname"]);
+
+    const employees = await qb.getMany();
+    // Use a Set to ensure unique employees (if they have multiple roles with same permission)
+    const uniqueEmployees = new Map<string, typeof employees[0]>();
+    for (const emp of employees) {
+      if (!uniqueEmployees.has(emp.idEmployee)) {
+        uniqueEmployees.set(emp.idEmployee, emp);
+      }
+    }
+
+    return Array.from(uniqueEmployees.values()).map(emp => ({
+      value: emp.idEmployee,
+      label: `${emp.name} ${emp.lastname || ""}`.trim()
+    }));
+  }
 }
+
 
 async function hashPassword(password: string): Promise<string> {
   return await bcrypt.hash(password, 12);

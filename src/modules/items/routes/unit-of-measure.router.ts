@@ -6,6 +6,6 @@ import { authMiddleware } from "../../../shared/middlewares/auth.middleware";
 const unitOfMeasureRouter = Router();
 
 unitOfMeasureRouter.use(authMiddleware);
-generateCrudRoutes(unitOfMeasureRouter, unitOfMeasureController);
+generateCrudRoutes(unitOfMeasureRouter, unitOfMeasureController, { valueField: "idUnit", labelField: "label" });
 
 export default unitOfMeasureRouter;

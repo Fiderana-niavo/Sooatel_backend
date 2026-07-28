@@ -9,7 +9,11 @@ export const generateCrudRoutes = <
 >(
   router: Router,
   controller: CrudController<T, CreateDto, UpdateDto>,
+  options?: { valueField: keyof T; labelField: keyof T }
 ) => {
+  if (options) {
+    router.get("/select", controller.getSelect(options.valueField, options.labelField));
+  }
   router.get("/", controller.findAll);
   router.get("/:id", controller.getOne);
   router.post("/", controller.save);

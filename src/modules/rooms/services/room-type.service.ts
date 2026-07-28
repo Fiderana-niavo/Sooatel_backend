@@ -1,4 +1,5 @@
-import { Repository } from "typeorm";
+import { Repository, FindOptionsWhere } from "typeorm";
+import { QueryDeepPartialEntity } from "typeorm/query-builder/QueryPartialEntity";
 import AppDataSource from "../../../database/data-source";
 import { RoomType } from "../../../database/Entities/RoomType";
 import { CrudService } from "../../../shared/crud/services/CrudService";
@@ -29,7 +30,7 @@ export class RoomTypeService extends CrudService<RoomType, RoomTypeDto, RoomType
 
   async findOne(id: string): Promise<RoomType | null> {
     return this.repository.findOne({
-      where: { idRoomType: id } as any,
+      where: { idRoomType: id } as FindOptionsWhere<RoomType>,
     });
   }
 
@@ -45,7 +46,7 @@ export class RoomTypeService extends CrudService<RoomType, RoomTypeDto, RoomType
     await this.repository.update(id, {
       label: dto.label,
       description: dto.description,
-    } as any);
+    } as QueryDeepPartialEntity<RoomType>);
   }
 
   async delete(id: string): Promise<void> {

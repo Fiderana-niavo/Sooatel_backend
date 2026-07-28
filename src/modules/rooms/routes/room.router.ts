@@ -6,6 +6,6 @@ import { authMiddleware } from "../../../shared/middlewares/auth.middleware";
 const roomRouter = Router();
 
 roomRouter.use(authMiddleware);
-generateCrudRoutes(roomRouter, roomController);
+generateCrudRoutes(roomRouter, roomController, { valueField: "idRoom", labelField: "roomNumber" });
 
 export default roomRouter;

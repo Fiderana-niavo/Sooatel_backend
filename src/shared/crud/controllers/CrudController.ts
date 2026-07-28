@@ -62,4 +62,13 @@ export class CrudController<T extends BaseEntity, CreateDto = Partial<T>, Update
       if (next) next(error);
     }
   };
+
+  getSelect = (valueField: keyof T, labelField: keyof T) => async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const options = await this.service.getSelectOptions(valueField, labelField);
+      res.json(ApiResponse.success(options));
+    } catch (error: unknown) {
+      if (next) next(error);
+    }
+  };
 }

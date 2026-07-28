@@ -6,7 +6,7 @@ export class UserToken extends BaseEntity {
   @PrimaryGeneratedColumn("uuid", { name: "id_token" })
   idToken: string;
 
-  @Column({ type: "uuid", unique: true, name: "token" })
+  @Column({ type: "varchar", length: 255, unique: true, name: "token" })
   token: string;
 
   @Column({ type: "varchar", length: 30, nullable: true, name: "token_type" })

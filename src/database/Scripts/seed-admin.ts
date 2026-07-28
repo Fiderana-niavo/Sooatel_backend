@@ -28,6 +28,8 @@ const PERMISSIONS = [
   { code: "hotel.access", name: "Accès au module Hôtel", category: "Navigation" },
   { code: "restaurant.access", name: "Accès au module Restaurant", category: "Navigation" },
   { code: "restaurant.pos", name: "Caisse & PDV", category: "Restaurant" },
+  { code: "sales.pos",      name: "Caisse & Ventes (Voir, Créer, Modifier)", category: "Restaurant" },
+  { code: "sale.manage",    name: "Gérer les ventes (Rouvrir, Annuler, Supprimer)", category: "Restaurant" },
   { code: "restaurant.purchases", name: "Achats & Dépenses", category: "Restaurant" },
   { code: "stock.access", name: "Accès Inventaire", category: "Logistique" },
   { code: "stock.read", name: "Voir les stocks", category: "Logistique" },

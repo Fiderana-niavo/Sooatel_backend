@@ -1,4 +1,5 @@
-import { Repository } from "typeorm";
+import { Repository, FindOptionsWhere } from "typeorm";
+import { QueryDeepPartialEntity } from "typeorm/query-builder/QueryPartialEntity";
 import AppDataSource from "../../../database/data-source";
 import { Event } from "../../../database/Entities/Event";
 import { CrudService } from "../../../shared/crud/services/CrudService";
@@ -29,7 +30,7 @@ export class EventService extends CrudService<Event, EventDto, EventDto> {
 
   async findOne(id: string): Promise<Event | null> {
     return this.repository.findOne({
-      where: { idEvent: id } as any,
+      where: { idEvent: id } as FindOptionsWhere<Event>,
     });
   }
 
@@ -47,7 +48,7 @@ export class EventService extends CrudService<Event, EventDto, EventDto> {
       eventName: dto.eventName,
       startDate: dto.startDate,
       endDate: dto.endDate,
-    } as any);
+    } as QueryDeepPartialEntity<Event>);
   }
 
   async delete(id: string): Promise<void> {
