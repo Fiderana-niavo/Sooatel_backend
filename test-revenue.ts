@@ -1,0 +1,1 @@
+import AppDataSource from './src/database/data-source'; import { RevenueService } from './src/modules/sales/services/revenue.service'; AppDataSource.initialize().then(async () => { try { const svc = new RevenueService(); const res = await svc.getRevenue({}); console.log(res); } catch (e) { console.error(e); } finally { process.exit(); } });
