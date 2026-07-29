@@ -16,8 +16,8 @@ export class MenuItem extends BaseEntity {
   @Column({ type: "numeric", precision: 10, scale: 2, name: "sale_price" })
   salePrice: number;
 
-  @Column({ type: "numeric", precision: 10, scale: 2, nullable: true, name: "recipe_cost" })
-  recipeCost: number;
+  @Column({ type: "numeric", precision: 10, scale: 2, nullable: true, name: "unit_cost" })
+  unitCost: number;
 
   @Column({ type: "uuid", name: "id_category" })
   idCategory: string;

@@ -7,10 +7,10 @@ export class EmployeeTeam extends BaseEntity {
   @PrimaryGeneratedColumn("uuid", { name: "id_employee_team" })
   idEmployeeTeam: string;
 
-  @Column({ type: "uuid", unique: true, name: "id_team" })
+  @Column({ type: "uuid", name: "id_team" })
   idTeam: string;
 
-  @Column({ type: "uuid", unique: true, name: "id_employee" })
+  @Column({ type: "uuid", name: "id_employee" })
   idEmployee: string;
 
   @ManyToOne(() => Team, (t) => t.employeeTeams)

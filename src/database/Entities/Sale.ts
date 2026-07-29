@@ -3,7 +3,7 @@ import { Employee } from "./Employee";
 import { Room } from "./Room";
 import { SaleItem } from "./SaleItem";
 import { User } from "./User";
-import { SalesPayment } from "./SalesPayment";
+import { Invoice } from "./Invoice";
 
 @Entity("sales")
 export class Sale extends BaseEntity {
@@ -19,8 +19,12 @@ export class Sale extends BaseEntity {
   @Column({ type: "numeric", precision: 15, scale: 2, nullable: true, name: "total_amount" })
   totalAmount: number | null;
 
-  @Column({ type: "numeric", precision: 15, scale: 2, nullable: true, name: "balance_due" })
-  balanceDue: number | null;
+  @Column({ type: "text", nullable: true, name: "comment" })
+  comment: string | null;
+
+  @Column({ type: "timestamptz", nullable: true, name: "delivery_date" })
+  deliveryDate: Date | null;
+
 
   @Column({ type: "integer", nullable: true, name: "table_number" })
   tableNumber: number | null;
@@ -34,8 +38,8 @@ export class Sale extends BaseEntity {
   @Column({ type: "uuid", name: "id_saler" })
   idSaler: string;
 
-  @Column({ type: "varchar", length: 20, unique: true, name: "invoice_number" })
-  invoiceNumber: string;
+  @Column({ type: "uuid", nullable: true, name: "id_invoice" })
+  idInvoice: string | null;
 
   @Column({ type: "integer", nullable: true, name: "status" })
   status: number | null;
@@ -71,6 +75,7 @@ export class Sale extends BaseEntity {
   @JoinColumn({ name: "updated_by" })
   updatedByUser: User;
 
-  @OneToMany(() => SalesPayment, (payment) => payment.sale)
-  payments: SalesPayment[];
+  @ManyToOne(() => Invoice)
+  @JoinColumn({ name: "id_invoice" })
+  invoice: Invoice;
 }

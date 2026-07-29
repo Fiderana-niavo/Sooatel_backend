@@ -54,7 +54,7 @@ export class MenuItemService extends CrudService<MenuItem, MenuItemDto, MenuItem
       ref: dto.ref,
       idItem: dto.idItem,
       salePrice: dto.salePrice,
-      recipeCost: dto.recipeCost,
+      unitCost: dto.unitCost,
       idCategory: dto.idCategory,
     });
     return await this.repository.save(entity);
@@ -65,7 +65,7 @@ export class MenuItemService extends CrudService<MenuItem, MenuItemDto, MenuItem
       ref: dto.ref,
       idItem: dto.idItem,
       salePrice: dto.salePrice,
-      recipeCost: dto.recipeCost,
+      unitCost: dto.unitCost,
       idCategory: dto.idCategory,
     } as QueryDeepPartialEntity<MenuItem>);
   }

@@ -527,25 +527,42 @@ CREATE TABLE Menu_Items(
 -- VENTES ET FACTURATION
 -- =========================================================================
 
+CREATE SEQUENCE invoice_ref_seq;
+CREATE TABLE Invoice(
+   id_invoice UUID DEFAULT uuid_generate_v4(),
+   invoice_number_system VARCHAR(30) UNIQUE NOT NULL DEFAULT 'INV' || to_char(nextval('invoice_ref_seq'), 'fm0000'),
+   invoice_number VARCHAR(20) UNIQUE,
+   invoice_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+   total_amount NUMERIC(15,2) NOT NULL DEFAULT 0,
+   balance_due NUMERIC(15,2) NOT NULL DEFAULT 0,
+   status INTEGER DEFAULT 5,
+   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+   created_by UUID,
+   PRIMARY KEY(id_invoice),
+   FOREIGN KEY(created_by) REFERENCES Users(id_user)
+);
+
 CREATE SEQUENCE sale_ref_seq;
 CREATE TABLE Sales(
    id_sale UUID DEFAULT uuid_generate_v4(),
    ref VARCHAR(20) NOT NULL DEFAULT 'VTE' || to_char(nextval('sale_ref_seq'), 'fm0000'),
    sale_date DATE NOT NULL DEFAULT CURRENT_DATE,
    total_amount NUMERIC(15,2) CHECK (total_amount >= 0),
-   balance_due NUMERIC(15,2),
+   id_invoice UUID,
    table_number INTEGER ,
    charge_to_room BOOLEAN,
    id_room UUID,
    id_saler UUID NOT NULL,
-   invoice_number VARCHAR(20) UNIQUE NOT NULL,
    status INTEGER,
+   comment TEXT,
+   delivery_date TIMESTAMP WITH TIME ZONE,
    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
    created_by UUID,
    updated_at TIMESTAMP WITH TIME ZONE,
    updated_by UUID,
    PRIMARY KEY(id_sale),
    UNIQUE(ref),
+   FOREIGN KEY(id_invoice) REFERENCES Invoice(id_invoice),
    FOREIGN KEY(id_room) REFERENCES Room(id_room),
    FOREIGN KEY(id_saler) REFERENCES Employees(id_employee),
    FOREIGN KEY(created_by) REFERENCES Users(id_user),
@@ -568,18 +585,19 @@ CREATE TABLE Sale_items(
    FOREIGN KEY(id_sale) REFERENCES Sales(id_sale)
 );
 
-CREATE SEQUENCE sales_payment_ref_seq;
-CREATE TABLE Sales_payment(
-   id_sale_payment UUID DEFAULT uuid_generate_v4(),
-   ref VARCHAR(20) NOT NULL DEFAULT 'REG_VTE' || to_char(nextval('sales_payment_ref_seq'), 'fm0000'),
-   id_sale UUID NOT NULL,
+CREATE SEQUENCE payment_ref_seq;
+CREATE TABLE Payment(
+   id_payment UUID DEFAULT uuid_generate_v4(),
+   ref VARCHAR(20) NOT NULL DEFAULT 'REG' || to_char(nextval('payment_ref_seq'), 'fm0000'),
+   id_invoice UUID NOT NULL,
    payment_date DATE NOT NULL,
+   payment_code VARCHAR(30),
    amount NUMERIC(15,2) NOT NULL CHECK (amount >= 0),
    id_payment_method UUID NOT NULL,
-   PRIMARY KEY(id_sale_payment),
+   PRIMARY KEY(id_payment),
    UNIQUE(ref),
    FOREIGN KEY(id_payment_method) REFERENCES Payment_method(id_payment_method),
-   FOREIGN KEY(id_sale) REFERENCES Sales(id_sale)
+   FOREIGN KEY(id_invoice) REFERENCES Invoice(id_invoice)
 );
 
 CREATE TABLE product_price(
@@ -656,6 +674,6 @@ CREATE TABLE Audit_logs(
 
 -- Seeding payment methods
 INSERT INTO payment_method (id_payment_method, label, description) VALUES
-('c460cf61-0000-0000-0000-000000000001', 'Espèces', 'Paiement en espèces'),
+('c460cf61-0000-0000-0000-000000000001', 'Espï¿½ces', 'Paiement en espï¿½ces'),
 ('c460cf61-0000-0000-0000-000000000002', 'Carte Bancaire', 'Paiement par CB'),
 ('c460cf61-0000-0000-0000-000000000003', 'Mobile Money', 'Paiement via mobile');

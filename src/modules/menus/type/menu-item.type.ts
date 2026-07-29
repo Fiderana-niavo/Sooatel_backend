@@ -2,7 +2,7 @@ export interface MenuItemDto {
   ref: string;
   idItem: string;
   salePrice: number;
-  recipeCost?: number;
+  unitCost?: number;
   idCategory: string;
 }
 

@@ -1,7 +1,8 @@
 import AppDataSource from "../../../database/data-source";
 import { Sale } from "../../../database/Entities/Sale";
 import { SaleItem } from "../../../database/Entities/SaleItem";
-import { SalesPayment } from "../../../database/Entities/SalesPayment";
+import { Invoice } from "../../../database/Entities/Invoice";
+import { Payment } from "../../../database/Entities/Payment";
 import { AuditLog } from "../../../database/Entities/AuditLog";
 import { MenuItem } from "../../../database/Entities/MenuItem";
 import { CreateSaleDto, UpdateSaleDto, SaleSearchOptions, ALLOWED_AUDIT_KEYS } from "../types/sale.type";
@@ -20,14 +21,24 @@ export class SaleService {
 
     try {
       const auditLogs: AuditLog[] = [];
+      const invoice = new Invoice();
+      invoice.invoiceDate = dto.saleDate;
+      invoice.totalAmount = 0;
+      invoice.balanceDue = 0;
+      invoice.invoiceNumber = dto.invoiceNumber || null;
+      invoice.createdBy = userId;
+      invoice.status = 5;
+      const savedInvoice = await queryRunner.manager.save(Invoice, invoice);
+
       const sale = new Sale();
       sale.saleDate = dto.saleDate;
       sale.totalAmount = 0;
-      sale.balanceDue = 0;
       sale.tableNumber = dto.tableNumber ? Number(dto.tableNumber) : null;
+      sale.comment = dto.comment || null;
+      sale.deliveryDate = dto.deliveryDate ? new Date(dto.deliveryDate) : null;
       sale.chargeToRoom = dto.chargeToRoom ?? false;
       sale.idRoom = dto.idRoom || null;
-      sale.invoiceNumber = dto.invoiceNumber;
+      sale.idInvoice = savedInvoice.idInvoice;
       if (!dto.idSaler) {
         throw new Error("L'identifiant du vendeur (idSaler) est requis.");
       }
@@ -62,24 +73,34 @@ export class SaleService {
       savedSale.totalAmount = calculatedTotal;
       await queryRunner.manager.save(Sale, savedSale);
 
+      savedInvoice.totalAmount = calculatedTotal;
+      savedInvoice.balanceDue = calculatedTotal;
+      await queryRunner.manager.save(Invoice, savedInvoice);
+
       if (dto.payment) {
         if (dto.payment.amount < 0) throw new BadRequestError("Le montant du paiement ne peut pas être négatif.");
-        const payment = new SalesPayment();
-        payment.idSale = savedSale.idSale;
+        const payment = new Payment();
+        payment.idInvoice = savedInvoice.idInvoice;
         payment.paymentDate = dto.payment.paymentDate;
-        payment.amount = dto.payment.amount;
+        
+        // Cap the saved payment to the total amount (so overpayments are treated as change returned)
+        payment.amount = Math.min(dto.payment.amount, calculatedTotal);
+        
         payment.idPaymentMethod = dto.payment.idPaymentMethod;
-        payment.type = "PAYMENT";
-        await queryRunner.manager.save(SalesPayment, payment);
-        savedSale.balanceDue = Number(savedSale.totalAmount) - Number(payment.amount);
-      } else {
-        savedSale.balanceDue = savedSale.totalAmount;
+        payment.paymentCode = dto.payment.paymentCode || null;
+        if (payment.amount > 0) {
+          await queryRunner.manager.save(Payment, payment);
+        }
+        
+        savedInvoice.balanceDue = Number(savedInvoice.totalAmount) - Number(payment.amount);
+        if (savedInvoice.balanceDue <= 0) {
+          savedInvoice.balanceDue = 0;
+          savedInvoice.status = 0;
+        } else {
+          savedInvoice.status = 3;
+        }
+        await queryRunner.manager.save(Invoice, savedInvoice);
       }
-
-      // No auto-close: fermeture manuelle uniquement
-      if (savedSale.balanceDue < 0) savedSale.balanceDue = 0;
-
-      await queryRunner.manager.save(Sale, savedSale);
 
       await queryRunner.commitTransaction();
       
@@ -116,12 +137,17 @@ export class SaleService {
     try {
       const sale = await queryRunner.manager.createQueryBuilder(Sale, "sale")
         .setLock("pessimistic_write")
-        .leftJoinAndSelect("sale.saleItems", "saleItems")
         .where("sale.id_sale = :idSale", { idSale })
         .getOne();
 
       if (!sale) {
         throw new NotFoundError("Vente introuvable");
+      }
+      
+      sale.saleItems = await queryRunner.manager.find(SaleItem, { where: { idSale } });
+      if (sale.idInvoice) {
+        const inv = await queryRunner.manager.findOne(Invoice, { where: { idInvoice: sale.idInvoice } });
+        if (inv) sale.invoice = inv;
       }
 
       const auditLogs: AuditLog[] = [];
@@ -137,9 +163,13 @@ export class SaleService {
       }
       if (dto.saleDate !== undefined) sale.saleDate = dto.saleDate;
       if (dto.tableNumber !== undefined) sale.tableNumber = dto.tableNumber ? Number(dto.tableNumber) : null;
+      if (dto.comment !== undefined) sale.comment = dto.comment || null;
+      if (dto.deliveryDate !== undefined) sale.deliveryDate = dto.deliveryDate ? new Date(dto.deliveryDate) : null;
       if (dto.chargeToRoom !== undefined) sale.chargeToRoom = dto.chargeToRoom;
       if (dto.idRoom !== undefined) sale.idRoom = dto.idRoom || null;
-      if (dto.invoiceNumber !== undefined) sale.invoiceNumber = dto.invoiceNumber;
+      if (dto.invoiceNumber !== undefined && sale.invoice) {
+        sale.invoice.invoiceNumber = dto.invoiceNumber;
+      }
       if (dto.idSaler !== undefined) sale.idSaler = dto.idSaler;
 
       if (dto.items && Array.isArray(dto.items)) {
@@ -219,15 +249,76 @@ export class SaleService {
         sale.totalAmount = calculatedTotal;
       }
 
-      // Recalculate balanceDue from scratch: total - (sum of PAYMENT - sum of REFUND)
-      const payments = await queryRunner.manager.find(SalesPayment, { where: { idSale } });
-      const totalPaid = payments.reduce((sum, p) => p.type === "REFUND" ? sum - Number(p.amount) : sum + Number(p.amount), 0);
-      const newBalance = Number(sale.totalAmount) - totalPaid;
+      if (dto.payment && dto.payment.amount > 0 && sale.invoice) {
+        const currentPayments = await queryRunner.manager.find(Payment, { where: { idInvoice: sale.invoice.idInvoice } });
+        const alreadyPaid = currentPayments.reduce((sum, p) => sum + Number(p.amount), 0);
+        const maxAllowed = Math.max(0, Number(sale.totalAmount) - alreadyPaid);
+        
+        const amountToSave = Math.min(dto.payment.amount, maxAllowed);
+        
+        if (amountToSave > 0) {
+          const payment = new Payment();
+          payment.idInvoice = sale.invoice.idInvoice;
+          payment.paymentDate = dto.payment.paymentDate ? new Date(dto.payment.paymentDate) : new Date();
+          payment.amount = amountToSave;
+          payment.idPaymentMethod = dto.payment.idPaymentMethod;
+          payment.paymentCode = dto.payment.paymentCode || null;
+          await queryRunner.manager.save(Payment, payment);
+        }
+      }
 
-      if (newBalance < 0) {
-        throw new BadRequestError("Paiement excédentaire détecté. Le total de la vente ne peut pas être inférieur au montant déjà encaissé. Veuillez corriger les paiements d'abord.");
-      } else {
-        sale.balanceDue = newBalance;
+      if (sale.invoice) {
+        sale.invoice.totalAmount = Number(sale.totalAmount);
+        const payments = await queryRunner.manager.find(Payment, { where: { idInvoice: sale.invoice.idInvoice } });
+        const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount), 0);
+        const newBalance = Number(sale.totalAmount) - totalPaid;
+
+        if (newBalance < 0) {
+          if (dto.overpaymentAction === "REFUND") {
+            const refundPayment = new Payment();
+            refundPayment.idInvoice = sale.invoice.idInvoice;
+            refundPayment.paymentDate = new Date();
+            refundPayment.amount = newBalance; // This will be a negative amount
+            const firstPayment = payments[0];
+            if (!firstPayment) {
+              throw new BadRequestError("Erreur système : Impossible de rembourser une vente qui n'a aucun paiement existant.");
+            }
+            
+            refundPayment.idPaymentMethod = firstPayment.idPaymentMethod;
+            refundPayment.paymentCode = "Remboursement suite modification";
+            await queryRunner.manager.save(Payment, refundPayment);
+            
+            sale.invoice.balanceDue = 0;
+            sale.invoice.status = 0; // Closed
+          } else if (dto.overpaymentAction === "ADJUST") {
+            let amountToReduce = Math.abs(newBalance);
+            // Sort payments by date to reduce the most recent ones first
+            const sortedPayments = [...payments].sort((a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime());
+            
+            for (const p of sortedPayments) {
+              if (amountToReduce <= 0) break;
+              
+              if (Number(p.amount) <= amountToReduce) {
+                amountToReduce -= Number(p.amount);
+                await queryRunner.manager.remove(Payment, p);
+              } else {
+                p.amount = Number(p.amount) - amountToReduce;
+                amountToReduce = 0;
+                await queryRunner.manager.save(Payment, p);
+              }
+            }
+            sale.invoice.balanceDue = 0;
+            sale.invoice.status = 0;
+          } else {
+            throw new BadRequestError("Paiement excédentaire détecté. Le total de la vente ne peut pas être inférieur au montant déjà encaissé. Veuillez corriger les paiements d'abord.");
+          }
+        } else {
+          sale.invoice.balanceDue = newBalance;
+          if (newBalance === 0 && totalPaid > 0) sale.invoice.status = 0;
+          else if (totalPaid > 0) sale.invoice.status = 3;
+          else sale.invoice.status = 5;
+        }
+        await queryRunner.manager.save(Invoice, sale.invoice);
       }
 
       sale.updatedBy = userId;
@@ -275,7 +366,8 @@ export class SaleService {
       .leftJoinAndSelect("sale.saleItems", "saleItems")
       .leftJoinAndSelect("saleItems.menu", "menu")
       .leftJoinAndSelect("menu.item", "item")
-      .leftJoinAndSelect("sale.payments", "payments")
+      .leftJoinAndSelect("sale.invoice", "invoice")
+      .leftJoinAndSelect("invoice.payments", "payments")
       .orderBy("sale.createdAt", "DESC")
       .skip((pageNum - 1) * limitNum)
       .take(limitNum);
@@ -295,11 +387,11 @@ export class SaleService {
 
     if (options.paymentStatus) {
       if (options.paymentStatus === "PAID") {
-        qb.andWhere("sale.balanceDue <= 0");
+        qb.andWhere("invoice.balance_due <= 0");
       } else if (options.paymentStatus === "UNPAID") {
-        qb.andWhere("sale.balanceDue > 0 AND sale.balanceDue = sale.totalAmount");
+        qb.andWhere("invoice.balance_due > 0 AND invoice.balance_due = invoice.total_amount");
       } else if (options.paymentStatus === "PARTIAL") {
-        qb.andWhere("sale.balanceDue > 0 AND sale.balanceDue < sale.totalAmount");
+        qb.andWhere("invoice.balance_due > 0 AND invoice.balance_due < invoice.total_amount");
       }
     }
 
@@ -317,7 +409,7 @@ export class SaleService {
   async getSaleById(idSale: string): Promise<Sale | null> {
     return Sale.findOne({
       where: { idSale },
-      relations: { saler: true, room: true, saleItems: { menu: { item: true } }, payments: true }
+      relations: { saler: true, room: true, saleItems: { menu: { item: true } }, invoice: { payments: true } }
     });
   }
 
@@ -326,8 +418,17 @@ export class SaleService {
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-      const sale = await queryRunner.manager.createQueryBuilder(Sale, "sale").setLock("pessimistic_write").where("sale.id_sale = :idSale", { idSale }).getOne();
+      const sale = await queryRunner.manager.createQueryBuilder(Sale, "sale")
+        .setLock("pessimistic_write")
+        .where("sale.id_sale = :idSale", { idSale })
+        .getOne();
       if (!sale) throw new NotFoundError("Vente introuvable");
+
+      sale.saleItems = await queryRunner.manager.find(SaleItem, { where: { idSale } });
+      if (sale.idInvoice) {
+        const inv = await queryRunner.manager.findOne(Invoice, { where: { idInvoice: sale.idInvoice } });
+        if (inv) sale.invoice = inv;
+      }
 
       const oldValue = { ...sale };
       sale.status = -3; // -3 = Annulée/Supprimée
@@ -397,66 +498,21 @@ export class SaleService {
       auditLog.entityName = "Sale";
       auditLog.entityId = idSale;
       auditLog.action = "DELETE";
-      auditLog.oldValue = { invoiceNumber: sale.invoiceNumber, totalAmount: sale.totalAmount };
+      auditLog.oldValue = { totalAmount: sale.totalAmount };
       auditLog.newValue = null;
       auditLog.idUser = userId;
       await queryRunner.manager.save(AuditLog, auditLog);
 
-      await queryRunner.manager.delete(SalesPayment, { idSale });
+      if (sale.idInvoice) {
+        await queryRunner.manager.delete(Payment, { idInvoice: sale.idInvoice });
+      }
       await queryRunner.manager.delete(SaleItem, { idSale });
       await queryRunner.manager.delete(Sale, { idSale });
+      if (sale.idInvoice) {
+        await queryRunner.manager.delete(Invoice, { idInvoice: sale.idInvoice });
+      }
 
       await queryRunner.commitTransaction();
-    } catch (error) {
-      await queryRunner.rollbackTransaction();
-      throw error;
-    } finally {
-      await queryRunner.release();
-    }
-  }
-
-  async paySale(idSale: string, userId: string, paymentDto: { amount: number; idPaymentMethod: string; paymentDate?: string }): Promise<Sale> {
-    if (paymentDto.amount < 0) {
-      throw new BadRequestError("Le montant du paiement ne peut pas être négatif.");
-    }
-    
-    const queryRunner = AppDataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-    try {
-      const sale = await queryRunner.manager.createQueryBuilder(Sale, "sale").setLock("pessimistic_write").where("sale.id_sale = :idSale", { idSale }).getOne();
-      if (!sale) throw new NotFoundError("Vente introuvable");
-
-      const oldValue = { ...sale };
-
-      const payment = new SalesPayment();
-      payment.idSale = idSale;
-      payment.paymentDate = paymentDto.paymentDate ? new Date(paymentDto.paymentDate) : new Date();
-      payment.amount = paymentDto.amount;
-      payment.idPaymentMethod = paymentDto.idPaymentMethod;
-      payment.type = "PAYMENT";
-      await queryRunner.manager.save(SalesPayment, payment);
-
-      // Recalculate balanceDue from total - (sum of PAYMENT - sum of REFUND)
-      const allPayments = await queryRunner.manager.find(SalesPayment, { where: { idSale } });
-      const totalPaid = allPayments.reduce((sum, p) => p.type === "REFUND" ? sum - Number(p.amount) : sum + Number(p.amount), 0);
-      sale.balanceDue = Math.max(0, Number(sale.totalAmount) - totalPaid);
-      // No auto-close: fermeture manuelle uniquement
-
-      sale.updatedBy = userId;
-      const updated = await queryRunner.manager.save(Sale, sale);
-
-      const auditLog = new AuditLog();
-      auditLog.entityName = "Sale";
-      auditLog.entityId = idSale;
-      auditLog.action = "PAYMENT";
-      auditLog.oldValue = { balanceDue: oldValue.balanceDue };
-      auditLog.newValue = { balanceDue: updated.balanceDue, payment: payment.idSalePayment };
-      auditLog.idUser = userId;
-      await queryRunner.manager.save(AuditLog, auditLog);
-
-      await queryRunner.commitTransaction();
-      return updated;
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;

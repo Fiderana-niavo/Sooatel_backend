@@ -8,6 +8,8 @@ export interface CreateSaleDto {
   items: CreateSaleItemDto[];
   payment?: CreateSalesPaymentDto;
   forceTotal?: boolean;
+  comment?: string;
+  deliveryDate?: Date | string;
 }
 
 export interface CreateSaleItemDto {
@@ -21,6 +23,7 @@ export interface CreateSalesPaymentDto {
   paymentDate: Date;
   amount: number;
   idPaymentMethod: string;
+  paymentCode?: string;
 }
 
 export interface RefundDto {
@@ -39,6 +42,9 @@ export interface UpdateSaleDto {
   status?: number;
   items?: CreateSaleItemDto[];
   payment?: CreateSalesPaymentDto;
+  overpaymentAction?: "REFUND" | "ADJUST";
+  comment?: string;
+  deliveryDate?: Date | string;
 }
 
 export type PaymentStatus = "UNPAID" | "PARTIAL" | "PAID";
