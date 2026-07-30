@@ -557,7 +557,7 @@ CREATE SEQUENCE sale_ref_seq;
 CREATE TABLE Sales(
    id_sale UUID DEFAULT uuid_generate_v4(),
    ref VARCHAR(20) NOT NULL DEFAULT 'VTE' || to_char(nextval('sale_ref_seq'), 'fm0000'),
-   sale_date DATE NOT NULL DEFAULT CURRENT_DATE,
+   sale_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
    total_amount NUMERIC(15,2) CHECK (total_amount >= 0),
    id_invoice UUID,
    table_number INTEGER ,

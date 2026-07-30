@@ -14,14 +14,14 @@ export class CashOutflow extends BaseEntity {
   @Column({ type: "numeric", precision: 15, scale: 2, name: "amount" })
   amount: number;
 
-  @Column({ type: "date", nullable: true, name: "outflow_date" })
-  outflowDate: Date;
+  @Column({ type: "timestamp", nullable: true, name: "outflow_date" })
+  outflowDate: Date | null;
 
   @Column({ type: "varchar", length: 255, nullable: true, name: "reason" })
-  reason: string;
+  reason: string | null;
 
   @Column({ type: "varchar", length: 100, nullable: true, name: "invoice_reference" })
-  invoiceReference: string;
+  invoiceReference: string | null;
 
   @Column({ type: "uuid", name: "id_processed_by" })
   idProcessedBy: string;
@@ -30,7 +30,7 @@ export class CashOutflow extends BaseEntity {
   idJournal: string;
 
   @Column({ type: "integer", nullable: true, name: "status" })
-  status: number;
+  status: number | null;
 
   @ManyToOne(() => Employee)
   @JoinColumn({ name: "id_processed_by" })
@@ -41,7 +41,7 @@ export class CashOutflow extends BaseEntity {
   journal: CashJournal;
 
   @Column({ type: "uuid", nullable: true, name: "id_outflow_category" })
-  idOutflowCategory: string;
+  idOutflowCategory: string | null;
 
   @ManyToOne(() => OutflowCategory)
   @JoinColumn({ name: "id_outflow_category" })

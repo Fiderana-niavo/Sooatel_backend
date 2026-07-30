@@ -13,7 +13,7 @@ export class Sale extends BaseEntity {
   @Column({ type: "varchar", length: 20, unique: true, name: "ref" })
   ref: string;
 
-  @Column({ type: "date", name: "sale_date" })
+  @Column({ type: "timestamptz", name: "sale_date" })
   saleDate: Date;
 
   @Column({ type: "numeric", precision: 15, scale: 2, nullable: true, name: "total_amount" })
