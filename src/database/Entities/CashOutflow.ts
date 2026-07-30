@@ -1,6 +1,7 @@
 import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { CashJournal } from "./CashJournal";
 import { Employee } from "./Employee";
+import { OutflowCategory } from "./OutflowCategory";
 
 @Entity("cash_outflows")
 export class CashOutflow extends BaseEntity {
@@ -38,4 +39,11 @@ export class CashOutflow extends BaseEntity {
   @ManyToOne(() => CashJournal)
   @JoinColumn({ name: "id_journal" })
   journal: CashJournal;
+
+  @Column({ type: "uuid", nullable: true, name: "id_outflow_category" })
+  idOutflowCategory: string;
+
+  @ManyToOne(() => OutflowCategory)
+  @JoinColumn({ name: "id_outflow_category" })
+  outflowCategory: OutflowCategory;
 }

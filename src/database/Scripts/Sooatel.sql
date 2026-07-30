@@ -319,6 +319,15 @@ CREATE TABLE Cash_journal(
 );
 
 CREATE SEQUENCE cash_outflow_ref_seq;
+CREATE TABLE Outflow_category(
+   id_outflow_category UUID DEFAULT uuid_generate_v4(),
+   label VARCHAR(80)  NOT NULL,
+   code VARCHAR(20)  NOT NULL,
+   PRIMARY KEY(id_outflow_category),
+   UNIQUE(label),
+   UNIQUE(code)
+);
+
 CREATE TABLE Cash_outflows(
    id_cash_outflows UUID DEFAULT uuid_generate_v4(),
    ref VARCHAR(20) NOT NULL DEFAULT 'DEP' || to_char(nextval('cash_outflow_ref_seq'), 'fm0000'),
@@ -329,10 +338,12 @@ CREATE TABLE Cash_outflows(
    id_processed_by UUID NOT NULL,--The employee who processed the cash outflow 
    id_journal UUID NOT NULL,
    status INTEGER,
+   id_outflow_category UUID,
    PRIMARY KEY(id_cash_outflows),
    UNIQUE(ref),
    FOREIGN KEY(id_processed_by) REFERENCES Employees(id_employee),
-   FOREIGN KEY(id_journal) REFERENCES Cash_journal(id_journal)
+   FOREIGN KEY(id_journal) REFERENCES Cash_journal(id_journal),
+   FOREIGN KEY(id_outflow_category) REFERENCES Outflow_category(id_outflow_category)
 );
 
 -- =========================================================================

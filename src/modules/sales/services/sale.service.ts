@@ -413,7 +413,7 @@ export class SaleService {
     });
   }
 
-  async cancelSale(idSale: string, userId: string): Promise<Sale> {
+  async cancelSale(idSale: string, userId: string, overpaymentAction?: "REFUND" | "ADJUST"): Promise<Sale> {
     const queryRunner = AppDataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -433,14 +433,65 @@ export class SaleService {
       const oldValue = { ...sale };
       sale.status = -3; // -3 = Annulée/Supprimée
       sale.updatedBy = userId;
+      sale.totalAmount = 0; // The sale is cancelled, effectively 0 amount
+      
       const updated = await queryRunner.manager.save(Sale, sale);
+
+      if (sale.invoice) {
+        sale.invoice.totalAmount = 0; // Since it was synced with sale
+        const payments = await queryRunner.manager.find(Payment, { where: { idInvoice: sale.invoice.idInvoice } });
+        const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount), 0);
+        
+        if (totalPaid > 0) {
+          if (overpaymentAction === "REFUND") {
+            const refundPayment = new Payment();
+            refundPayment.idInvoice = sale.invoice.idInvoice;
+            refundPayment.paymentDate = new Date();
+            refundPayment.amount = -totalPaid;
+            const firstPayment = payments[0];
+            if (!firstPayment) {
+              throw new BadRequestError("Erreur système : Impossible de rembourser une vente qui n'a aucun paiement existant.");
+            }
+            
+            refundPayment.idPaymentMethod = firstPayment.idPaymentMethod;
+            refundPayment.paymentCode = "Remboursement suite à l'annulation";
+            await queryRunner.manager.save(Payment, refundPayment);
+            
+            sale.invoice.balanceDue = 0;
+            sale.invoice.status = 0; // Closed
+          } else if (overpaymentAction === "ADJUST") {
+            let amountToReduce = totalPaid;
+            const sortedPayments = [...payments].sort((a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime());
+            
+            for (const p of sortedPayments) {
+              if (amountToReduce <= 0) break;
+              
+              if (p.amount <= amountToReduce) {
+                amountToReduce -= p.amount;
+                await queryRunner.manager.remove(Payment, p);
+              } else {
+                p.amount -= amountToReduce;
+                amountToReduce = 0;
+                await queryRunner.manager.save(Payment, p);
+              }
+            }
+            
+            sale.invoice.balanceDue = 0;
+            sale.invoice.status = 0; // Closed
+          }
+        } else {
+          sale.invoice.balanceDue = 0;
+          sale.invoice.status = 0;
+        }
+        await queryRunner.manager.save(Invoice, sale.invoice);
+      }
 
       const auditLog = new AuditLog();
       auditLog.entityName = "Sale";
       auditLog.entityId = idSale;
       auditLog.action = "CANCEL_SALE";
-      auditLog.oldValue = { status: oldValue.status };
-      auditLog.newValue = { status: -3 };
+      auditLog.oldValue = { status: oldValue.status, totalAmount: oldValue.totalAmount };
+      auditLog.newValue = { status: -3, totalAmount: 0 };
       auditLog.idUser = userId;
       await queryRunner.manager.save(AuditLog, auditLog);
 

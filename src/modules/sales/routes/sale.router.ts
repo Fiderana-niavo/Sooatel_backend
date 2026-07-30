@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { createSale, updateSale, findAll, getSaleById, cancelSale, reopenSale, deleteSale, closeSale } from "../controllers/sale.controller";
 import { RevenueController } from "../controllers/revenue.controller";
+
 import { authMiddleware } from "../../../shared/middlewares/auth.middleware";
 import { authorize } from "../../../shared/middlewares/authorize.middleware";
 
@@ -8,7 +9,6 @@ const saleRouter = Router();
 const revenueController = new RevenueController();
 
 saleRouter.get("/revenue", authMiddleware, revenueController.getRevenue.bind(revenueController));
-
 saleRouter.get("/", authMiddleware, findAll);
 saleRouter.get("/:id", authMiddleware, getSaleById);
 saleRouter.post("/", authMiddleware, authorize("sales.pos"), createSale);

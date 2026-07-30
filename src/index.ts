@@ -24,6 +24,7 @@ import menuItemRouter from "./modules/menus/routes/menu-item.router";
 import menuCategoryRouter from "./modules/menus/routes/menu-category.router";
 import productPriceRouter from "./modules/menus/routes/product-price.router";
 import saleRouter from "./modules/sales/routes/sale.router";
+import saleDashboardRouter from "./modules/dashboard/saledashboard/routes/saledashboard.router";
 import paymentMethodRouter from "./modules/payment-methods/routes/payment-method.router";
 import paymentRouter from "./modules/payment/routes/payment.route";
 import { startTokenPurgeJob } from "./shared/jobs/tokenPurge.job";
@@ -64,6 +65,7 @@ AppDataSource.initialize()
     app.use("/api/menu-categories", menuCategoryRouter);
     app.use("/api/product-prices", productPriceRouter);
     app.use("/api/sales", saleRouter);
+    app.use("/api/dashboard/saledashboard", saleDashboardRouter);
     app.use("/api/payments", paymentRouter);
     app.use("/api/payment-methods", paymentMethodRouter);
 

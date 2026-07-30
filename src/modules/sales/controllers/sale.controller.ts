@@ -87,7 +87,8 @@ export const cancelSale = async (req: Request, res: Response): Promise<void> => 
     if (!userId) {
       throw new AppError("Unauthorized", 401);
     }
-    const updated = await saleService.cancelSale(req.params.id as string, userId);
+    const { overpaymentAction } = req.body;
+    const updated = await saleService.cancelSale(req.params.id as string, userId, overpaymentAction);
     res.status(200).json(ApiResponse.success(updated, "Sale cancelled successfully"));
   } catch (error: unknown) {
     const err = error as { statusCode?: number; message?: string };
