@@ -27,9 +27,9 @@ import saleRouter from "./modules/sales/routes/sale.router";
 import saleDashboardRouter from "./modules/dashboard/saledashboard/routes/saledashboard.router";
 import paymentMethodRouter from "./modules/payment-methods/routes/payment-method.router";
 import paymentRouter from "./modules/payment/routes/payment.route";
-import outflowCategoryRouter from "./modules/outflows/category/routes/outflow-category.route";
-import cashOutflowRouter from "./modules/outflows/cash_outflow/routes/cash-outflow.route";
-import cashJournalRouter from "./modules/outflows/cash_journal/routes/cash-journal.route";
+import cashMovementCategoryRouter from "./modules/cash_movement/category/routes/cash-movement-category.route";
+import cashMovementRouter from "./modules/cash_movement/movement/routes/cash-movement.route";
+import cashJournalRouter from "./modules/cash_movement/cash_journal/routes/cash-journal.route";
 import { startTokenPurgeJob } from "./shared/jobs/tokenPurge.job";
 import { globalErrorMiddleware } from "./shared/middlewares/error.middleware";
 
@@ -71,8 +71,8 @@ AppDataSource.initialize()
     app.use("/api/dashboard/saledashboard", saleDashboardRouter);
     app.use("/api/payments", paymentRouter);
     app.use("/api/payment-methods", paymentMethodRouter);
-    app.use("/api/outflow-categories", outflowCategoryRouter);
-    app.use("/api/cash-outflows", cashOutflowRouter);
+    app.use("/api/cash-movement-categories", cashMovementCategoryRouter);
+    app.use("/api/cash-movements", cashMovementRouter);
     app.use("/api/cash-journals", cashJournalRouter);
 
     app.use(globalErrorMiddleware);

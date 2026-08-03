@@ -8,6 +8,7 @@ import {
 } from "typeorm";
 import { PaymentMethod } from "./PaymentMethod";
 import { Invoice } from "./Invoice";
+import { CashMovement } from "./CashMovement";
 
 @Entity("payment")
 export class Payment extends BaseEntity {
@@ -20,7 +21,7 @@ export class Payment extends BaseEntity {
   @Column({ type: "uuid", name: "id_invoice" })
   idInvoice: string;
 
-  @Column({ type: "date", name: "payment_date" })
+  @Column({ type: "timestamp", name: "payment_date" })
   paymentDate: Date;
 
   @Column({ type: "varchar", length: 50, nullable: true, name: "payment_code" })
@@ -39,4 +40,11 @@ export class Payment extends BaseEntity {
   @ManyToOne(() => Invoice, (invoice) => invoice.payments)
   @JoinColumn({ name: "id_invoice" })
   invoice: Invoice;
+
+  @Column({ type: "uuid", nullable: true, name: "id_cash_movement" })
+  idCashMovement: string | null;
+
+  @ManyToOne(() => CashMovement, { nullable: true })
+  @JoinColumn({ name: "id_cash_movement" })
+  cashMovement: CashMovement | null;
 }

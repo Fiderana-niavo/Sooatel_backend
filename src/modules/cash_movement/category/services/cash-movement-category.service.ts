@@ -1,17 +1,17 @@
 import { Repository, FindOptionsWhere, ILike } from "typeorm";
 import { QueryDeepPartialEntity } from "typeorm/query-builder/QueryPartialEntity";
 import AppDataSource from "../../../../database/data-source";
-import { OutflowCategory } from "../../../../database/Entities/OutflowCategory";
+import { CashMovementCategory } from "../../../../database/Entities/CashMovementCategory";
 import { CrudService } from "../../../../shared/crud/services/CrudService";
 import { Paginated } from "../../../../shared/types/Paginated";
-import { OutflowCategoryDto, OutflowCategorySearchOptions } from "../type/outflow-category.type";
+import { CashMovementCategoryDto, CashMovementCategorySearchOptions } from "../type/cash-movement-category.type";
 
-export class OutflowCategoryService extends CrudService<OutflowCategory, OutflowCategoryDto, OutflowCategoryDto> {
-  constructor(repository: Repository<OutflowCategory> = AppDataSource.getRepository(OutflowCategory)) {
+export class CashMovementCategoryService extends CrudService<CashMovementCategory, CashMovementCategoryDto, CashMovementCategoryDto> {
+  constructor(repository: Repository<CashMovementCategory> = AppDataSource.getRepository(CashMovementCategory)) {
     super(repository);
   }
 
-  async findAll(options: OutflowCategorySearchOptions = {}): Promise<Paginated<OutflowCategory>> {
+  async findAll(options: CashMovementCategorySearchOptions = {}): Promise<Paginated<CashMovementCategory>> {
     const pageNum = options.page ?? 1;
     const limitNum = options.limit ?? 10;
     const search = options.search ?? "";
@@ -26,28 +26,28 @@ export class OutflowCategoryService extends CrudService<OutflowCategory, Outflow
     }
 
     const [records, total] = await qb.getManyAndCount();
-    return new Paginated<OutflowCategory>(records, total, pageNum, limitNum);
+    return new Paginated<CashMovementCategory>(records, total, pageNum, limitNum);
   }
 
-  async findOne(id: string): Promise<OutflowCategory | null> {
+  async findOne(id: string): Promise<CashMovementCategory | null> {
     return this.repository.findOne({
-      where: { idOutflowCategory: id } as FindOptionsWhere<OutflowCategory>,
+      where: { idCashMovementCategory: id } as FindOptionsWhere<CashMovementCategory>,
     });
   }
 
-  async create(dto: OutflowCategoryDto): Promise<OutflowCategory> {
+  async create(dto: CashMovementCategoryDto): Promise<CashMovementCategory> {
     const entity = this.repository.create({
       label: dto.label,
-      code: dto.code || null,
+      allowedDirection: dto.allowedDirection,
     });
     return this.repository.save(entity);
   }
 
-  async update(id: string, dto: OutflowCategoryDto): Promise<void> {
+  async update(id: string, dto: CashMovementCategoryDto): Promise<void> {
     await this.repository.update(id, {
       label: dto.label,
-      code: dto.code || null,
-    } as QueryDeepPartialEntity<OutflowCategory>);
+      allowedDirection: dto.allowedDirection,
+    } as QueryDeepPartialEntity<CashMovementCategory>);
   }
 
   async delete(id: string): Promise<void> {

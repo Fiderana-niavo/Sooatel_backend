@@ -1,12 +1,13 @@
 import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { CashJournal } from "./CashJournal";
 import { Employee } from "./Employee";
-import { OutflowCategory } from "./OutflowCategory";
+import { CashMovementCategory } from "./CashMovementCategory";
+import { PaymentMethod } from "./PaymentMethod";
 
-@Entity("cash_outflows")
-export class CashOutflow extends BaseEntity {
-  @PrimaryGeneratedColumn("uuid", { name: "id_cash_outflows" })
-  idCashOutflows: string;
+@Entity("cash_movement")
+export class CashMovement extends BaseEntity {
+  @PrimaryGeneratedColumn("uuid", { name: "id_cash_movement" })
+  idCashMovement: string;
 
   @Column({ type: "varchar", length: 20, unique: true, name: "ref" })
   ref: string;
@@ -14,14 +15,17 @@ export class CashOutflow extends BaseEntity {
   @Column({ type: "numeric", precision: 15, scale: 2, name: "amount" })
   amount: number;
 
-  @Column({ type: "timestamp", nullable: true, name: "outflow_date" })
-  outflowDate: Date | null;
+  @Column({ type: "timestamp", nullable: true, name: "movement_date" })
+  movementDate: Date | null;
 
   @Column({ type: "varchar", length: 255, nullable: true, name: "reason" })
   reason: string | null;
 
   @Column({ type: "varchar", length: 100, nullable: true, name: "invoice_reference" })
   invoiceReference: string | null;
+
+  @Column({ type: "integer", name: "direction" })
+  direction: number; // -5 for outflow, 5 for inflow
 
   @Column({ type: "uuid", name: "id_processed_by" })
   idProcessedBy: string;
@@ -40,10 +44,17 @@ export class CashOutflow extends BaseEntity {
   @JoinColumn({ name: "id_journal" })
   journal: CashJournal;
 
-  @Column({ type: "uuid", nullable: true, name: "id_outflow_category" })
-  idOutflowCategory: string | null;
+  @Column({ type: "uuid", nullable: true, name: "id_cash_movement_category" })
+  idCashMovementCategory: string | null;
 
-  @ManyToOne(() => OutflowCategory)
-  @JoinColumn({ name: "id_outflow_category" })
-  outflowCategory: OutflowCategory;
+  @ManyToOne(() => CashMovementCategory)
+  @JoinColumn({ name: "id_cash_movement_category" })
+  cashMovementCategory: CashMovementCategory;
+
+  @Column({ type: "uuid", name: "id_payment_method" })
+  idPaymentMethod: string;
+
+  @ManyToOne(() => PaymentMethod)
+  @JoinColumn({ name: "id_payment_method" })
+  paymentMethod: PaymentMethod;
 }

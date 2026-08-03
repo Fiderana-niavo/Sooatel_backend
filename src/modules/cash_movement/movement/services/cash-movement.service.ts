@@ -1,24 +1,25 @@
 import { Repository, FindOptionsWhere, ILike } from "typeorm";
 import { QueryDeepPartialEntity } from "typeorm/query-builder/QueryPartialEntity";
 import AppDataSource from "../../../../database/data-source";
-import { CashOutflow } from "../../../../database/Entities/CashOutflow";
+import { CashMovement } from "../../../../database/Entities/CashMovement";
 import { CrudService } from "../../../../shared/crud/services/CrudService";
 import { Paginated } from "../../../../shared/types/Paginated";
-import { CashOutflowDto, CashOutflowSearchOptions } from "../type/cash-outflow.type";
+import { cashMovementDto, cashMovementSearchOptions } from "../type/cash-movement.type";
 
-export class CashOutflowService extends CrudService<CashOutflow, CashOutflowDto, CashOutflowDto> {
-  constructor(repository: Repository<CashOutflow> = AppDataSource.getRepository(CashOutflow)) {
+export class CashMovementService extends CrudService<CashMovement, cashMovementDto, cashMovementDto> {
+  constructor(repository: Repository<CashMovement> = AppDataSource.getRepository(CashMovement)) {
     super(repository);
   }
 
-  async findAll(options: CashOutflowSearchOptions = {}): Promise<Paginated<CashOutflow>> {
+  async findAll(options: cashMovementSearchOptions = {}): Promise<Paginated<CashMovement>> {
     const pageNum = options.page ?? 1;
     const limitNum = options.limit ?? 10;
     const search = options.search ?? "";
 
     const qb = this.repository
       .createQueryBuilder("entity")
-      .leftJoinAndSelect("entity.outflowCategory", "category")
+      .leftJoinAndSelect("entity.cashMovementCategory", "category")
+      .leftJoinAndSelect("entity.paymentMethod", "paymentMethod")
       .where("entity.status IS DISTINCT FROM -3")
       .skip((pageNum - 1) * limitNum)
       .take(limitNum);
@@ -28,48 +29,51 @@ export class CashOutflowService extends CrudService<CashOutflow, CashOutflowDto,
     }
 
     const [records, total] = await qb.getManyAndCount();
-    return new Paginated<CashOutflow>(records, total, pageNum, limitNum);
+    return new Paginated<CashMovement>(records, total, pageNum, limitNum);
   }
 
-  async findOne(id: string): Promise<CashOutflow | null> {
+  async findOne(id: string): Promise<CashMovement | null> {
     return this.repository.findOne({
-      where: { idCashOutflows: id } as FindOptionsWhere<CashOutflow>,
-      relations: { outflowCategory: true, processedBy: true, journal: true }
+      where: { idCashMovement: id } as FindOptionsWhere<CashMovement>,
+      relations: { cashMovementCategory: true, processedBy: true, journal: true, paymentMethod: true }
     });
   }
 
-  async create(dto: CashOutflowDto): Promise<CashOutflow> {
+  async create(dto: cashMovementDto): Promise<CashMovement> {
     const entity = this.repository.create({
       ref: dto.ref || undefined,
       amount: dto.amount,
-      outflowDate: dto.outflowDate,
+      movementDate: dto.movementDate,
       reason: dto.reason,
       invoiceReference: dto.invoiceReference,
+      direction: dto.direction,
       idProcessedBy: dto.idProcessedBy,
       idJournal: dto.idJournal,
       status: dto.status,
-      idOutflowCategory: dto.idOutflowCategory,
+      idCashMovementCategory: dto.idCashMovementCategory,
     });
     return this.repository.save(entity);
   }
 
-  async update(id: string, dto: CashOutflowDto): Promise<void> {
+  async update(id: string, dto: cashMovementDto): Promise<void> {
     await this.repository.update(id, {
       ref: dto.ref,
       amount: dto.amount,
-      outflowDate: dto.outflowDate,
+      movementDate: dto.movementDate,
       reason: dto.reason,
       invoiceReference: dto.invoiceReference,
+      direction: dto.direction,
       idProcessedBy: dto.idProcessedBy,
       idJournal: dto.idJournal,
       status: dto.status,
-      idOutflowCategory: dto.idOutflowCategory,
-    } as QueryDeepPartialEntity<CashOutflow>);
+      idCashMovementCategory: dto.idCashMovementCategory,
+      idPaymentMethod: dto.idPaymentMethod,
+    } as QueryDeepPartialEntity<CashMovement>);
   }
 
   async delete(id: string): Promise<void> {
     await this.repository.update(id, {
       status: -3
-    } as QueryDeepPartialEntity<CashOutflow>);
+    } as QueryDeepPartialEntity<CashMovement>);
   }
 }

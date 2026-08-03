@@ -87,8 +87,8 @@ export const cancelSale = async (req: Request, res: Response): Promise<void> => 
     if (!userId) {
       throw new AppError("Unauthorized", 401);
     }
-    const { overpaymentAction } = req.body;
-    const updated = await saleService.cancelSale(req.params.id as string, userId, overpaymentAction);
+    const { overpaymentAction, idPaymentMethodRefund } = req.body;
+    const updated = await saleService.cancelSale(req.params.id as string, userId, overpaymentAction, idPaymentMethodRefund);
     res.status(200).json(ApiResponse.success(updated, "Sale cancelled successfully"));
   } catch (error: unknown) {
     const err = error as { statusCode?: number; message?: string };
@@ -139,5 +139,44 @@ export const closeSale = async (req: Request, res: Response): Promise<void> => {
   } catch (error: unknown) {
     const err = error as { statusCode?: number; message?: string };
     res.status(err.statusCode || 500).json(ApiResponse.error(err.message || "Unknown error", "Failed to close sale"));
+  }
+};
+
+export const adjustPayment = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = (req as Request & { userId: string }).userId;
+    if (!userId) throw new AppError("Unauthorized", 401);
+    
+    const { id, idPayment } = req.params;
+    const { newAmount } = req.body;
+    
+    if (newAmount === undefined) {
+      throw new BadRequestError("newAmount is required");
+    }
+
+    const updated = await saleService.adjustPayment(id as string, idPayment as string, userId, newAmount);
+    res.status(200).json(ApiResponse.success(updated, "Payment adjusted successfully"));
+  } catch (error: unknown) {
+    const err = error as { statusCode?: number; message?: string };
+    res.status(err.statusCode || 500).json(ApiResponse.error(err.message || "Unknown error", "Failed to adjust payment"));
+  }
+};
+
+export const refundPayment = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = (req as Request & { userId: string }).userId;
+    if (!userId) throw new AppError("Unauthorized", 401);
+
+    const { id } = req.params;
+    const { amount, idPaymentMethod } = req.body;
+
+    if (!amount || amount <= 0) throw new BadRequestError("Un montant positif est requis pour le remboursement.");
+    if (!idPaymentMethod) throw new BadRequestError("Le mode de paiement est requis pour le remboursement.");
+
+    const updated = await saleService.refundPayment(id as string, userId, Number(amount), idPaymentMethod as string);
+    res.status(200).json(ApiResponse.success(updated, "Remboursement effectué avec succès"));
+  } catch (error: unknown) {
+    const err = error as { statusCode?: number; message?: string };
+    res.status(err.statusCode || 500).json(ApiResponse.error(err.message || "Unknown error", "Failed to refund payment"));
   }
 };

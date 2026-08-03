@@ -1,16 +1,18 @@
-export interface CashOutflowDto {
+export interface cashMovementDto {
   ref: string;
   amount: number;
-  outflowDate?: number | string;
+  movementDate?: number | string;
   reason?: string | null;
   invoiceReference?: string | null;
+  direction: number;
   idProcessedBy: string;
   idJournal: string;
   status?: number;
-  idOutflowCategory?: string | null;
+  idCashMovementCategory?: string | null;
+  idPaymentMethod: string;
 }
 
-export interface CashOutflowSearchOptions {
+export interface cashMovementSearchOptions {
   page?: number;
   limit?: number;
   search?: string;
