@@ -168,12 +168,12 @@ export const refundPayment = async (req: Request, res: Response): Promise<void> 
     if (!userId) throw new AppError("Unauthorized", 401);
 
     const { id } = req.params;
-    const { amount, idPaymentMethod } = req.body;
+    const { amount, idPaymentMethod, reason } = req.body;
 
     if (!amount || amount <= 0) throw new BadRequestError("Un montant positif est requis pour le remboursement.");
     if (!idPaymentMethod) throw new BadRequestError("Le mode de paiement est requis pour le remboursement.");
 
-    const updated = await saleService.refundPayment(id as string, userId, Number(amount), idPaymentMethod as string);
+    const updated = await saleService.refundPayment(id as string, userId, Number(amount), idPaymentMethod as string, reason as string);
     res.status(200).json(ApiResponse.success(updated, "Remboursement effectué avec succès"));
   } catch (error: unknown) {
     const err = error as { statusCode?: number; message?: string };

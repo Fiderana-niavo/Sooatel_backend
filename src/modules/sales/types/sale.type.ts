@@ -44,6 +44,7 @@ export interface UpdateSaleDto {
   payment?: CreateSalesPaymentDto;
   overpaymentAction?: "REFUND" | "ADJUST";
   idPaymentMethodRefund?: string;
+  idPaymentToAdjust?: string;
   comment?: string;
   deliveryDate?: Date | string;
 }

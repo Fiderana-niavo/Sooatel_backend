@@ -21,7 +21,7 @@ export class Payment extends BaseEntity {
   @Column({ type: "uuid", name: "id_invoice" })
   idInvoice: string;
 
-  @Column({ type: "timestamp", name: "payment_date" })
+  @Column({ type: "timestamptz", name: "payment_date" })
   paymentDate: Date;
 
   @Column({ type: "varchar", length: 50, nullable: true, name: "payment_code" })

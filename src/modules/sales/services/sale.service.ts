@@ -3,6 +3,7 @@ import { Sale } from "../../../database/Entities/Sale";
 import { SaleItem } from "../../../database/Entities/SaleItem";
 import { Invoice } from "../../../database/Entities/Invoice";
 import { Payment } from "../../../database/Entities/Payment";
+import { CashMovement } from "../../../database/Entities/CashMovement";
 import { AuditLog } from "../../../database/Entities/AuditLog";
 import { MenuItem } from "../../../database/Entities/MenuItem";
 import { getOrCreateCategory, getOpenJournal, createCashOutflow, createCashInflow } from "../utils/sale-cash-movement.util";
@@ -80,6 +81,9 @@ export class SaleService {
 
       if (dto.payment) {
         if (dto.payment.amount < 0) throw new BadRequestError("Le montant du paiement ne peut pas être négatif.");
+        if (dto.payment.paymentDate && new Date(dto.payment.paymentDate) > new Date()) {
+          throw new BadRequestError("La date de paiement ne peut pas être dans le futur.");
+        }
         const payment = new Payment();
         payment.idInvoice = savedInvoice.idInvoice;
         payment.paymentDate = dto.payment.paymentDate;
@@ -106,7 +110,7 @@ export class SaleService {
       await queryRunner.commitTransaction();
 
       // Audit log for CREATE_SALE removed as per request
-      
+
       // We don't save any audit log during create anymore
       // if (auditLogs.length > 0) {
       //   await queryRunner.manager.save(AuditLog, auditLogs);
@@ -243,12 +247,17 @@ export class SaleService {
 
       if (dto.payment && dto.payment.amount > 0 && sale.invoice) {
         const currentPayments = await queryRunner.manager.find(Payment, { where: { idInvoice: sale.invoice.idInvoice } });
-        const alreadyPaid = currentPayments.reduce((sum, p) => sum + Number(p.amount), 0);
+        const alreadyPaid = currentPayments
+          .filter(p => p.paymentCode !== "Remboursement manuel")
+          .reduce((sum, p) => sum + Number(p.amount), 0);
         const maxAllowed = Math.max(0, Number(sale.totalAmount) - alreadyPaid);
 
         const amountToSave = Math.min(dto.payment.amount, maxAllowed);
 
         if (amountToSave > 0) {
+          if (dto.payment.paymentDate && new Date(dto.payment.paymentDate) > new Date()) {
+            throw new BadRequestError("La date de paiement ne peut pas être dans le futur.");
+          }
           const payment = new Payment();
           payment.idInvoice = sale.invoice.idInvoice;
           payment.paymentDate = dto.payment.paymentDate ? new Date(dto.payment.paymentDate) : new Date();
@@ -262,70 +271,86 @@ export class SaleService {
       if (sale.invoice) {
         sale.invoice.totalAmount = Number(sale.totalAmount);
         const payments = await queryRunner.manager.find(Payment, { where: { idInvoice: sale.invoice.idInvoice } });
-        const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount), 0);
+        // Exclude manual refunds from balance calculation — they are independent cash movements
+        const totalPaid = payments
+          .filter(p => p.paymentCode !== "Remboursement manuel")
+          .reduce((sum, p) => sum + Number(p.amount), 0);
         const newBalance = Number(sale.totalAmount) - totalPaid;
 
         if (newBalance < 0) {
           if (dto.overpaymentAction === "REFUND") {
-            const refundPayment = new Payment();
-            refundPayment.idInvoice = sale.invoice.idInvoice;
-            refundPayment.paymentDate = new Date();
-            refundPayment.amount = newBalance; // negative amount
-            const firstPayment = payments[0];
-            if (!firstPayment) {
-              throw new BadRequestError("Erreur système : Impossible de rembourser une vente qui n'a aucun paiement existant.");
-            }
-
             if (!dto.idPaymentMethodRefund) {
               throw new BadRequestError("Le mode de paiement est requis pour un remboursement.");
             }
 
+            // 1. Create CashOutflow first
+            const refundCat = await getOrCreateCategory(queryRunner, "Remboursement Client", -5);
+            const openJournal = await getOpenJournal(queryRunner);
+            if (!openJournal) throw new BadRequestError("Impossible de créer le remboursement en caisse : Aucun journal ouvert trouvé.");
+
+            const cashMvt = await createCashOutflow(
+              queryRunner,
+              Math.abs(newBalance),
+              `Remboursement suite modification de la vente (Facture ${sale.invoice.invoiceNumber || 'N/A'})`,
+              sale.invoice.invoiceNumber || null,
+              userId,
+              refundCat.idCashMovementCategory,
+              openJournal.idJournal,
+              dto.idPaymentMethodRefund
+            );
+
+            // 2. Then create Payment linked to the CashMovement
+            const refundPayment = new Payment();
+            refundPayment.idInvoice = sale.invoice.idInvoice;
+            refundPayment.paymentDate = new Date();
+            refundPayment.amount = newBalance; // negative
             refundPayment.idPaymentMethod = dto.idPaymentMethodRefund;
             refundPayment.paymentCode = "Remboursement suite modification";
+            refundPayment.idCashMovement = cashMvt.idCashMovement;
             await queryRunner.manager.save(Payment, refundPayment);
 
             sale.invoice.balanceDue = 0;
             sale.invoice.status = 0;
           } else if (dto.overpaymentAction === "ADJUST") {
-            let amountToReduce = Math.abs(newBalance);
-            // Sort payments by date to reduce the most recent ones first
-            const sortedPayments = [...payments].sort((a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime());
+            if (!dto.idPaymentToAdjust) {
+              throw new BadRequestError("Veuillez sélectionner le paiement à ajuster.");
+            }
 
-            const needsAdj = sortedPayments.some(p => p.idCashMovement);
+            const paymentToAdjust = payments.find(p => p.idPayment === dto.idPaymentToAdjust);
+            if (!paymentToAdjust) {
+              throw new BadRequestError("Le paiement sélectionné pour ajustement est introuvable.");
+            }
+
+            let amountToReduce = Math.abs(newBalance);
+            if (Number(paymentToAdjust.amount) < amountToReduce) {
+              throw new BadRequestError("La somme à déduire est supérieure au montant du paiement choisi.");
+            }
+
             let adjCat: any = null;
             let openJournal: any = null;
-            if (needsAdj) {
+            if (paymentToAdjust.idCashMovement) {
               adjCat = await getOrCreateCategory(queryRunner, "Ajustement de vente", -5);
               openJournal = await getOpenJournal(queryRunner);
             }
 
-            for (const p of sortedPayments) {
-              if (amountToReduce <= 0) break;
-              if (Number(p.amount) <= 0) continue; // Ne pas supprimer les remboursements existants !
+            if (paymentToAdjust.idCashMovement && openJournal && adjCat) {
+              await createCashOutflow(
+                queryRunner,
+                amountToReduce,
+                `Ajustement suite réduction/suppression de paiement (Facture ${sale.invoice.invoiceNumber || 'N/A'})`,
+                sale.invoice.invoiceNumber || null,
+                userId,
+                adjCat.idCashMovementCategory,
+                openJournal.idJournal,
+                paymentToAdjust.idPaymentMethod
+              );
+            }
 
-              const reducedAmount = Math.min(Number(p.amount), amountToReduce);
-
-              if (p.idCashMovement && openJournal && adjCat) {
-                await createCashOutflow(
-                  queryRunner,
-                  reducedAmount,
-                  `Ajustement suite réduction/suppression de paiement (Facture ${sale.invoice.invoiceNumber || 'N/A'})`,
-                  sale.invoice.invoiceNumber || null,
-                  userId,
-                  adjCat.idCashMovementCategory,
-                  openJournal.idJournal,
-                  p.idPaymentMethod
-                );
-              }
-
-              if (Number(p.amount) <= amountToReduce) {
-                amountToReduce -= Number(p.amount);
-                await queryRunner.manager.remove(Payment, p);
-              } else {
-                p.amount = Number(p.amount) - amountToReduce;
-                amountToReduce = 0;
-                await queryRunner.manager.save(Payment, p);
-              }
+            if (Number(paymentToAdjust.amount) === amountToReduce) {
+              await queryRunner.manager.remove(Payment, paymentToAdjust);
+            } else {
+              paymentToAdjust.amount = Number(paymentToAdjust.amount) - amountToReduce;
+              await queryRunner.manager.save(Payment, paymentToAdjust);
             }
             sale.invoice.balanceDue = 0;
             sale.invoice.status = 0;
@@ -342,23 +367,8 @@ export class SaleService {
       }
 
       sale.updatedBy = userId;
-      // Clear in-memory saleItems so TypeORM doesn't try to sync/delete them
       delete (sale as any).saleItems;
       const updatedSale = await queryRunner.manager.save(Sale, sale);
-
-      // As requested, we no longer log the global UPDATE_SALE, since UPDATE_ITEM tracks the important changes.
-      // const SALE_UPDATE_ALLOWED_KEYS = ALLOWED_AUDIT_KEYS.filter(k => k !== "totalAmount" && k !== "balanceDue");
-      // const { diffOld, diffNew } = getDiff(oldValue, sanitize(updatedSale), SALE_UPDATE_ALLOWED_KEYS);
-      // if (Object.keys(diffNew).length > 0) {
-      //   const auditLog = new AuditLog();
-      //   auditLog.entityName = "Sale";
-      //   auditLog.entityId = idSale;
-      //   auditLog.action = "UPDATE_SALE";
-      //   auditLog.oldValue = diffOld;
-      //   auditLog.newValue = diffNew;
-      //   auditLog.idUser = userId;
-      //   auditLogs.push(auditLog);
-      // }
 
       if (auditLogs.length > 0) {
         await queryRunner.manager.save(AuditLog, auditLogs);
@@ -389,6 +399,7 @@ export class SaleService {
       .leftJoinAndSelect("menu.item", "item")
       .leftJoinAndSelect("sale.invoice", "invoice")
       .leftJoinAndSelect("invoice.payments", "payments")
+      .leftJoinAndSelect("payments.cashMovement", "cashMovement")
       .orderBy("sale.createdAt", "DESC")
       .skip((pageNum - 1) * limitNum)
       .take(limitNum);
@@ -461,25 +472,40 @@ export class SaleService {
       if (sale.invoice) {
         sale.invoice.totalAmount = 0; // Since it was synced with sale
         const payments = await queryRunner.manager.find(Payment, { where: { idInvoice: sale.invoice.idInvoice } });
-        const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount), 0);
+        const totalPaid = payments
+          .filter(p => p.paymentCode !== "Remboursement manuel")
+          .reduce((sum, p) => sum + Number(p.amount), 0);
 
         if (totalPaid > 0) {
           if (overpaymentAction === "REFUND") {
-            const refundPayment = new Payment();
-            refundPayment.idInvoice = sale.invoice.idInvoice;
-            refundPayment.paymentDate = new Date();
-            refundPayment.amount = -totalPaid;
-            const firstPayment = payments[0];
-            if (!firstPayment) {
-              throw new BadRequestError("Erreur système : Impossible de rembourser une vente qui n'a aucun paiement existant.");
-            }
-
             if (!idPaymentMethodRefund) {
               throw new BadRequestError("Le mode de paiement est requis pour un remboursement.");
             }
 
+            // 1. Create CashOutflow first
+            const refundCat = await getOrCreateCategory(queryRunner, "Remboursement Client", -5);
+            const openJournal = await getOpenJournal(queryRunner);
+            if (!openJournal) throw new BadRequestError("Impossible de créer le remboursement en caisse : Aucun journal ouvert trouvé.");
+
+            const cashMvt = await createCashOutflow(
+              queryRunner,
+              totalPaid,
+              `Remboursement suite à l'annulation de la vente (Facture ${sale.invoice.invoiceNumber || 'N/A'})`,
+              sale.invoice.invoiceNumber || null,
+              userId,
+              refundCat.idCashMovementCategory,
+              openJournal.idJournal,
+              idPaymentMethodRefund
+            );
+
+            // 2. Then create Payment linked to the CashMovement
+            const refundPayment = new Payment();
+            refundPayment.idInvoice = sale.invoice.idInvoice;
+            refundPayment.paymentDate = new Date();
+            refundPayment.amount = -totalPaid;
             refundPayment.idPaymentMethod = idPaymentMethodRefund;
             refundPayment.paymentCode = "Remboursement suite à l'annulation";
+            refundPayment.idCashMovement = cashMvt.idCashMovement;
             await queryRunner.manager.save(Payment, refundPayment);
 
             sale.invoice.balanceDue = 0;
@@ -593,12 +619,12 @@ export class SaleService {
     try {
       const sale = await queryRunner.manager.createQueryBuilder(Sale, "sale")
         .leftJoinAndSelect("sale.invoice", "invoice")
-        .setLock("pessimistic_write")
+        .setLock("pessimistic_write", undefined, ["sale"])
         .where("sale.id_sale = :idSale", { idSale })
         .getOne();
       if (!sale || !sale.invoice) throw new NotFoundError("Vente introuvable");
 
-      const payment = await queryRunner.manager.findOne(Payment, { where: { idPayment, idInvoice: sale.invoice.idInvoice }});
+      const payment = await queryRunner.manager.findOne(Payment, { where: { idPayment, idInvoice: sale.invoice.idInvoice } });
       if (!payment) throw new NotFoundError("Paiement introuvable");
 
       const oldAmount = Number(payment.amount);
@@ -607,10 +633,30 @@ export class SaleService {
         return sale;
       }
 
+      const isSystemRefund = payment.paymentCode?.includes("suite modification") || payment.paymentCode?.includes("suite à l'annulation");
+      if (isSystemRefund) {
+        throw new BadRequestError("Impossible de modifier un remboursement généré par le système.");
+      }
+
+      const isManualRefund = oldAmount < 0 || payment.paymentCode?.startsWith("Remboursement manuel");
       const diff = oldAmount - newAmount;
       const needsMovement = !!payment.idCashMovement;
 
-      if (needsMovement) {
+      if (isManualRefund) {
+        if (newAmount > 0) throw new BadRequestError("Un remboursement doit conserver un montant négatif.");
+
+        if (needsMovement) {
+          const cashMovement = await queryRunner.manager.findOne(CashMovement, { where: { idCashMovement: payment.idCashMovement as string } });
+          if (cashMovement) {
+            if (newAmount === 0) {
+              await queryRunner.manager.remove(CashMovement, cashMovement);
+            } else {
+              cashMovement.amount = Math.abs(newAmount);
+              await queryRunner.manager.save(CashMovement, cashMovement);
+            }
+          }
+        }
+      } else if (needsMovement) {
         const openJournal = await getOpenJournal(queryRunner);
         if (!openJournal) throw new BadRequestError("Aucun journal ouvert trouvé pour enregistrer l'ajustement.");
 
@@ -652,9 +698,11 @@ export class SaleService {
 
       // Recalculate invoice
       const payments = await queryRunner.manager.find(Payment, { where: { idInvoice: sale.invoice.idInvoice } });
-      const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount), 0);
+      const totalPaid = payments
+        .filter(p => !p.paymentCode?.startsWith("Remboursement manuel"))
+        .reduce((sum, p) => sum + Number(p.amount), 0);
       const newBalance = Number(sale.totalAmount) - totalPaid;
-      
+
       sale.invoice.balanceDue = newBalance;
       if (newBalance <= 0) sale.invoice.status = 0;
       else if (totalPaid > 0) sale.invoice.status = 3;
@@ -666,13 +714,13 @@ export class SaleService {
       auditLog.entityName = "Payment";
       auditLog.entityId = idPayment;
       auditLog.action = newAmount === 0 ? "DELETE_PAYMENT" : "UPDATE_PAYMENT";
-      auditLog.oldValue = { amount: oldAmount };
-      auditLog.newValue = { amount: newAmount };
+      auditLog.oldValue = { amount: Math.abs(oldAmount) };
+      auditLog.newValue = { amount: Math.abs(newAmount) };
       auditLog.idUser = userId;
       await queryRunner.manager.save(AuditLog, auditLog);
 
       await queryRunner.commitTransaction();
-      
+
       return (await queryRunner.manager.createQueryBuilder(Sale, "sale")
         .leftJoinAndSelect("sale.saler", "saler")
         .leftJoinAndSelect("sale.room", "room")
@@ -680,6 +728,7 @@ export class SaleService {
         .leftJoinAndSelect("saleItems.menu", "menu")
         .leftJoinAndSelect("sale.invoice", "invoice")
         .leftJoinAndSelect("invoice.payments", "payments")
+        .leftJoinAndSelect("payments.cashMovement", "cashMovement")
         .where("sale.id_sale = :idSale", { idSale })
         .getOne()) as Sale;
     } catch (error) {
@@ -690,7 +739,7 @@ export class SaleService {
     }
   }
 
-  async refundPayment(idSale: string, userId: string, amount: number, idPaymentMethod: string): Promise<Sale> {
+  async refundPayment(idSale: string, userId: string, amount: number, idPaymentMethod: string, reason?: string): Promise<Sale> {
     if (amount <= 0) throw new BadRequestError("Le montant du remboursement doit être positif.");
 
     const queryRunner = AppDataSource.createQueryRunner();
@@ -699,29 +748,21 @@ export class SaleService {
     try {
       const sale = await queryRunner.manager.createQueryBuilder(Sale, "sale")
         .leftJoinAndSelect("sale.invoice", "invoice")
-        .setLock("pessimistic_write")
+        .setLock("pessimistic_write", undefined, ["sale"])
         .where("sale.id_sale = :idSale", { idSale })
         .getOne();
       if (!sale || !sale.invoice) throw new NotFoundError("Vente introuvable");
 
-      // 1. Add negative payment line
-      const refund = new Payment();
-      refund.idInvoice = sale.invoice.idInvoice;
-      refund.paymentDate = new Date();
-      refund.amount = -amount;
-      refund.idPaymentMethod = idPaymentMethod;
-      refund.paymentCode = "Remboursement manuel";
-      await queryRunner.manager.save(Payment, refund);
-
-      // 2. Create CashOutflow and link it to the payment line
+      // 1. Create CashOutflow first
       const openJournal = await getOpenJournal(queryRunner);
       if (!openJournal) throw new BadRequestError("Aucun journal ouvert trouvé pour enregistrer le remboursement.");
 
+      const refundReason = reason ? ` - ${reason}` : "";
       const cat = await getOrCreateCategory(queryRunner, "Remboursement Client", -5);
       const cashMovement = await createCashOutflow(
         queryRunner,
         amount,
-        `Remboursement manuel (Facture ${sale.invoice.invoiceNumber || 'N/A'})`,
+        `Remboursement manuel (Facture ${sale.invoice.invoiceNumber || 'N/A'})${refundReason}`,
         sale.invoice.invoiceNumber || null,
         userId,
         cat.idCashMovementCategory,
@@ -729,13 +770,21 @@ export class SaleService {
         idPaymentMethod
       );
 
-      // Link CashMovement back to the payment
+      // 2. Create Payment linked to the CashMovement
+      const refund = new Payment();
+      refund.idInvoice = sale.invoice.idInvoice;
+      refund.paymentDate = new Date();
+      refund.amount = -amount;
+      refund.idPaymentMethod = idPaymentMethod;
+      refund.paymentCode = "Remboursement manuel";
       refund.idCashMovement = cashMovement.idCashMovement;
       await queryRunner.manager.save(Payment, refund);
 
-      // 3. Recalculate invoice
+      // 3. Recalculate invoice — manual refunds do NOT affect balance due (only sale-linked refunds do)
       const payments = await queryRunner.manager.find(Payment, { where: { idInvoice: sale.invoice.idInvoice } });
-      const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount), 0);
+      const totalPaid = payments
+        .filter(p => p.paymentCode !== "Remboursement manuel")
+        .reduce((sum, p) => sum + Number(p.amount), 0);
       const newBalance = Number(sale.totalAmount) - totalPaid;
 
       sale.invoice.balanceDue = newBalance;
@@ -750,7 +799,7 @@ export class SaleService {
       auditLog.entityId = sale.invoice.idInvoice;
       auditLog.action = "REFUND_PAYMENT";
       auditLog.oldValue = null;
-      auditLog.newValue = { amount: -amount, idPaymentMethod };
+      auditLog.newValue = { amount, idPaymentMethod };
       auditLog.idUser = userId;
       await queryRunner.manager.save(AuditLog, auditLog);
 
@@ -763,6 +812,7 @@ export class SaleService {
         .leftJoinAndSelect("saleItems.menu", "menu")
         .leftJoinAndSelect("sale.invoice", "invoice")
         .leftJoinAndSelect("invoice.payments", "payments")
+        .leftJoinAndSelect("payments.cashMovement", "cashMovement")
         .where("sale.id_sale = :idSale", { idSale })
         .getOne()) as Sale;
     } catch (error) {
@@ -784,7 +834,7 @@ export class SaleService {
       const auditLog = new AuditLog();
       auditLog.entityName = "Sale";
       auditLog.entityId = idSale;
-      auditLog.action = "DELETE";
+      auditLog.action = "DELETE_SALE";
       auditLog.oldValue = { totalAmount: sale.totalAmount };
       auditLog.newValue = null;
       auditLog.idUser = userId;
@@ -804,16 +854,30 @@ export class SaleService {
           if (openJournal) {
             for (const p of payments) {
               if (p.idCashMovement) {
-                await createCashOutflow(
-                  queryRunner,
-                  Number(p.amount),
-                  `Ajustement suite suppression de la vente (Facture ${invoiceNumber || 'N/A'})`,
-                  invoiceNumber,
-                  userId,
-                  adjCat.idCashMovementCategory,
-                  openJournal.idJournal,
-                  p.idPaymentMethod
-                );
+                const amount = Number(p.amount);
+                if (amount > 0) {
+                  await createCashOutflow(
+                    queryRunner,
+                    amount,
+                    `Ajustement suite suppression de la vente (Facture ${invoiceNumber || 'N/A'})`,
+                    invoiceNumber,
+                    userId,
+                    adjCat.idCashMovementCategory,
+                    openJournal.idJournal,
+                    p.idPaymentMethod
+                  );
+                } else if (amount < 0) {
+                  await createCashInflow(
+                    queryRunner,
+                    Math.abs(amount),
+                    `Ajustement suite suppression de la vente (Facture ${invoiceNumber || 'N/A'})`,
+                    invoiceNumber,
+                    userId,
+                    adjCat.idCashMovementCategory,
+                    openJournal.idJournal,
+                    p.idPaymentMethod
+                  );
+                }
               }
             }
           }

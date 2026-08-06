@@ -10,17 +10,21 @@ export class PaymentService {
     if (paymentDto.amount < 0) {
       throw new BadRequestError("Le montant du paiement ne peut pas être négatif.");
     }
-    
+
     const queryRunner = AppDataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
-    
+
     try {
+      if (paymentDto.paymentDate && new Date(paymentDto.paymentDate) > new Date()) {
+        throw new BadRequestError("La date de paiement ne peut pas être dans le futur.");
+      }
+
       const invoice = await queryRunner.manager.createQueryBuilder(Invoice, "invoice")
         .setLock("pessimistic_write")
         .where("invoice.id_invoice = :idInvoice", { idInvoice })
         .getOne();
-        
+
       if (!invoice) throw new NotFoundError("Facture introuvable");
 
       const oldValue = { ...invoice };
@@ -34,10 +38,13 @@ export class PaymentService {
       await queryRunner.manager.save(Payment, payment);
 
       const allPayments = await queryRunner.manager.find(Payment, { where: { idInvoice } });
-      const totalPaid = allPayments.reduce((sum, p) => sum + Number(p.amount), 0);
-      
+      // Manual refunds are tracked via cash_movement only — they do NOT affect the invoice balance due
+      const totalPaid = allPayments
+        .filter(p => !p.paymentCode?.startsWith("Remboursement manuel"))
+        .reduce((sum, p) => sum + Number(p.amount), 0);
+
       invoice.balanceDue = Math.max(0, Number(invoice.totalAmount) - totalPaid);
-      
+
       if (invoice.balanceDue <= 0) {
         invoice.balanceDue = 0;
         invoice.status = 0;
@@ -49,14 +56,6 @@ export class PaymentService {
 
       const updated = await queryRunner.manager.save(Invoice, invoice);
 
-      const auditLog = new AuditLog();
-      auditLog.entityName = "Invoice";
-      auditLog.entityId = idInvoice;
-      auditLog.action = "PAYMENT";
-      auditLog.oldValue = { balanceDue: oldValue.balanceDue, status: oldValue.status };
-      auditLog.newValue = { balanceDue: updated.balanceDue, status: updated.status, payment: payment.idPayment };
-      auditLog.idUser = userId;
-      await queryRunner.manager.save(AuditLog, auditLog);
 
       await queryRunner.commitTransaction();
       return updated;
