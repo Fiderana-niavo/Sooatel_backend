@@ -16,6 +16,7 @@ export class CashMovementController extends CrudController<CashMovement, cashMov
         page: Number(req.query.page ?? 1),
         limit: Number(req.query.limit ?? 10),
         search: req.query.search as string | undefined,
+        direction: req.query.direction ? Number(req.query.direction) : undefined,
       });
 
       res.json(ApiResponse.success(result));

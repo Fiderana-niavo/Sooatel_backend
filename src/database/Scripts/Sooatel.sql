@@ -692,3 +692,15 @@ INSERT INTO payment_method (id_payment_method, label, description) VALUES
 ('c460cf61-0000-0000-0000-000000000001', 'Esp�ces', 'Paiement en esp�ces'),
 ('c460cf61-0000-0000-0000-000000000002', 'Carte Bancaire', 'Paiement par CB'),
 ('c460cf61-0000-0000-0000-000000000003', 'Mobile Money', 'Paiement via mobile');
+
+CREATE TABLE IF NOT EXISTS payment_method_balance (
+    id_payment_method_balance UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id_journal UUID NOT NULL,
+    id_payment_method UUID NOT NULL,
+    amount NUMERIC(15, 2) NOT NULL DEFAULT 0,
+    CONSTRAINT fk_payment_method_balance_journal FOREIGN KEY (id_journal) REFERENCES cash_journal(id_journal),
+    CONSTRAINT fk_payment_method_balance_payment_method FOREIGN KEY (id_payment_method) REFERENCES payment_method(id_payment_method)
+);
+
+ALTER TABLE payment_method_balance 
+ADD CONSTRAINT uq_pmb_journal_method UNIQUE (id_journal, id_payment_method);

@@ -25,6 +25,7 @@ export interface TokenPayload {
   idUser: string;
   ref: string;
   username: string;
+  idEmployee: string;
 }
 
 export interface GeneratedToken {

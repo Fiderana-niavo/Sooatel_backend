@@ -1,4 +1,5 @@
-import { BaseEntity, Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { BaseEntity, Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { PaymentMethodBalance } from "./PaymentMethodBalance";
 
 @Entity("payment_method")
 export class PaymentMethod extends BaseEntity {
@@ -10,4 +11,7 @@ export class PaymentMethod extends BaseEntity {
 
   @Column({ type: "varchar", length: 50, nullable: true, name: "description" })
   description: string;
+
+  @OneToMany(() => PaymentMethodBalance, balance => balance.paymentMethod)
+  paymentMethodBalances: PaymentMethodBalance[];
 }

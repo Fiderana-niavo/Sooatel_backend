@@ -8,7 +8,9 @@ cashJournalRouter.use(authMiddleware);
 
 cashJournalRouter.get("/", cashJournalController.findAll);
 cashJournalRouter.get("/:id", cashJournalController.getOne);
-cashJournalRouter.post("/", cashJournalController.save);
+cashJournalRouter.get("/:id/movements", cashJournalController.getMovements);
+cashJournalRouter.post("/open", cashJournalController.openJournal);
+cashJournalRouter.post("/:id/close", cashJournalController.closeJournal);
 cashJournalRouter.put("/:id", cashJournalController.update);
 cashJournalRouter.delete("/:id", cashJournalController.remove);
 

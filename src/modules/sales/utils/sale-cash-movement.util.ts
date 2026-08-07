@@ -19,28 +19,32 @@ export async function getOpenJournal(queryRunner: QueryRunner): Promise<CashJour
   return await queryRunner.manager.findOne(CashJournal, { where: { journalClosing: IsNull() } });
 }
 
+export async function resolveEmployeeId(queryRunner: QueryRunner, userId: string): Promise<string> {
+  const user = await queryRunner.manager.findOne(User, {
+    where: { idUser: userId },
+    select: { idEmployee: true }
+  });
+  if (!user) throw new Error("Utilisateur introuvable pour la création du mouvement de caisse.");
+  return user.idEmployee;
+}
+
 export async function createCashOutflow(
   queryRunner: QueryRunner,
   amount: number,
   reason: string,
   invoiceReference: string | null,
-  userId: string,
+  idEmployee: string,
   categoryId: string,
   journalId: string,
   paymentMethodId: string
 ): Promise<CashMovement> {
-  const user = await queryRunner.manager.findOne(User, { where: { idUser: userId } });
-  if (!user) {
-    throw new Error("Utilisateur introuvable pour la création du mouvement de caisse.");
-  }
-
   const cm = new CashMovement();
   cm.amount = amount;
   cm.movementDate = new Date();
   cm.reason = reason;
   cm.invoiceReference = invoiceReference;
   cm.direction = -5;
-  cm.idProcessedBy = user.idEmployee;
+  cm.idProcessedBy = idEmployee;
   cm.idJournal = journalId;
   cm.status = 5;
   cm.idCashMovementCategory = categoryId;
@@ -53,23 +57,18 @@ export async function createCashInflow(
   amount: number,
   reason: string,
   invoiceReference: string | null,
-  userId: string,
+  idEmployee: string,
   categoryId: string,
   journalId: string,
   paymentMethodId: string
 ): Promise<CashMovement> {
-  const user = await queryRunner.manager.findOne(User, { where: { idUser: userId } });
-  if (!user) {
-    throw new Error("Utilisateur introuvable pour la création du mouvement de caisse.");
-  }
-
   const cm = new CashMovement();
   cm.amount = amount;
   cm.movementDate = new Date();
   cm.reason = reason;
   cm.invoiceReference = invoiceReference;
-  cm.direction = 5; // 5 for inflow
-  cm.idProcessedBy = user.idEmployee;
+  cm.direction = 5;
+  cm.idProcessedBy = idEmployee;
   cm.idJournal = journalId;
   cm.status = 5;
   cm.idCashMovementCategory = categoryId;

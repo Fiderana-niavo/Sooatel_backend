@@ -20,7 +20,13 @@ export class CashMovementService extends CrudService<CashMovement, cashMovementD
       .createQueryBuilder("entity")
       .leftJoinAndSelect("entity.cashMovementCategory", "category")
       .leftJoinAndSelect("entity.paymentMethod", "paymentMethod")
-      .where("entity.status IS DISTINCT FROM -3")
+      .where("entity.status IS DISTINCT FROM -3");
+
+    if (options.direction) {
+      qb.andWhere("entity.direction = :dir", { dir: options.direction });
+    }
+
+    qb.orderBy("entity.movementDate", "DESC")
       .skip((pageNum - 1) * limitNum)
       .take(limitNum);
 
@@ -56,6 +62,17 @@ export class CashMovementService extends CrudService<CashMovement, cashMovementD
   }
 
   async update(id: string, dto: cashMovementDto): Promise<void> {
+    const existing = await this.repository.findOneBy({ idCashMovement: id });
+    if (!existing) throw new Error("Mouvement de caisse introuvable.");
+
+    if (
+      existing.reason === "Journalisation des ventes" ||
+      existing.reason?.toLowerCase().includes("remboursement") ||
+      existing.reason?.toLowerCase().includes("ajustement")
+    ) {
+      throw new Error("Ce type de mouvement (Journalisation, Remboursement, Ajustement) ne peut pas être modifié.");
+    }
+
     await this.repository.update(id, {
       ref: dto.ref,
       amount: dto.amount,
@@ -72,6 +89,17 @@ export class CashMovementService extends CrudService<CashMovement, cashMovementD
   }
 
   async delete(id: string): Promise<void> {
+    const existing = await this.repository.findOneBy({ idCashMovement: id });
+    if (!existing) throw new Error("Mouvement de caisse introuvable.");
+
+    if (
+      existing.reason === "Journalisation des ventes" ||
+      existing.reason?.toLowerCase().includes("remboursement") ||
+      existing.reason?.toLowerCase().includes("ajustement")
+    ) {
+      throw new Error("Ce type de mouvement (Journalisation, Remboursement, Ajustement) ne peut pas être supprimé.");
+    }
+
     await this.repository.update(id, {
       status: -3
     } as QueryDeepPartialEntity<CashMovement>);

@@ -9,6 +9,7 @@ const saleRouter = Router();
 const revenueController = new RevenueController();
 
 saleRouter.get("/revenue", authMiddleware, revenueController.getRevenue.bind(revenueController));
+saleRouter.post("/revenue/journalize", authMiddleware, authorize("sales.pos"), revenueController.journalizeSales.bind(revenueController));
 saleRouter.get("/", authMiddleware, findAll);
 saleRouter.get("/:id", authMiddleware, getSaleById);
 saleRouter.post("/", authMiddleware, authorize("sales.pos"), createSale);

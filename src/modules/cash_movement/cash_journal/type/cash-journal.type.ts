@@ -8,6 +8,15 @@ export interface CashJournalDto {
   idCashier: string;
 }
 
+export interface OpenJournalDto {
+  ref: string;
+  idCashier: string;
+}
+
+export interface CloseJournalDto {
+  actualClosingBalance: number;
+}
+
 export interface CashJournalSearchOptions {
   page?: number;
   limit?: number;

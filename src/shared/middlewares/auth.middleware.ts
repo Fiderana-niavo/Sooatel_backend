@@ -12,6 +12,7 @@ declare global {
     interface Request {
       userId: string;
       username: string;
+      idEmployee: string;
     }
   }
 }
@@ -37,6 +38,7 @@ export const authMiddleware = async (
 
     req.userId = payload["idUser"] as string;
     req.username = payload["username"] as string;
+    req.idEmployee = payload["idEmployee"] as string;
 
     next();
   } catch {

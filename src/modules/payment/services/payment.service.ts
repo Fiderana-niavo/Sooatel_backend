@@ -37,13 +37,14 @@ export class PaymentService {
       payment.paymentCode = paymentDto.paymentCode || null;
       await queryRunner.manager.save(Payment, payment);
 
-      const allPayments = await queryRunner.manager.find(Payment, { where: { idInvoice } });
-      // Manual refunds are tracked via cash_movement only — they do NOT affect the invoice balance due
-      const totalPaid = allPayments
-        .filter(p => !p.paymentCode?.startsWith("Remboursement manuel"))
-        .reduce((sum, p) => sum + Number(p.amount), 0);
+      // Recalculate with SQL SUM — no need to load all payments in memory
+      const { totalPaid } = await queryRunner.manager
+        .createQueryBuilder(Payment, "p")
+        .select("COALESCE(SUM(p.amount), 0)", "totalPaid")
+        .where("p.id_invoice = :idInvoice AND (p.payment_code IS NULL OR p.payment_code NOT LIKE 'Remboursement manuel%')", { idInvoice })
+        .getRawOne();
 
-      invoice.balanceDue = Math.max(0, Number(invoice.totalAmount) - totalPaid);
+      invoice.balanceDue = Math.max(0, Number(invoice.totalAmount) - Number(totalPaid));
 
       if (invoice.balanceDue <= 0) {
         invoice.balanceDue = 0;

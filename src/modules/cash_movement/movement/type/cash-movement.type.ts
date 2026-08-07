@@ -16,4 +16,5 @@ export interface cashMovementSearchOptions {
   page?: number;
   limit?: number;
   search?: string;
+  direction?: number;
 }

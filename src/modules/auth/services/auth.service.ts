@@ -52,6 +52,7 @@ export class AuthService {
       idUser: user.idUser,
       ref: user.ref,
       username: user.username,
+      idEmployee: user.idEmployee,
     };
 
     const accessToken = await this.signToken(payload, ACCESS_EXPIRY);
@@ -88,6 +89,7 @@ export class AuthService {
         idUser: payload["idUser"] as string,
         ref: payload["ref"] as string,
         username: payload["username"] as string,
+        idEmployee: payload["idEmployee"] as string,
       },
       ACCESS_EXPIRY,
     );
