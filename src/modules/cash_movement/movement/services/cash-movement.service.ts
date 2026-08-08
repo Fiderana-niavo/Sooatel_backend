@@ -2,8 +2,10 @@ import { Repository, FindOptionsWhere, ILike } from "typeorm";
 import { QueryDeepPartialEntity } from "typeorm/query-builder/QueryPartialEntity";
 import AppDataSource from "../../../../database/data-source";
 import { CashMovement } from "../../../../database/Entities/CashMovement";
+import { PaymentMethodBalance } from "../../../../database/Entities/PaymentMethodBalance";
 import { CrudService } from "../../../../shared/crud/services/CrudService";
 import { Paginated } from "../../../../shared/types/Paginated";
+import { CashJournalService } from "../../cash_journal/services/cash-journal.service";
 import { cashMovementDto, cashMovementSearchOptions } from "../type/cash-movement.type";
 
 export class CashMovementService extends CrudService<CashMovement, cashMovementDto, cashMovementDto> {
@@ -46,6 +48,16 @@ export class CashMovementService extends CrudService<CashMovement, cashMovementD
   }
 
   async create(dto: cashMovementDto): Promise<CashMovement> {
+    if (dto.direction < 0) {
+      const pmb = await this.repository.manager.findOne(PaymentMethodBalance, {
+        where: { idJournal: dto.idJournal, idPaymentMethod: dto.idPaymentMethod }
+      });
+      const currentBalance = pmb ? Number(pmb.amount) : 0;
+      if (currentBalance < dto.amount) {
+        throw new Error(`Fonds insuffisants pour ce mode de paiement. Solde disponible : ${currentBalance} Ar.`);
+      }
+    }
+
     const entity = this.repository.create({
       ref: dto.ref || undefined,
       amount: dto.amount,
@@ -55,10 +67,14 @@ export class CashMovementService extends CrudService<CashMovement, cashMovementD
       direction: dto.direction,
       idProcessedBy: dto.idProcessedBy,
       idJournal: dto.idJournal,
-      status: dto.status,
+      status: dto.status ?? 0,
       idCashMovementCategory: dto.idCashMovementCategory,
+      idPaymentMethod: dto.idPaymentMethod,
     });
-    return this.repository.save(entity);
+    const saved = await this.repository.save(entity);
+    const journalService = new CashJournalService();
+    await journalService.recalculateBalances(saved.idJournal);
+    return saved;
   }
 
   async update(id: string, dto: cashMovementDto): Promise<void> {
@@ -71,6 +87,21 @@ export class CashMovementService extends CrudService<CashMovement, cashMovementD
       existing.reason?.toLowerCase().includes("ajustement")
     ) {
       throw new Error("Ce type de mouvement (Journalisation, Remboursement, Ajustement) ne peut pas être modifié.");
+    }
+
+    if (dto.direction < 0) {
+      // Check if the balance is sufficient for the updated amount
+      const pmb = await this.repository.manager.findOne(PaymentMethodBalance, {
+        where: { idJournal: dto.idJournal, idPaymentMethod: dto.idPaymentMethod }
+      });
+      const currentBalance = pmb ? Number(pmb.amount) : 0;
+      
+      // If payment method hasn't changed, we can add back the old amount before checking
+      const oldAmount = (existing.idPaymentMethod === dto.idPaymentMethod && existing.direction < 0) ? Number(existing.amount) : 0;
+      
+      if (currentBalance + oldAmount < dto.amount) {
+        throw new Error(`Fonds insuffisants. Vous ne pouvez pas sortir plus que le solde disponible (${currentBalance + oldAmount} Ar).`);
+      }
     }
 
     await this.repository.update(id, {
@@ -86,6 +117,9 @@ export class CashMovementService extends CrudService<CashMovement, cashMovementD
       idCashMovementCategory: dto.idCashMovementCategory,
       idPaymentMethod: dto.idPaymentMethod,
     } as QueryDeepPartialEntity<CashMovement>);
+    
+    const journalService = new CashJournalService();
+    await journalService.recalculateBalances(dto.idJournal);
   }
 
   async delete(id: string): Promise<void> {
@@ -103,5 +137,8 @@ export class CashMovementService extends CrudService<CashMovement, cashMovementD
     await this.repository.update(id, {
       status: -3
     } as QueryDeepPartialEntity<CashMovement>);
+
+    const journalService = new CashJournalService();
+    await journalService.recalculateBalances(existing.idJournal);
   }
 }

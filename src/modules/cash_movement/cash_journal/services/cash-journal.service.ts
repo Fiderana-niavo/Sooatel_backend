@@ -147,9 +147,20 @@ export class CashJournalService extends CrudService<CashJournal, CashJournalDto,
     const repo = AppDataSource.getRepository(CashMovement);
     const [records, total] = await repo
       .createQueryBuilder("cm")
-      .leftJoinAndSelect("cm.paymentMethod", "paymentMethod")
-      .leftJoinAndSelect("cm.cashMovementCategory", "category")
-      .leftJoinAndSelect("cm.processedBy", "processedBy")
+      .select([
+        "cm.idCashMovement",
+        "cm.direction",
+        "cm.reason",
+        "cm.ref",
+        "cm.movementDate",
+        "cm.amount",
+        "paymentMethod.idPaymentMethod",
+        "paymentMethod.label",
+        "category.idCashMovementCategory",
+        "category.label"
+      ])
+      .leftJoin("cm.paymentMethod", "paymentMethod")
+      .leftJoin("cm.cashMovementCategory", "category")
       .where("cm.id_journal = :idJournal", { idJournal })
       .orderBy("cm.movementDate", "DESC")
       .skip((page - 1) * limit)
@@ -157,6 +168,76 @@ export class CashJournalService extends CrudService<CashJournal, CashJournalDto,
       .getManyAndCount();
 
     return new Paginated<CashMovement>(records, total, page, limit);
+  }
+
+  async recalculateBalances(idJournal: string): Promise<void> {
+    const queryRunner = AppDataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const activeJournal = await queryRunner.manager.findOne(CashJournal, {
+        where: { idJournal }
+      });
+      if (!activeJournal) throw new Error("Journal not found");
+
+      const previousJournal = await queryRunner.manager.findOne(CashJournal, {
+        where: { journalOpening: LessThan(activeJournal.journalOpening) },
+        order: { journalOpening: "DESC" }
+      });
+
+      const balanceRows: { idPaymentMethod: string; movementSum: string; prevAmount: string }[] = await queryRunner.query(`
+        SELECT
+          pm.id_payment_method AS "idPaymentMethod",
+          COALESCE((
+            SELECT SUM(cm.amount * (cm.direction / 5))
+            FROM cash_movement cm
+            WHERE cm.id_journal = $1 AND cm.id_payment_method = pm.id_payment_method AND cm.status IS DISTINCT FROM -3
+          ), 0) AS "movementSum",
+          COALESCE((
+            SELECT pmb.amount
+            FROM payment_method_balance pmb
+            WHERE pmb.id_journal = $2 AND pmb.id_payment_method = pm.id_payment_method
+          ), 0) AS "prevAmount"
+        FROM payment_method pm
+      `, [activeJournal.idJournal, previousJournal?.idJournal ?? null]);
+
+      if (balanceRows.length > 0) {
+        const upsertValues = [];
+        for (const row of balanceRows) {
+          upsertValues.push({
+            idJournal: activeJournal.idJournal,
+            idPaymentMethod: row.idPaymentMethod,
+            amount: Number(row.prevAmount) + Number(row.movementSum)
+          });
+        }
+
+        await queryRunner.manager
+          .createQueryBuilder()
+          .insert()
+          .into(PaymentMethodBalance)
+          .values(upsertValues)
+          .orUpdate(["amount"], ["id_journal", "id_payment_method"])
+          .execute();
+      }
+
+      const { totalExpected } = await queryRunner.manager
+        .createQueryBuilder(PaymentMethodBalance, "pmb")
+        .select("COALESCE(SUM(pmb.amount), 0)", "totalExpected")
+        .where("pmb.id_journal = :idJournal", { idJournal: activeJournal.idJournal })
+        .getRawOne();
+
+      await queryRunner.manager.update(CashJournal, activeJournal.idJournal, {
+        expectedClosingBalance: Number(totalExpected || 0)
+      });
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   async create(dto: CashJournalDto): Promise<CashJournal> {

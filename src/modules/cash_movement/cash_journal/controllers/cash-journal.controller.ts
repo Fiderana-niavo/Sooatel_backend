@@ -16,16 +16,28 @@ class CashJournalController extends CrudController<CashJournal, CashJournalDto, 
 
   openJournal = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const user = (req as any).user;
-      const idCashier = user?.employee?.idEmployee || user?.idEmployee;
+      let idCashier = (req as any).idEmployee;
+      
       if (!idCashier) {
-        res.status(401).json(ApiResponse.error("Utilisateur non identifié."));
+        const idUser = (req as any).userId;
+        if (idUser) {
+          const userRepo = require("../../../../database/data-source").default.getRepository(require("../../../../database/Entities/User").User);
+          const user = await userRepo.findOne({ where: { idUser } });
+          if (user) {
+            idCashier = user.idEmployee;
+          }
+        }
+      }
+
+      if (!idCashier) {
+        res.status(401).json(ApiResponse.error("Utilisateur non identifié. Impossible de lier un employé."));
         return;
       }
-      const ref = req.body.ref as string;
-      if (!ref) {
-        res.status(400).json(ApiResponse.error("La référence du journal est requise."));
-        return;
+      let ref = req.body.ref as string;
+      if (!ref || ref === "AUTO") {
+        const today = new Date();
+        const dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
+        ref = `JNL-${dateStr}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
       }
       const journal = await this.journalService.openJournal({ ref, idCashier });
       res.status(201).json(ApiResponse.success(journal));
