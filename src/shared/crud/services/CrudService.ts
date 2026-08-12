@@ -17,8 +17,9 @@ export class CrudService<T extends BaseEntity, CreateDto = Partial<T>, UpdateDto
   }
 
   async findOne(id: string): Promise<T | null> {
+    const primaryKey = this.repository.metadata.primaryColumns[0]?.propertyName || "id";
     const entity = await this.repository.findOne({
-      where: { id } as unknown as FindOptionsWhere<T>,
+      where: { [primaryKey]: id } as unknown as FindOptionsWhere<T>,
     });
     return entity;
   }

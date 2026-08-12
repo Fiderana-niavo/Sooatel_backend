@@ -5,7 +5,7 @@ export class Supplier extends BaseEntity {
   @PrimaryGeneratedColumn("uuid", { name: "id_supplier" })
   idSupplier: string;
 
-  @Column({ type: "varchar", length: 20, unique: true, name: "ref" })
+  @Column({ type: "varchar", length: 20, unique: true, name: "ref", insert: false, update: false })
   ref: string;
 
   @Column({ type: "varchar", length: 100, name: "name" })
@@ -20,6 +20,7 @@ export class Supplier extends BaseEntity {
   @Column({ type: "boolean", nullable: true, name: "provides_delivery" })
   providesDelivery: boolean;
 
+  // day
   @Column({ type: "numeric", precision: 5, scale: 2, nullable: true, name: "delivery_delay" })
   deliveryDelay: number;
 

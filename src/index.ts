@@ -30,7 +30,9 @@ import paymentRouter from "./modules/payment/routes/payment.route";
 import cashMovementCategoryRouter from "./modules/cash_movement/category/routes/cash-movement-category.route";
 import cashMovementRouter from "./modules/cash_movement/movement/routes/cash-movement.route";
 import cashJournalRouter from "./modules/cash_movement/cash_journal/routes/cash-journal.route";
+import supplierRouter from "./modules/suppliers/routes/supplier.router";
 import { startTokenPurgeJob } from "./shared/jobs/tokenPurge.job";
+import { startSupplierPriceJob } from "./modules/suppliers/jobs/supplier-price.job";
 import { globalErrorMiddleware } from "./shared/middlewares/error.middleware";
 
 configDotenv();
@@ -74,6 +76,9 @@ AppDataSource.initialize()
     app.use("/api/cash-movement-categories", cashMovementCategoryRouter);
     app.use("/api/cash-movements", cashMovementRouter);
     app.use("/api/cash-journals", cashJournalRouter);
+    app.use("/api/suppliers", supplierRouter);
+    app.use("/api/supplier-products", require("./modules/suppliers/routes/supplier-product.router").default);
+    app.use("/api/supplied-items", require("./modules/suppliers/routes/supplied-item.router").default);
 
     app.use(globalErrorMiddleware);
 
@@ -81,6 +86,7 @@ AppDataSource.initialize()
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
       startTokenPurgeJob();
+      startSupplierPriceJob();
     });
   })
   .catch((err: Error) => {

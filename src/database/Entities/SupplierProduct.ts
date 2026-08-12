@@ -6,7 +6,7 @@ export class SupplierProduct extends BaseEntity {
   @PrimaryGeneratedColumn("uuid", { name: "id_supplier_product" })
   idSupplierProduct: string;
 
-  @Column({ type: "varchar", length: 20, unique: true, name: "ref" })
+  @Column({ type: "varchar", length: 20, unique: true, name: "ref", insert: false, update: false })
   ref: string;
 
   @Column({ type: "varchar", length: 50, name: "name" })

@@ -1,6 +1,6 @@
 import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { Purchase } from "./Purchase";
-import { SupplierProduct } from "./SupplierProduct";
+import { SuppliedItem } from "./SuppliedItem";
 
 @Entity("purchase_details")
 export class PurchaseDetail extends BaseEntity {
@@ -10,8 +10,8 @@ export class PurchaseDetail extends BaseEntity {
   @Column({ type: "uuid", name: "id_purchase" })
   idPurchase: string;
 
-  @Column({ type: "uuid", name: "id_supplier_product" })
-  idSupplierProduct: string;
+  @Column({ type: "uuid", name: "id_supplied_item" })
+  idSuppliedItem: string;
 
   @Column({ type: "numeric", precision: 10, scale: 2, name: "quantity" })
   quantity: number;
@@ -22,9 +22,9 @@ export class PurchaseDetail extends BaseEntity {
   @Column({ type: "numeric", precision: 15, scale: 2, nullable: true, name: "total_amount" })
   totalAmount: number;
 
-  @ManyToOne(() => SupplierProduct)
-  @JoinColumn({ name: "id_supplier_product" })
-  supplierProduct: SupplierProduct;
+  @ManyToOne(() => SuppliedItem)
+  @JoinColumn({ name: "id_supplied_item" })
+  suppliedItem: SuppliedItem;
 
   @ManyToOne(() => Purchase)
   @JoinColumn({ name: "id_purchase" })

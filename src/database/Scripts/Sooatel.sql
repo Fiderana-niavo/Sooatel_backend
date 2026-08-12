@@ -259,13 +259,39 @@ CREATE TABLE Purchases(
 CREATE TABLE Purchase_details(
    id_purchase_detail UUID DEFAULT uuid_generate_v4(),
    id_purchase UUID NOT NULL,
-   id_supplier_product UUID NOT NULL,
+   id_supplied_item UUID NOT NULL,
    quantity NUMERIC(10,2)   NOT NULL,
    unit_price NUMERIC(15,2),
    total_amount NUMERIC(15,2) CHECK (total_amount >= 0),
    PRIMARY KEY(id_purchase_detail),
-   FOREIGN KEY(id_supplier_product) REFERENCES Supplier_products(id_supplier_product),
+   FOREIGN KEY(id_supplied_item) REFERENCES Supplied_Items(id_supplied_item),
    FOREIGN KEY(id_purchase) REFERENCES Purchases(id_purchase)
+);
+
+CREATE SEQUENCE delivery_ref_seq;
+CREATE TABLE Product_delivery(
+   id_delivery UUID DEFAULT uuid_generate_v4(),
+   ref VARCHAR(20) NOT NULL DEFAULT 'LIV' || to_char(nextval('delivery_ref_seq'), 'fm0000'),
+   delivery_date TIMESTAMPTZ NOT NULL,
+   total_amount NUMERIC(15,2),
+   status INTEGER,
+   notes TEXT,
+   id_purchase UUID NOT NULL,
+   PRIMARY KEY(id_delivery),
+   UNIQUE(ref),
+   FOREIGN KEY(id_purchase) REFERENCES Purchases(id_purchase)
+);
+
+CREATE TABLE Delivery_details(
+   id_detail UUID DEFAULT uuid_generate_v4(),
+   quantity NUMERIC(10,2) NOT NULL,
+   unit_price NUMERIC(15,2) NOT NULL,
+   total_amount NUMERIC(15,2),
+   id_supplied_item UUID NOT NULL,
+   id_delivery UUID NOT NULL,
+   PRIMARY KEY(id_detail),
+   FOREIGN KEY(id_supplied_item) REFERENCES Supplied_Items(id_supplied_item),
+   FOREIGN KEY(id_delivery) REFERENCES Product_delivery(id_delivery)
 );
 
 CREATE SEQUENCE purchase_payment_ref_seq;
