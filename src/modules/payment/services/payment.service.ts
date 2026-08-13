@@ -1,7 +1,7 @@
 import AppDataSource from "../../../database/data-source";
 import { Invoice } from "../../../database/Entities/Invoice";
+import { SALE_CONSTANTS } from "../../sales/constants/sale.constants";
 import { Payment } from "../../../database/Entities/Payment";
-import { AuditLog } from "../../../database/Entities/AuditLog";
 import { NotFoundError, BadRequestError } from "../../../shared/errors/AppError";
 import { CreatePaymentDto } from "../types/payment.type";
 
@@ -41,7 +41,10 @@ export class PaymentService {
       const { totalPaid } = await queryRunner.manager
         .createQueryBuilder(Payment, "p")
         .select("COALESCE(SUM(p.amount), 0)", "totalPaid")
-        .where("p.id_invoice = :idInvoice AND (p.payment_code IS NULL OR p.payment_code NOT LIKE 'Remboursement manuel%')", { idInvoice })
+        .where(`p.id_invoice = :idInvoice AND (p.payment_code IS NULL OR p.payment_code NOT LIKE :refundCode)`, {
+          idInvoice,
+          refundCode: `${SALE_CONSTANTS.MANUAL_REFUND_CODE}%`
+        })
         .getRawOne();
 
       invoice.balanceDue = Math.max(0, Number(invoice.totalAmount) - Number(totalPaid));

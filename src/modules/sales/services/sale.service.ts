@@ -1,6 +1,7 @@
 import AppDataSource from "../../../database/data-source";
 import { Sale } from "../../../database/Entities/Sale";
 import { SaleItem } from "../../../database/Entities/SaleItem";
+import { SALE_CONSTANTS } from "../constants/sale.constants";
 import { Invoice } from "../../../database/Entities/Invoice";
 import { Payment } from "../../../database/Entities/Payment";
 import { CashMovement } from "../../../database/Entities/CashMovement";
@@ -252,7 +253,7 @@ export class SaleService {
       if (dto.payment && dto.payment.amount > 0 && sale.invoice) {
         const currentPayments = await queryRunner.manager.find(Payment, { where: { idInvoice: sale.invoice.idInvoice } });
         const alreadyPaid = currentPayments
-          .filter(p => p.paymentCode !== "Remboursement manuel")
+          .filter(p => p.paymentCode !== SALE_CONSTANTS.MANUAL_REFUND_CODE)
           .reduce((sum, p) => sum + Number(p.amount), 0);
         const maxAllowed = Math.max(0, Number(sale.totalAmount) - alreadyPaid);
 
@@ -277,7 +278,7 @@ export class SaleService {
         const payments = await queryRunner.manager.find(Payment, { where: { idInvoice: sale.invoice.idInvoice } });
         // Exclude manual refunds from balance calculation — they are independent cash movements
         const totalPaid = payments
-          .filter(p => p.paymentCode !== "Remboursement manuel")
+          .filter(p => p.paymentCode !== SALE_CONSTANTS.MANUAL_REFUND_CODE)
           .reduce((sum, p) => sum + Number(p.amount), 0);
         const newBalance = Number(sale.totalAmount) - totalPaid;
 
@@ -287,7 +288,7 @@ export class SaleService {
               throw new BadRequestError("Le mode de paiement est requis pour un remboursement.");
             }
 
-            const refundCat = await getOrCreateCategory(queryRunner, "Remboursement Client", -5);
+            const refundCat = await getOrCreateCategory(queryRunner, SALE_CONSTANTS.REFUND_CLIENT, -5);
             const openJournal = await getOpenJournal(queryRunner);
             if (!openJournal) throw new BadRequestError("Impossible de créer le remboursement en caisse : Aucun journal ouvert trouvé.");
             const idEmployee = await resolveEmployeeId(queryRunner, userId);
@@ -332,7 +333,7 @@ export class SaleService {
             let adjCat: any = null;
             let openJournal: any = null;
             if (paymentToAdjust.idCashMovement) {
-              adjCat = await getOrCreateCategory(queryRunner, "Ajustement de vente", -5);
+              adjCat = await getOrCreateCategory(queryRunner, SALE_CONSTANTS.ADJUSTMENT_SALE, -5);
               openJournal = await getOpenJournal(queryRunner);
             }
 
@@ -477,7 +478,7 @@ export class SaleService {
         sale.invoice.totalAmount = 0; // Since it was synced with sale
         const payments = await queryRunner.manager.find(Payment, { where: { idInvoice: sale.invoice.idInvoice } });
         const totalPaid = payments
-          .filter(p => p.paymentCode !== "Remboursement manuel")
+          .filter(p => p.paymentCode !== SALE_CONSTANTS.MANUAL_REFUND_CODE)
           .reduce((sum, p) => sum + Number(p.amount), 0);
 
         if (totalPaid > 0) {
@@ -486,7 +487,7 @@ export class SaleService {
               throw new BadRequestError("Le mode de paiement est requis pour un remboursement.");
             }
 
-            const refundCat = await getOrCreateCategory(queryRunner, "Remboursement Client", -5);
+            const refundCat = await getOrCreateCategory(queryRunner, SALE_CONSTANTS.REFUND_CLIENT, -5);
             const openJournal = await getOpenJournal(queryRunner);
             if (!openJournal) throw new BadRequestError("Impossible de créer le remboursement en caisse : Aucun journal ouvert trouvé.");
             const idEmployee = await resolveEmployeeId(queryRunner, userId);
@@ -523,7 +524,7 @@ export class SaleService {
             let openJournal: any = null;
             let idEmployee: string | null = null;
             if (needsAdj) {
-              adjCat = await getOrCreateCategory(queryRunner, "Ajustement de vente", -5);
+              adjCat = await getOrCreateCategory(queryRunner, SALE_CONSTANTS.ADJUSTMENT_SALE, -5);
               openJournal = await getOpenJournal(queryRunner);
               idEmployee = await resolveEmployeeId(queryRunner, userId);
             }
@@ -644,7 +645,7 @@ export class SaleService {
         throw new BadRequestError("Impossible de modifier un remboursement généré par le système.");
       }
 
-      const isManualRefund = oldAmount < 0 || payment.paymentCode?.startsWith("Remboursement manuel");
+      const isManualRefund = oldAmount < 0 || payment.paymentCode?.startsWith(SALE_CONSTANTS.MANUAL_REFUND_CODE);
       const diff = oldAmount - newAmount;
       const needsMovement = !!payment.idCashMovement;
 
@@ -667,7 +668,7 @@ export class SaleService {
         if (!openJournal) throw new BadRequestError("Aucun journal ouvert trouvé pour enregistrer l'ajustement.");
 
         if (diff > 0) {
-          const cat = await getOrCreateCategory(queryRunner, "Ajustement de paiement (Sortie)", -5);
+          const cat = await getOrCreateCategory(queryRunner, SALE_CONSTANTS.ADJUSTMENT_PAYMENT_OUT, -5);
           const idEmployee = await resolveEmployeeId(queryRunner, userId);
           await createCashOutflow(
             queryRunner,
@@ -680,7 +681,7 @@ export class SaleService {
             payment.idPaymentMethod
           );
         } else if (diff < 0) {
-          const catInflow = await getOrCreateCategory(queryRunner, "Ajustement de paiement (Entrée)", 5);
+          const catInflow = await getOrCreateCategory(queryRunner, SALE_CONSTANTS.ADJUSTMENT_PAYMENT_IN, 5);
           const idEmployee = await resolveEmployeeId(queryRunner, userId);
           await createCashInflow(
             queryRunner,
@@ -705,7 +706,7 @@ export class SaleService {
       // Recalculate invoice
       const payments = await queryRunner.manager.find(Payment, { where: { idInvoice: sale.invoice.idInvoice } });
       const totalPaid = payments
-        .filter(p => !p.paymentCode?.startsWith("Remboursement manuel"))
+        .filter(p => !p.paymentCode?.startsWith(SALE_CONSTANTS.MANUAL_REFUND_CODE))
         .reduce((sum, p) => sum + Number(p.amount), 0);
       const newBalance = Number(sale.totalAmount) - totalPaid;
 
@@ -764,12 +765,12 @@ export class SaleService {
       if (!openJournal) throw new BadRequestError("Aucun journal ouvert trouvé pour enregistrer le remboursement.");
 
       const refundReason = reason ? ` - ${reason}` : "";
-      const cat = await getOrCreateCategory(queryRunner, "Remboursement Client", -5);
+      const cat = await getOrCreateCategory(queryRunner, SALE_CONSTANTS.REFUND_CLIENT, -5);
       const idEmployee = await resolveEmployeeId(queryRunner, userId);
       const cashMovement = await createCashOutflow(
         queryRunner,
         amount,
-        `Remboursement manuel (Facture ${sale.invoice.invoiceNumber || 'N/A'})${refundReason}`,
+        `${SALE_CONSTANTS.MANUAL_REFUND_CODE} (Facture ${sale.invoice.invoiceNumber || 'N/A'})${refundReason}`,
         sale.invoice.invoiceNumber || null,
         idEmployee,
         cat.idCashMovementCategory,
@@ -783,7 +784,7 @@ export class SaleService {
       refund.paymentDate = new Date();
       refund.amount = -amount;
       refund.idPaymentMethod = idPaymentMethod;
-      refund.paymentCode = "Remboursement manuel";
+      refund.paymentCode = SALE_CONSTANTS.MANUAL_REFUND_CODE;
       refund.idCashMovement = cashMovement.idCashMovement;
       await queryRunner.manager.save(Payment, refund);
 
@@ -791,7 +792,7 @@ export class SaleService {
       const { totalPaid } = await queryRunner.manager
         .createQueryBuilder(Payment, "p")
         .select("COALESCE(SUM(p.amount), 0)", "totalPaid")
-        .where("p.id_invoice = :idInvoice AND p.payment_code != 'Remboursement manuel'", { idInvoice: sale.invoice.idInvoice })
+        .where("p.id_invoice = :idInvoice AND p.payment_code != :manualRefundCode", { idInvoice: sale.invoice.idInvoice, manualRefundCode: SALE_CONSTANTS.MANUAL_REFUND_CODE })
         .getRawOne();
       const newBalance = Number(sale.totalAmount) - Number(totalPaid);
 
@@ -856,7 +857,7 @@ export class SaleService {
         const needsAdj = payments.some(p => p.idCashMovement);
 
         if (needsAdj) {
-          const adjCat = await getOrCreateCategory(queryRunner, "Ajustement de vente", -5);
+          const adjCat = await getOrCreateCategory(queryRunner, SALE_CONSTANTS.ADJUSTMENT_SALE, -5);
           const openJournal = await getOpenJournal(queryRunner);
 
           if (openJournal) {

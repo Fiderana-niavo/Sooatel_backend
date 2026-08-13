@@ -79,6 +79,7 @@ AppDataSource.initialize()
     app.use("/api/suppliers", supplierRouter);
     app.use("/api/supplier-products", require("./modules/suppliers/routes/supplier-product.router").default);
     app.use("/api/supplied-items", require("./modules/suppliers/routes/supplied-item.router").default);
+    app.use("/api/purchases", require("./modules/purchases/routes/purchase.routes").default);
 
     app.use(globalErrorMiddleware);
 

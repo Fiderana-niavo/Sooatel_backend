@@ -1,18 +1,18 @@
 import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { Employee } from "./Employee";
 import { PaymentMethod } from "./PaymentMethod";
-import { Purchase } from "./Purchase";
+import { SupplierInvoice } from "./SupplierInvoice";
 
-@Entity("purchase_payment")
-export class PurchasePayment extends BaseEntity {
-  @PrimaryGeneratedColumn("uuid", { name: "id_purchase_payment" })
-  idPurchasePayment: string;
+@Entity("supplier_payment")
+export class SupplierPayment extends BaseEntity {
+  @PrimaryGeneratedColumn("uuid", { name: "id_supplier_payment" })
+  idSupplierPayment: string;
 
   @Column({ type: "varchar", length: 20, unique: true, name: "ref" })
   ref: string;
 
-  @Column({ type: "uuid", name: "id_purchase" })
-  idPurchase: string;
+  @Column({ type: "uuid", name: "id_supplier_invoice" })
+  idSupplierInvoice: string;
 
   @Column({ type: "date", name: "payment_date" })
   paymentDate: Date;
@@ -34,7 +34,7 @@ export class PurchasePayment extends BaseEntity {
   @JoinColumn({ name: "id_payment_method" })
   paymentMethod: PaymentMethod;
 
-  @ManyToOne(() => Purchase)
-  @JoinColumn({ name: "id_purchase" })
-  purchase: Purchase;
+  @ManyToOne(() => SupplierInvoice, (invoice) => invoice.supplierPayments)
+  @JoinColumn({ name: "id_supplier_invoice" })
+  supplierInvoice: SupplierInvoice;
 }

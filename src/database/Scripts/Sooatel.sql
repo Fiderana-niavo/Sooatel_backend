@@ -294,20 +294,37 @@ CREATE TABLE Delivery_details(
    FOREIGN KEY(id_delivery) REFERENCES Product_delivery(id_delivery)
 );
 
-CREATE SEQUENCE purchase_payment_ref_seq;
-CREATE TABLE Purchase_payment(
-   id_purchase_payment UUID DEFAULT uuid_generate_v4(),
-   ref VARCHAR(20) NOT NULL DEFAULT 'REG_ACH' || to_char(nextval('purchase_payment_ref_seq'), 'fm0000'),
-   id_purchase UUID NOT NULL,
+CREATE SEQUENCE supplier_invoice_ref_seq;
+CREATE TABLE Supplier_invoice(
+   id_supplier_invoice UUID DEFAULT uuid_generate_v4(),
+   ref VARCHAR(20) NOT NULL DEFAULT 'INV_ACH' || to_char(nextval('supplier_invoice_ref_seq'), 'fm0000'),
+   id_delivery UUID,
+   id_purchase UUID,
+   total_amount NUMERIC(15,2),
+   balance_due NUMERIC(15,2),
+   invoice_date TIMESTAMPTZ,
+   status INTEGER,
+   PRIMARY KEY(id_supplier_invoice),
+   UNIQUE(ref),
+   FOREIGN KEY(id_delivery) REFERENCES Product_delivery(id_delivery),
+   FOREIGN KEY(id_purchase) REFERENCES Purchases(id_purchase),
+   CHECK ( (id_delivery IS NULL) <> (id_purchase IS NULL) )
+);
+
+CREATE SEQUENCE supplier_payment_ref_seq;
+CREATE TABLE Supplier_payment(
+   id_supplier_payment UUID DEFAULT uuid_generate_v4(),
+   ref VARCHAR(20) NOT NULL DEFAULT 'REG_ACH' || to_char(nextval('supplier_payment_ref_seq'), 'fm0000'),
+   id_supplier_invoice UUID NOT NULL,
    payment_date DATE NOT NULL,
    amount NUMERIC(15,2),
    id_processed_by UUID NOT NULL, --the employee in charge of the payment 
    id_payment_method UUID NOT NULL,
-   PRIMARY KEY(id_purchase_payment),
+   PRIMARY KEY(id_supplier_payment),
    UNIQUE(ref),
    FOREIGN KEY(id_processed_by) REFERENCES Employees(id_employee),
    FOREIGN KEY(id_payment_method) REFERENCES Payment_method(id_payment_method),
-   FOREIGN KEY(id_purchase) REFERENCES Purchases(id_purchase)
+   FOREIGN KEY(id_supplier_invoice) REFERENCES Supplier_invoice(id_supplier_invoice)
 );
 
 CREATE SEQUENCE stock_mvmt_ref_seq;

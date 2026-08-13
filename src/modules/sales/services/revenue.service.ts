@@ -7,6 +7,7 @@ import { CashJournal } from "../../../database/Entities/CashJournal";
 import { CashMovement } from "../../../database/Entities/CashMovement";
 import { PaymentMethodBalance } from "../../../database/Entities/PaymentMethodBalance";
 import { IsNull, LessThan } from "typeorm";
+import { SALE_CONSTANTS } from "../constants/sale.constants";
 
 
 export interface RevenueFilters {
@@ -175,7 +176,7 @@ export class RevenueService {
           ref: `MVT-${dateStr}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
           amount: Number(total),
           movementDate: today,
-          reason: "Journalisation des ventes",
+          reason: SALE_CONSTANTS.JOURNAL_REASON_SALE,
           direction: 5,
           idProcessedBy,
           idJournal: activeJournal.idJournal,

@@ -7,6 +7,7 @@ import { CrudService } from "../../../../shared/crud/services/CrudService";
 import { Paginated } from "../../../../shared/types/Paginated";
 import { CashJournalService } from "../../cash_journal/services/cash-journal.service";
 import { cashMovementDto, cashMovementSearchOptions } from "../type/cash-movement.type";
+import { CASH_MOVEMENT_CONSTANTS } from "../constants/cash-movement.constants";
 
 export class CashMovementService extends CrudService<CashMovement, cashMovementDto, cashMovementDto> {
   constructor(repository: Repository<CashMovement> = AppDataSource.getRepository(CashMovement)) {
@@ -81,11 +82,8 @@ export class CashMovementService extends CrudService<CashMovement, cashMovementD
     const existing = await this.repository.findOneBy({ idCashMovement: id });
     if (!existing) throw new Error("Mouvement de caisse introuvable.");
 
-    if (
-      existing.reason === "Journalisation des ventes" ||
-      existing.reason?.toLowerCase().includes("remboursement") ||
-      existing.reason?.toLowerCase().includes("ajustement")
-    ) {
+    const lowerReason = existing.reason?.toLowerCase() || "";
+    if (CASH_MOVEMENT_CONSTANTS.PROTECTED_REASONS.some(r => lowerReason.includes(r))) {
       throw new Error("Ce type de mouvement (Journalisation, Remboursement, Ajustement) ne peut pas être modifié.");
     }
 
@@ -126,11 +124,8 @@ export class CashMovementService extends CrudService<CashMovement, cashMovementD
     const existing = await this.repository.findOneBy({ idCashMovement: id });
     if (!existing) throw new Error("Mouvement de caisse introuvable.");
 
-    if (
-      existing.reason === "Journalisation des ventes" ||
-      existing.reason?.toLowerCase().includes("remboursement") ||
-      existing.reason?.toLowerCase().includes("ajustement")
-    ) {
+    const lowerReason = existing.reason?.toLowerCase() || "";
+    if (CASH_MOVEMENT_CONSTANTS.PROTECTED_REASONS.some(r => lowerReason.includes(r))) {
       throw new Error("Ce type de mouvement (Journalisation, Remboursement, Ajustement) ne peut pas être supprimé.");
     }
 

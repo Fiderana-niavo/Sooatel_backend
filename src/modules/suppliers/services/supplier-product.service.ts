@@ -3,6 +3,7 @@ import { QueryDeepPartialEntity } from "typeorm/query-builder/QueryPartialEntity
 import AppDataSource from "../../../database/data-source";
 import { SupplierProduct } from "../../../database/Entities/SupplierProduct";
 import { SupplierProductPrice } from "../../../database/Entities/SupplierProductPrice";
+import { SuppliedItem } from "../../../database/Entities/SuppliedItem";
 import { CrudService } from "../../../shared/crud/services/CrudService";
 import { Paginated } from "../../../shared/types/Paginated";
 import { SupplierProductDto, SupplierProductSearchOptions } from "../type/supplier.type";
@@ -33,6 +34,11 @@ export class SupplierProductService extends CrudService<SupplierProduct, Supplie
 
     if (search) {
       qb.andWhere("(entity.name ILIKE :s OR entity.ref ILIKE :s)", { s: `%${search}%` });
+    }
+
+    if (options.unlinkedOnly) {
+      qb.leftJoin(SuppliedItem, "si", "si.idSupplierProduct = entity.idSupplierProduct")
+        .andWhere("si.idSuppliedItem IS NULL");
     }
 
     const [records, total] = await qb.getManyAndCount();

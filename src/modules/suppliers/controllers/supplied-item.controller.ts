@@ -24,6 +24,20 @@ export class SuppliedItemController extends CrudController<SuppliedItem, Supplie
       next(err);
     }
   };
+
+  findBySupplier = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const idSupplier = req.params.idSupplier as string;
+      if (!idSupplier) {
+        res.status(400).json(ApiResponse.error("idSupplier est requis"));
+        return;
+      }
+      const result = await (this.service as SuppliedItemService).findBySupplier(idSupplier);
+      res.json(ApiResponse.success(result));
+    } catch (err: unknown) {
+      next(err);
+    }
+  };
 }
 
 export const suppliedItemController = new SuppliedItemController(new SuppliedItemService());

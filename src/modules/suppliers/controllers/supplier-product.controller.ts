@@ -17,6 +17,7 @@ export class SupplierProductController extends CrudController<SupplierProduct, S
         limit: Number(req.query.limit ?? 10),
         search: req.query.search as string | undefined,
         idSupplier: req.query.idSupplier as string | undefined,
+        unlinkedOnly: req.query.unlinkedOnly === "true",
       });
 
       res.json(ApiResponse.success(result));

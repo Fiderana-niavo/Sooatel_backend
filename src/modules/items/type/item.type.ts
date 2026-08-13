@@ -15,4 +15,6 @@ export interface ItemSearchOptions {
   page?: number;
   limit?: number;
   search?: string;
+  isProduced?: boolean;
+  unlinkedSupplierId?: string;
 }

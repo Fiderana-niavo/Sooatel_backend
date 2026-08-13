@@ -30,6 +30,7 @@ export interface SupplierProductSearchOptions {
   limit?: number;
   search?: string;
   idSupplier?: string;
+  unlinkedOnly?: boolean;
 }
 
 export interface SupplierProductPriceDto {
