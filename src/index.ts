@@ -80,6 +80,7 @@ AppDataSource.initialize()
     app.use("/api/supplier-products", require("./modules/suppliers/routes/supplier-product.router").default);
     app.use("/api/supplied-items", require("./modules/suppliers/routes/supplied-item.router").default);
     app.use("/api/purchases", require("./modules/purchases/routes/purchase.routes").default);
+    app.use("/api/deliveries", require("./modules/delivery/routes/delivery.routes").default);
 
     app.use(globalErrorMiddleware);
 

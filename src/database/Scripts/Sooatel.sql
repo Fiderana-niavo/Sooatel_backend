@@ -276,10 +276,8 @@ CREATE TABLE Product_delivery(
    total_amount NUMERIC(15,2),
    status INTEGER,
    notes TEXT,
-   id_purchase UUID NOT NULL,
    PRIMARY KEY(id_delivery),
-   UNIQUE(ref),
-   FOREIGN KEY(id_purchase) REFERENCES Purchases(id_purchase)
+   UNIQUE(ref)
 );
 
 CREATE TABLE Delivery_details(
@@ -291,6 +289,17 @@ CREATE TABLE Delivery_details(
    id_delivery UUID NOT NULL,
    PRIMARY KEY(id_detail),
    FOREIGN KEY(id_supplied_item) REFERENCES Supplied_Items(id_supplied_item),
+   FOREIGN KEY(id_delivery) REFERENCES Product_delivery(id_delivery)
+);
+
+-- Table de liaison entre commandes et livraisons (N:N)
+CREATE TABLE Purchase_delivery(
+   id_purchase_delivery UUID DEFAULT uuid_generate_v4(),
+   id_purchase UUID NOT NULL,
+   id_delivery UUID NOT NULL,
+   PRIMARY KEY(id_purchase_delivery),
+   UNIQUE(id_purchase, id_delivery),
+   FOREIGN KEY(id_purchase) REFERENCES Purchases(id_purchase),
    FOREIGN KEY(id_delivery) REFERENCES Product_delivery(id_delivery)
 );
 

@@ -1,13 +1,13 @@
-import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
-import { Purchase } from "./Purchase";
+import { BaseEntity, Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { DeliveryDetail } from "./DeliveryDetail";
+import { PurchaseDelivery } from "./PurchaseDelivery";
 
 @Entity("product_delivery")
 export class ProductDelivery extends BaseEntity {
   @PrimaryGeneratedColumn("uuid", { name: "id_delivery" })
   idDelivery: string;
 
-  @Column({ type: "varchar", length: 20, unique: true, name: "ref" })
+  @Column({ type: "varchar", length: 20, unique: true, name: "ref", insert: false, update: false })
   ref: string;
 
   @Column({ type: "timestamptz", name: "delivery_date" })
@@ -22,13 +22,9 @@ export class ProductDelivery extends BaseEntity {
   @Column({ type: "text", nullable: true, name: "notes" })
   notes: string;
 
-  @Column({ type: "uuid", name: "id_purchase" })
-  idPurchase: string;
-
-  @ManyToOne(() => Purchase)
-  @JoinColumn({ name: "id_purchase" })
-  purchase: Purchase;
-
-  @OneToMany(() => DeliveryDetail, (deliveryDetail: DeliveryDetail) => deliveryDetail.productDelivery)
+  @OneToMany(() => DeliveryDetail, (detail: DeliveryDetail) => detail.productDelivery)
   deliveryDetails: DeliveryDetail[];
+
+  @OneToMany(() => PurchaseDelivery, (pd: PurchaseDelivery) => pd.productDelivery)
+  purchaseDeliveries: PurchaseDelivery[];
 }

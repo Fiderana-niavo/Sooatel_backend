@@ -59,6 +59,15 @@ export class PurchaseController {
       next(err);
     }
   };
+
+  getDeliveries = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const result = await this.service.getPurchaseDeliveries(req.params.id as string);
+      res.json(ApiResponse.success(result));
+    } catch (err: unknown) {
+      next(err);
+    }
+  };
 }
 
 export const purchaseController = new PurchaseController(new PurchaseService());

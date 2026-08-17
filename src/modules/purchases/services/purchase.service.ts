@@ -7,6 +7,8 @@ import { PurchaseDto } from "../type/purchase.type";
 import { NotFoundError, BadRequestError } from "../../../shared/errors/AppError";
 import { Paginated } from "../../../shared/types/Paginated";
 import { getPurchaseStatusName } from "../constants/purchase.constants";
+import { getDeliveryStatusName } from "../../delivery/constants/delivery.constants";
+import { ProductDelivery } from "../../../database/Entities/ProductDelivery";
 
 export class PurchaseService {
   async createPurchase(dto: PurchaseDto, userId: string): Promise<any> {
@@ -202,6 +204,52 @@ export class PurchaseService {
           supplierProduct: true
         }
       }
+    });
+  }
+
+  async getPurchaseDeliveries(idPurchase: string): Promise<any[]> {
+    // 1. Get supplied items for this purchase
+    const purchaseDetails = await PurchaseDetail.find({
+      where: { idPurchase },
+      select: { idSuppliedItem: true }
+    });
+    const suppliedItemIds = purchaseDetails.map((d) => d.idSuppliedItem);
+
+    if (suppliedItemIds.length === 0) return [];
+
+    // 2. Get deliveries linked to this purchase
+    const deliveries = await AppDataSource.getRepository(ProductDelivery)
+      .createQueryBuilder("delivery")
+      .innerJoin("delivery.purchaseDeliveries", "pd")
+      .leftJoinAndSelect("delivery.deliveryDetails", "detail")
+      .leftJoinAndSelect("detail.suppliedItem", "si")
+      .leftJoinAndSelect("si.item", "item")
+      .where("pd.idPurchase = :idPurchase", { idPurchase })
+      .orderBy("delivery.deliveryDate", "DESC")
+      .getMany();
+
+    // 3. Filter deliveryDetails to only include items from this purchase
+    return deliveries.map((delivery) => {
+      const filteredDetails = delivery.deliveryDetails.filter((d) =>
+        suppliedItemIds.includes(d.idSuppliedItem)
+      );
+
+      return {
+        idDelivery: delivery.idDelivery,
+        ref: delivery.ref,
+        deliveryDate: delivery.deliveryDate,
+        totalAmount: delivery.totalAmount, // Note: Global delivery amount
+        status: getDeliveryStatusName(delivery.status),
+        details: filteredDetails.map((d) => ({
+          idDeliveryDetail: d.idDetail,
+          idSuppliedItem: d.idSuppliedItem,
+          quantity: d.quantity,
+          unitPrice: d.unitPrice,
+          totalAmount: d.totalAmount,
+          itemLabel: d.suppliedItem?.item?.label,
+          itemRef: d.suppliedItem?.item?.ref,
+        })),
+      };
     });
   }
 }

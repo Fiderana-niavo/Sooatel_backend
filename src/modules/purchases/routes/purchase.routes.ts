@@ -11,5 +11,6 @@ router.post("/", purchaseController.create);
 router.get("/", purchaseController.findAll);
 router.get("/:id", purchaseController.getById);
 router.get("/:id/details", purchaseController.getDetails);
+router.get("/:id/deliveries", purchaseController.getDeliveries);
 
 export default router;
