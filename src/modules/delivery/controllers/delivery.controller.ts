@@ -5,7 +5,7 @@ import { ApiResponse } from "../../../shared/types/ApiResponse";
 export class DeliveryController {
   findAll = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { page, limit, status, ref, startDate, endDate } = req.query;
+      const { page, limit, status, ref, startDate, endDate, idPurchase } = req.query;
       const options = {
         page: page ? parseInt(page as string, 10) : 1,
         limit: limit ? parseInt(limit as string, 10) : 10,
@@ -13,6 +13,7 @@ export class DeliveryController {
         ref: ref as string,
         startDate: startDate as string,
         endDate: endDate as string,
+        idPurchase: idPurchase as string,
       };
       const result = await deliveryService.findAll(options);
       res.json(ApiResponse.success(result));

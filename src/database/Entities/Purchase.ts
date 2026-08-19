@@ -11,7 +11,7 @@ export class Purchase extends BaseEntity {
   @Column({ type: "varchar", length: 20, unique: true, name: "ref", insert: false, update: false })
   ref: string;
 
-  @Column({ type: "date", name: "purchase_date" })
+  @Column({ type: "timestamp", name: "purchase_date" })
   purchaseDate: Date;
 
   @Column({ type: "numeric", precision: 15, scale: 2, nullable: true, name: "total_amount" })
@@ -22,6 +22,9 @@ export class Purchase extends BaseEntity {
 
   @Column({ type: "int", name: "status", nullable: true })
   status: number;
+
+  @Column({ type: "int", name: "lifecycle_status", nullable: true, default: 5 })
+  lifecycleStatus: number;
 
   @Column({ type: "uuid", name: "id_supplier" })
   idSupplier: string;

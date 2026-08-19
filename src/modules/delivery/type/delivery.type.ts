@@ -4,7 +4,7 @@ export interface DeliveryLineDto {
 }
 
 export interface CreateDeliveryDto {
-  idPurchaseClicked: string;
+  
   idPurchases: string[];
   lines: DeliveryLineDto[];
 }

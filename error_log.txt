@@ -1,0 +1,5 @@
+AppError: La quantité de l'article dda9a6bc-3997-4c5a-9353-57702252eb7d ne peut pas être inférieure à la quantité déjà livrée (60).
+    at PurchaseService.preparePurchaseDetails (F:\Stage\Sooatel\Projet_de_stage\Sooatel_backend\src\modules\purchases\services\purchase.service.ts:199:17)
+    at PurchaseService.updatePurchase (F:\Stage\Sooatel\Projet_de_stage\Sooatel_backend\src\modules\purchases\services\purchase.service.ts:64:42)
+    at processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async update (F:\Stage\Sooatel\Projet_de_stage\Sooatel_backend\src\modules\purchases\controllers\purchase.controller.ts:30:22)

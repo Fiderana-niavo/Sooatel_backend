@@ -1,3 +1,4 @@
+import { PurchaseService as IPurchaseService } from "./purchase.service";
 import AppDataSource from "../../../database/data-source";
 import { Purchase } from "../../../database/Entities/Purchase";
 import { PurchaseDetail } from "../../../database/Entities/PurchaseDetail";
@@ -9,6 +10,8 @@ import { Paginated } from "../../../shared/types/Paginated";
 import { getPurchaseStatusName } from "../constants/purchase.constants";
 import { getDeliveryStatusName } from "../../delivery/constants/delivery.constants";
 import { ProductDelivery } from "../../../database/Entities/ProductDelivery";
+import { PurchaseDelivery } from "../../../database/Entities/PurchaseDelivery";
+import { DeliveryDetail } from "../../../database/Entities/DeliveryDetail";
 
 export class PurchaseService {
   async createPurchase(dto: PurchaseDto, userId: string): Promise<any> {
@@ -17,56 +20,22 @@ export class PurchaseService {
     await queryRunner.startTransaction();
 
     try {
-      const purchase = new Purchase();
+      let purchase = this.buildNewPurchase(dto, userId);
+      purchase = await queryRunner.manager.save(Purchase, purchase);
 
-      purchase.purchaseDate = dto.purchaseDate ? new Date(dto.purchaseDate) : new Date();
-      purchase.status = PURCHASE_STATUS.CREATED;
-      purchase.idSupplier = dto.idSupplier;
-      purchase.idPurchaser = dto.idPurchaser || userId;
+      const { details, totalAmount } = await this.prepareNewPurchaseDetails(queryRunner, purchase.idPurchase, dto);
 
-      const savedPurchase = await queryRunner.manager.save(Purchase, purchase);
+      await this.insertPurchaseDetails(queryRunner, details);
 
-      let calculatedTotal = 0;
-      const detailsToInsert = [];
-
-      if (dto.details && dto.details.length > 0) {
-        for (const detailDto of dto.details) {
-          if (detailDto.quantity < 1) throw new BadRequestError(`La quantité doit être au moins 1.`);
-          if (detailDto.unitPrice < 0) throw new BadRequestError(`Le prix unitaire ne peut pas être négatif.`);
-
-          const suppliedItem = await queryRunner.manager.findOne(SuppliedItem, { where: { idSuppliedItem: detailDto.idSuppliedItem } });
-          if (!suppliedItem) throw new NotFoundError(`Article fournisseur ${detailDto.idSuppliedItem} introuvable`);
-
-          const lineTotal = detailDto.quantity * detailDto.unitPrice;
-          calculatedTotal += lineTotal;
-          detailsToInsert.push({
-            idPurchase: savedPurchase.idPurchase,
-            idSuppliedItem: detailDto.idSuppliedItem,
-            quantity: detailDto.quantity,
-            unitPrice: detailDto.unitPrice,
-            totalAmount: lineTotal
-          });
-        }
-
-        if (detailsToInsert.length > 0) {
-          await queryRunner.manager
-            .createQueryBuilder()
-            .insert()
-            .into(PurchaseDetail)
-            .values(detailsToInsert)
-            .execute();
-        }
-      }
-
-      savedPurchase.totalAmount = calculatedTotal;
-      savedPurchase.balanceDue = calculatedTotal;
-      await queryRunner.manager.save(Purchase, savedPurchase);
+      purchase.totalAmount = totalAmount;
+      purchase.balanceDue = totalAmount;
+      await queryRunner.manager.save(Purchase, purchase);
 
       await queryRunner.commitTransaction();
 
       return {
-        ...savedPurchase,
-        status: getPurchaseStatusName(savedPurchase.status)
+        ...purchase,
+        status: getPurchaseStatusName(purchase.status)
       } as any;
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -76,13 +45,251 @@ export class PurchaseService {
     }
   }
 
-  async findAll(options: { 
-    page?: number; 
-    limit?: number; 
-    status?: number; 
-    idSupplier?: string; 
-    startDate?: string; 
-    endDate?: string 
+  async updatePurchase(idPurchase: string, dto: PurchaseDto, userId: string): Promise<any> {
+    const queryRunner = AppDataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const purchase = await this.getPurchaseForUpdate(queryRunner, idPurchase);
+
+      this.validatePurchaseCanBeUpdated(purchase);
+
+      await this.validateNoOpenDelivery(queryRunner, idPurchase);
+
+      const deliveredQuantities = await this.getDeliveredQuantities(queryRunner, purchase);
+
+      this.validateSupplierChange(purchase, dto, deliveredQuantities);
+
+      const preparedDetails = await this.preparePurchaseDetails(queryRunner, purchase, dto, deliveredQuantities);
+
+      await this.replacePurchaseDetails(queryRunner, purchase.idPurchase, preparedDetails.details);
+
+      this.updatePurchaseData(purchase, dto, preparedDetails.totalAmount, userId);
+
+      // Prevent TypeORM from syncing the old details relation and deleting the newly inserted details
+      delete (purchase as any).details;
+
+      await queryRunner.manager.save(Purchase, purchase);
+      await queryRunner.commitTransaction();
+
+      return {
+        ...purchase,
+        status: getPurchaseStatusName(purchase.status)
+      } as any;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  // --- Helpers for PurchaseService ---
+
+  private buildNewPurchase(dto: PurchaseDto, userId: string): Purchase {
+    const purchase = new Purchase();
+    purchase.purchaseDate = dto.purchaseDate ? new Date(dto.purchaseDate) : new Date();
+    purchase.status = PURCHASE_STATUS.CREATED;
+    purchase.idSupplier = dto.idSupplier;
+    purchase.idPurchaser = dto.idPurchaser || userId;
+    return purchase;
+  }
+
+  private async prepareNewPurchaseDetails(queryRunner: any, idPurchase: string, dto: PurchaseDto) {
+    let calculatedTotal = 0;
+    const detailsToInsert = [];
+
+    if (dto.details && dto.details.length > 0) {
+      for (const detailDto of dto.details) {
+        if (detailDto.quantity < 1) throw new BadRequestError(`La quantité doit être au moins 1.`);
+        if (detailDto.unitPrice < 0) throw new BadRequestError(`Le prix unitaire ne peut pas être négatif.`);
+
+        const suppliedItem = await queryRunner.manager.findOne(SuppliedItem, { where: { idSuppliedItem: detailDto.idSuppliedItem } });
+        if (!suppliedItem) throw new NotFoundError(`Article fournisseur ${detailDto.idSuppliedItem} introuvable`);
+
+        const lineTotal = detailDto.quantity * detailDto.unitPrice;
+        calculatedTotal += lineTotal;
+        detailsToInsert.push({
+          idPurchase: idPurchase,
+          idSuppliedItem: detailDto.idSuppliedItem,
+          quantity: detailDto.quantity,
+          unitPrice: detailDto.unitPrice,
+          totalAmount: lineTotal
+        });
+      }
+    }
+    return { details: detailsToInsert, totalAmount: calculatedTotal };
+  }
+
+  private async insertPurchaseDetails(queryRunner: any, detailsToInsert: any[]): Promise<void> {
+    if (detailsToInsert.length > 0) {
+      await queryRunner.manager
+        .createQueryBuilder()
+        .insert()
+        .into(PurchaseDetail)
+        .values(detailsToInsert)
+        .execute();
+    }
+  }
+
+  private async getPurchaseForUpdate(queryRunner: any, idPurchase: string): Promise<Purchase> {
+    const purchase = await queryRunner.manager.findOne(Purchase, {
+      where: { idPurchase },
+      relations: { details: true }
+    });
+    if (!purchase) throw new NotFoundError("Commande introuvable");
+    return purchase;
+  }
+
+  private validatePurchaseCanBeUpdated(purchase: Purchase): void {
+    if (purchase.lifecycleStatus !== 5 && purchase.lifecycleStatus !== 0) {
+      throw new BadRequestError("Cette commande ne peut plus être modifiée (statut invalide).");
+    }
+  }
+
+  private async validateNoOpenDelivery(queryRunner: any, idPurchase: string): Promise<void> {
+    const openDeliveriesCount = await queryRunner.manager
+      .createQueryBuilder(PurchaseDelivery, "pd")
+      .innerJoin("pd.productDelivery", "delivery")
+      .where("pd.id_purchase = :idPurchase", { idPurchase })
+      .andWhere("delivery.status = 5") // Open delivery
+      .getCount();
+
+    if (openDeliveriesCount > 0) {
+      throw new BadRequestError("Impossible de modifier une commande avec une livraison en cours (OUVERTE).");
+    }
+  }
+
+  private async getDeliveredQuantities(queryRunner: any, purchase: Purchase): Promise<Map<string, number>> {
+    const deliveredQuantities = new Map<string, number>();
+
+    if (purchase.status === PURCHASE_STATUS.PARTIALLY_DELIVERED || purchase.status === PURCHASE_STATUS.DELIVERED) {
+      const details = await queryRunner.manager
+        .createQueryBuilder(DeliveryDetail, "dd")
+        .innerJoin("dd.productDelivery", "delivery")
+        .innerJoin("delivery.purchaseDeliveries", "pd")
+        .where("pd.id_purchase = :idPurchase", { idPurchase: purchase.idPurchase })
+        .andWhere("delivery.status = 0") // Confirmed delivery
+        .getMany();
+
+      for (const d of details) {
+        const current = deliveredQuantities.get(d.idSuppliedItem) || 0;
+        deliveredQuantities.set(d.idSuppliedItem, current + Number(d.quantity));
+      }
+    }
+    return deliveredQuantities;
+  }
+
+  private validateSupplierChange(purchase: Purchase, dto: PurchaseDto, deliveredQuantities: Map<string, number>): void {
+    if (deliveredQuantities.size > 0 && purchase.idSupplier !== dto.idSupplier) {
+      throw new BadRequestError("Impossible de changer le fournisseur d'une commande partiellement livrée.");
+    }
+  }
+
+  private async preparePurchaseDetails(queryRunner: any, purchase: Purchase, dto: PurchaseDto, deliveredQuantities: Map<string, number>) {
+    let calculatedTotal = 0;
+    const detailsToInsert = [];
+    const newDetailIds = dto.details ? dto.details.map(d => d.idSuppliedItem) : [];
+
+    if (dto.details && dto.details.length > 0) {
+      for (const detailDto of dto.details) {
+        if (detailDto.quantity < 1) throw new BadRequestError("La quantité doit être au moins 1.");
+        if (detailDto.unitPrice < 0) throw new BadRequestError("Le prix unitaire ne peut pas être négatif.");
+
+        const deliveredQty = deliveredQuantities.get(detailDto.idSuppliedItem) || 0;
+        if (detailDto.quantity < deliveredQty) {
+          throw new BadRequestError(`La quantité de l'article ${detailDto.idSuppliedItem} ne peut pas être inférieure à la quantité déjà livrée (${deliveredQty}).`);
+        }
+        const suppliedItem = await queryRunner.manager.findOne(SuppliedItem, { where: { idSuppliedItem: detailDto.idSuppliedItem } });
+        if (!suppliedItem) throw new NotFoundError(`Article fournisseur ${detailDto.idSuppliedItem} introuvable`);
+
+        const lineTotal = detailDto.quantity * detailDto.unitPrice;
+        calculatedTotal += lineTotal;
+        detailsToInsert.push({
+          idPurchase: purchase.idPurchase,
+          idSuppliedItem: detailDto.idSuppliedItem,
+          quantity: detailDto.quantity,
+          unitPrice: detailDto.unitPrice,
+          totalAmount: lineTotal
+        });
+      }
+    }
+
+    for (const oldDetail of purchase.details) {
+      if (!newDetailIds.includes(oldDetail.idSuppliedItem)) {
+        const deliveredQty = deliveredQuantities.get(oldDetail.idSuppliedItem) || 0;
+        if (deliveredQty > 0) {
+          throw new BadRequestError(`Impossible de supprimer l'article ${oldDetail.idSuppliedItem} car ${deliveredQty} unités ont déjà été livrées.`);
+        }
+      }
+    }
+
+    return { details: detailsToInsert, totalAmount: calculatedTotal };
+  }
+
+  private async replacePurchaseDetails(queryRunner: any, idPurchase: string, detailsToInsert: any[]): Promise<void> {
+    await queryRunner.manager.delete(PurchaseDetail, { idPurchase });
+    if (detailsToInsert.length > 0) {
+      await queryRunner.manager
+        .createQueryBuilder()
+        .insert()
+        .into(PurchaseDetail)
+        .values(detailsToInsert)
+        .execute();
+    }
+  }
+
+  private updatePurchaseData(purchase: Purchase, dto: PurchaseDto, calculatedTotal: number, userId: string): void {
+    purchase.purchaseDate = dto.purchaseDate ? new Date(dto.purchaseDate) : purchase.purchaseDate;
+    purchase.idSupplier = dto.idSupplier;
+    purchase.idPurchaser = dto.idPurchaser || purchase.idPurchaser || userId;
+    purchase.totalAmount = calculatedTotal;
+    purchase.balanceDue = calculatedTotal;
+  }
+
+  async confirmPurchase(idPurchase: string, userId: string): Promise<Purchase> {
+    const purchase = await Purchase.findOne({ where: { idPurchase } });
+    if (!purchase) throw new NotFoundError("Commande introuvable");
+    if (purchase.lifecycleStatus !== 5) { // 5 = Ouvert
+      throw new BadRequestError("Seule une commande au statut 'Ouvert' peut être confirmée.");
+    }
+    
+    purchase.lifecycleStatus = 0; // 0 = Confirmé
+    await purchase.save();
+    return {
+      ...purchase,
+      status: getPurchaseStatusName(purchase.status)
+    } as any;
+  }
+
+  async cancelPurchase(idPurchase: string, userId: string): Promise<Purchase> {
+    const purchase = await Purchase.findOne({ where: { idPurchase } });
+    if (!purchase) throw new NotFoundError("Commande introuvable");
+    if (purchase.lifecycleStatus === -3) { // -3 = Annulé
+      throw new BadRequestError("Cette commande est déjà annulée.");
+    }
+    
+    if (purchase.status === PURCHASE_STATUS.DELIVERED) { // 0 = Livré
+      throw new BadRequestError("Impossible d'annuler une commande déjà entièrement livrée.");
+    }
+
+    purchase.lifecycleStatus = -3; // Annulé
+    await purchase.save();
+    return {
+      ...purchase,
+      status: getPurchaseStatusName(purchase.status)
+    } as any;
+  }
+
+  async findAll(options: {
+    page?: number;
+    limit?: number;
+    status?: number;
+    lifecycleStatus?: number;
+    idSupplier?: string;
+    startDate?: string;
+    endDate?: string;
   } = {}): Promise<Paginated<any>> {
     const pageNum = options.page ?? 1;
     const limitNum = options.limit ?? 10;
@@ -97,6 +304,7 @@ export class PurchaseService {
         "purchase.totalAmount",
         "purchase.balanceDue",
         "purchase.status",
+        "purchase.lifecycleStatus",
         "purchase.idSupplier",
         "purchase.idPurchaser"
       ])
@@ -108,6 +316,13 @@ export class PurchaseService {
 
     if (options.status !== undefined) {
       qb.andWhere("purchase.status = :status", { status: options.status });
+    }
+
+    if (options.lifecycleStatus !== undefined) {
+      qb.andWhere("purchase.lifecycleStatus = :lifecycleStatus", { lifecycleStatus: options.lifecycleStatus });
+    } else {
+      // By default, exclude canceled purchases from the normal list
+      qb.andWhere("purchase.lifecycleStatus != -3");
     }
 
     if (options.idSupplier) {
@@ -126,7 +341,8 @@ export class PurchaseService {
 
     const mappedRecords = records.map((record) => ({
       ...record,
-      status: getPurchaseStatusName(record.status)
+      status: record.lifecycleStatus === -3 ? "Annulé" : getPurchaseStatusName(record.status),
+      lifecycleStatus: record.lifecycleStatus ?? 5
     }));
 
     return {
@@ -148,6 +364,7 @@ export class PurchaseService {
         totalAmount: true,
         balanceDue: true,
         status: true,
+        lifecycleStatus: true,
         idSupplier: true,
         idPurchaser: true,
         supplier: {
@@ -170,7 +387,7 @@ export class PurchaseService {
 
     return {
       ...purchase,
-      status: getPurchaseStatusName(purchase.status)
+      status: purchase.lifecycleStatus === -3 ? "Annulé" : getPurchaseStatusName(purchase.status)
     };
   }
 
