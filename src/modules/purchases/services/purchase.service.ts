@@ -4,7 +4,7 @@ import { Purchase } from "../../../database/Entities/Purchase";
 import { PurchaseDetail } from "../../../database/Entities/PurchaseDetail";
 import { SuppliedItem } from "../../../database/Entities/SuppliedItem";
 import { PURCHASE_STATUS } from "../constants/purchase.constants";
-import { PurchaseDto } from "../type/purchase.type";
+import { PurchaseDto, PurchaseDetailDto } from "../type/purchase.type";
 import { NotFoundError, BadRequestError } from "../../../shared/errors/AppError";
 import { Paginated } from "../../../shared/types/Paginated";
 import { getPurchaseStatusName } from "../constants/purchase.constants";
@@ -187,6 +187,20 @@ export class PurchaseService {
     }
   }
 
+  private async validateSuppliedItemQuantity(queryRunner: any, detailDto: PurchaseDetailDto, deliveredQuantities: Map<string, number>): Promise<void> {
+    const suppliedItem = await queryRunner.manager.findOne(SuppliedItem, {
+      where: { idSuppliedItem: detailDto.idSuppliedItem },
+      relations: { item: true }
+    });
+    if (!suppliedItem) throw new NotFoundError(`Article fournisseur ${detailDto.idSuppliedItem} introuvable`);
+
+    const deliveredQty = deliveredQuantities.get(detailDto.idSuppliedItem) || 0;
+    if (detailDto.quantity < deliveredQty) {
+      const itemName = suppliedItem.item?.label || detailDto.idSuppliedItem;
+      throw new BadRequestError(`La quantité de l'article "${itemName}" ne peut pas être inférieure à la quantité déjà livrée (${deliveredQty}).`);
+    }
+  }
+
   private async preparePurchaseDetails(queryRunner: any, purchase: Purchase, dto: PurchaseDto, deliveredQuantities: Map<string, number>) {
     let calculatedTotal = 0;
     const detailsToInsert = [];
@@ -197,12 +211,7 @@ export class PurchaseService {
         if (detailDto.quantity < 1) throw new BadRequestError("La quantité doit être au moins 1.");
         if (detailDto.unitPrice < 0) throw new BadRequestError("Le prix unitaire ne peut pas être négatif.");
 
-        const deliveredQty = deliveredQuantities.get(detailDto.idSuppliedItem) || 0;
-        if (detailDto.quantity < deliveredQty) {
-          throw new BadRequestError(`La quantité de l'article ${detailDto.idSuppliedItem} ne peut pas être inférieure à la quantité déjà livrée (${deliveredQty}).`);
-        }
-        const suppliedItem = await queryRunner.manager.findOne(SuppliedItem, { where: { idSuppliedItem: detailDto.idSuppliedItem } });
-        if (!suppliedItem) throw new NotFoundError(`Article fournisseur ${detailDto.idSuppliedItem} introuvable`);
+        await this.validateSuppliedItemQuantity(queryRunner, detailDto, deliveredQuantities);
 
         const lineTotal = detailDto.quantity * detailDto.unitPrice;
         calculatedTotal += lineTotal;
@@ -254,7 +263,7 @@ export class PurchaseService {
     if (purchase.lifecycleStatus !== 5) { // 5 = Ouvert
       throw new BadRequestError("Seule une commande au statut 'Ouvert' peut être confirmée.");
     }
-    
+
     purchase.lifecycleStatus = 0; // 0 = Confirmé
     await purchase.save();
     return {
@@ -263,15 +272,45 @@ export class PurchaseService {
     } as any;
   }
 
-  async cancelPurchase(idPurchase: string, userId: string): Promise<Purchase> {
+  async cancelPurchase(idPurchase: string, userId: string, options?: { forceAction?: "delete" | "confirm" }): Promise<Purchase> {
     const purchase = await Purchase.findOne({ where: { idPurchase } });
     if (!purchase) throw new NotFoundError("Commande introuvable");
     if (purchase.lifecycleStatus === -3) { // -3 = Annulé
       throw new BadRequestError("Cette commande est déjà annulée.");
     }
-    
+
     if (purchase.status === PURCHASE_STATUS.DELIVERED) { // 0 = Livré
       throw new BadRequestError("Impossible d'annuler une commande déjà entièrement livrée.");
+    }
+
+    // Handle open deliveries
+    const openDelivery = await PurchaseDelivery.createQueryBuilder("pd")
+      .innerJoinAndSelect("pd.productDelivery", "delivery")
+      .where("pd.id_purchase = :idPurchase", { idPurchase })
+      .andWhere("delivery.status = 5") // Open delivery
+      .getOne();
+
+    if (openDelivery && openDelivery.productDelivery) {
+      const deliveryId = openDelivery.productDelivery.idDelivery;
+      if (!options?.forceAction) {
+        throw new BadRequestError("livraison non validée");
+      }
+      
+      const { DeliveryService } = require("../../delivery/services/delivery.service");
+      const deliveryService = new DeliveryService();
+      
+      if (options.forceAction === "delete") {
+        await deliveryService.deleteDelivery(deliveryId);
+      } else if (options.forceAction === "confirm") {
+        await deliveryService.validateDelivery(deliveryId, userId);
+      }
+      
+      // Reload purchase as status might have changed after delivery confirmation
+      await purchase.reload();
+    }
+
+    if (purchase.status === PURCHASE_STATUS.PARTIALLY_DELIVERED) {
+      purchase.status = PURCHASE_STATUS.DELIVERED;
     }
 
     purchase.lifecycleStatus = -3; // Annulé

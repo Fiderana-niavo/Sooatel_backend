@@ -8,7 +8,7 @@ export type PurchaseStatus = typeof PURCHASE_STATUS[keyof typeof PURCHASE_STATUS
 
 export const PURCHASE_STATUS_LABELS: Record<PurchaseStatus, string> = {
   [PURCHASE_STATUS.CREATED]: "Créé",
-  [PURCHASE_STATUS.PARTIALLY_DELIVERED]: "Partiellement Livré",
+  [PURCHASE_STATUS.PARTIALLY_DELIVERED]: "Partiel",
   [PURCHASE_STATUS.DELIVERED]: "Livré",
 };
 

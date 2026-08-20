@@ -50,12 +50,13 @@ export class PurchaseController {
 
   cancel = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const userId = req.userId;
-      if (!userId) {
+      const idOperator = req.idEmployee || req.userId;
+      if (!idOperator) {
         res.status(401).json(ApiResponse.error("Non authentifié"));
         return;
       }
-      const result = await this.service.cancelPurchase(req.params.id as string, userId);
+      const forceAction = req.body.forceAction;
+      const result = await this.service.cancelPurchase(req.params.id as string, idOperator, { forceAction });
       res.status(200).json(ApiResponse.success(result));
     } catch (err: unknown) {
       next(err);

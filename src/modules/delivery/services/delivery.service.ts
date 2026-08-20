@@ -327,7 +327,6 @@ export class DeliveryService {
         const item = detail.suppliedItem.item;
 
         const movement = new StockMovement();
-        movement.ref = `MVT-${Date.now().toString(36).toUpperCase()}-${i}`;
         movement.idItem = item.idItem;
         movement.movementDate = new Date();
         movement.quantity = detail.quantity;
