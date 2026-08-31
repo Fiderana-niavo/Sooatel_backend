@@ -2,6 +2,8 @@ import { Brackets } from "typeorm";
 import AppDataSource from "../../../database/data-source";
 import { Purchase } from "../../../database/Entities/Purchase";
 import { ProductDelivery } from "../../../database/Entities/ProductDelivery";
+import { SupplierBalance } from "../../../database/Entities/SupplierBalance";
+import { SupplierPaymentAllocation } from "../../../database/Entities/SupplierPaymentAllocation";
 import { DeliveryDetail } from "../../../database/Entities/DeliveryDetail";
 import { PurchaseDelivery } from "../../../database/Entities/PurchaseDelivery";
 import { PURCHASE_STATUS, getPurchaseStatusName } from "../../purchases/constants/purchase.constants";
@@ -282,6 +284,21 @@ export class DeliveryService {
 
       await this.saveStockUpdates(queryRunner, stockMovements, itemsArray);
 
+      // Initialiser balance_due et mettre à jour le debit fournisseur
+      const totalDelivery = Number(delivery.totalAmount ?? 0);
+      delivery.balanceDue = totalDelivery;
+      await queryRunner.manager.save(ProductDelivery, delivery);
+
+      const idSupplier = delivery.purchaseDeliveries?.[0]?.purchase?.idSupplier;
+      if (idSupplier) {
+        let balance = await queryRunner.manager.findOne(SupplierBalance, { where: { idSupplier } });
+        if (!balance) {
+          balance = queryRunner.manager.create(SupplierBalance, { idSupplier, credit: 0, debit: 0 });
+        }
+        balance.debit = Number(balance.debit) + totalDelivery;
+        await queryRunner.manager.save(SupplierBalance, balance);
+      }
+
       await queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -301,7 +318,8 @@ export class DeliveryService {
           suppliedItem: {
             item: true
           }
-        }
+        },
+        purchaseDeliveries: { purchase: true }
       }
     });
 
@@ -480,6 +498,7 @@ export class DeliveryService {
         "delivery.ref",
         "delivery.deliveryDate",
         "delivery.totalAmount",
+        "delivery.balanceDue",
         "delivery.status",
       ])
       .leftJoinAndSelect("delivery.purchaseDeliveries", "pd")
@@ -510,11 +529,15 @@ export class DeliveryService {
     const mappedRecords = records.map((record) => {
       // Find supplier from the first linked purchase if any
       const purchaseLink = record.purchaseDeliveries?.[0]?.purchase;
+      
+      const balanceDue = Number(record.balanceDue ?? 0);
+
       return {
         idDelivery: record.idDelivery,
         ref: record.ref,
         deliveryDate: record.deliveryDate,
         totalAmount: record.totalAmount,
+        balanceDue: balanceDue,
         status: getDeliveryStatusName(record.status),
         purchaseRef: purchaseLink?.ref,
         idSupplier: purchaseLink?.supplier?.idSupplier,
@@ -545,11 +568,14 @@ export class DeliveryService {
 
     if (!delivery) throw new NotFoundError("Livraison introuvable.");
 
+    const balanceDue = Number(delivery.balanceDue ?? 0);
+
     return {
       idDelivery: delivery.idDelivery,
       ref: delivery.ref,
       deliveryDate: delivery.deliveryDate,
       totalAmount: delivery.totalAmount,
+      balanceDue: balanceDue,
       status: getDeliveryStatusName(delivery.status),
       purchases: (delivery.purchaseDeliveries ?? []).map(pd => ({
         idPurchase: pd.purchase?.idPurchase,
@@ -570,3 +596,4 @@ export class DeliveryService {
 }
 
 export const deliveryService = new DeliveryService();
+

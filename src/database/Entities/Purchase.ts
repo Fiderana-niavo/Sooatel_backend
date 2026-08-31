@@ -17,8 +17,7 @@ export class Purchase extends BaseEntity {
   @Column({ type: "numeric", precision: 15, scale: 2, nullable: true, name: "total_amount" })
   totalAmount: number;
 
-  @Column({ type: "numeric", precision: 15, scale: 2, nullable: true, name: "balance_due" })
-  balanceDue: number;
+
 
   @Column({ type: "int", name: "status", nullable: true })
   status: number;

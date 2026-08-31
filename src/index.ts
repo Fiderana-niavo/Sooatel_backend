@@ -31,6 +31,7 @@ import cashMovementCategoryRouter from "./modules/cash_movement/category/routes/
 import cashMovementRouter from "./modules/cash_movement/movement/routes/cash-movement.route";
 import cashJournalRouter from "./modules/cash_movement/cash_journal/routes/cash-journal.route";
 import supplierRouter from "./modules/suppliers/routes/supplier.router";
+import supplierPaymentRouter from "./modules/supplier-payment/routes/supplier-payment.routes";
 import { startTokenPurgeJob } from "./shared/jobs/tokenPurge.job";
 import { startSupplierPriceJob } from "./modules/suppliers/jobs/supplier-price.job";
 import { globalErrorMiddleware } from "./shared/middlewares/error.middleware";
@@ -81,6 +82,7 @@ AppDataSource.initialize()
     app.use("/api/supplied-items", require("./modules/suppliers/routes/supplied-item.router").default);
     app.use("/api/purchases", require("./modules/purchases/routes/purchase.routes").default);
     app.use("/api/deliveries", require("./modules/delivery/routes/delivery.routes").default);
+    app.use("/api/supplier-payments", supplierPaymentRouter);
 
     app.use(globalErrorMiddleware);
 

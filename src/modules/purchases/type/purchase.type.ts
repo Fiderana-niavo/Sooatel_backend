@@ -1,4 +1,4 @@
-export interface PurchaseDetailDto {
+﻿export interface PurchaseDetailDto {
   idPurchaseDetail?: string;
   idPurchase?: string;
   idSuppliedItem: string;
@@ -17,4 +17,6 @@ export interface PurchaseDto {
   idSupplier: string;
   idPurchaser: string;
   details?: PurchaseDetailDto[];
+  advanceAmount?: number;
+  idPaymentMethod?: string;
 }

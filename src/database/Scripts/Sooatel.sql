@@ -274,6 +274,7 @@ CREATE TABLE Product_delivery(
    ref VARCHAR(20) NOT NULL DEFAULT 'LIV' || to_char(nextval('delivery_ref_seq'), 'fm0000'),
    delivery_date TIMESTAMPTZ NOT NULL,
    total_amount NUMERIC(15,2),
+   balance_due NUMERIC(15,2) DEFAULT 0,     -- Reste à payer sur cette livraison (dénormalisé)
    status INTEGER,
    notes TEXT,
    PRIMARY KEY(id_delivery),
@@ -303,37 +304,50 @@ CREATE TABLE Purchase_delivery(
    FOREIGN KEY(id_delivery) REFERENCES Product_delivery(id_delivery)
 );
 
-CREATE SEQUENCE supplier_invoice_ref_seq;
-CREATE TABLE Supplier_invoice(
-   id_supplier_invoice UUID DEFAULT uuid_generate_v4(),
-   ref VARCHAR(20) NOT NULL DEFAULT 'INV_ACH' || to_char(nextval('supplier_invoice_ref_seq'), 'fm0000'),
-   id_delivery UUID,
-   id_purchase UUID,
-   total_amount NUMERIC(15,2),
-   balance_due NUMERIC(15,2),
-   invoice_date TIMESTAMPTZ,
-   status INTEGER,
-   PRIMARY KEY(id_supplier_invoice),
-   UNIQUE(ref),
-   FOREIGN KEY(id_delivery) REFERENCES Product_delivery(id_delivery),
-   FOREIGN KEY(id_purchase) REFERENCES Purchases(id_purchase),
-   CHECK ( (id_delivery IS NULL) <> (id_purchase IS NULL) )
-);
-
 CREATE SEQUENCE supplier_payment_ref_seq;
 CREATE TABLE Supplier_payment(
    id_supplier_payment UUID DEFAULT uuid_generate_v4(),
-   ref VARCHAR(20) NOT NULL DEFAULT 'REG_ACH' || to_char(nextval('supplier_payment_ref_seq'), 'fm0000'),
-   id_supplier_invoice UUID NOT NULL,
+   ref VARCHAR(20) NOT NULL DEFAULT 'PAY-' || to_char(nextval('supplier_payment_ref_seq'), 'fm0000'),
+   id_supplier UUID NOT NULL,              -- Fournisseur directement lié au paiement
    payment_date DATE NOT NULL,
    amount NUMERIC(15,2),
-   id_processed_by UUID NOT NULL, --the employee in charge of the payment 
+   id_processed_by UUID NOT NULL,          -- Employé responsable du paiement
    id_payment_method UUID NOT NULL,
+   notes TEXT,
    PRIMARY KEY(id_supplier_payment),
    UNIQUE(ref),
+   FOREIGN KEY(id_supplier) REFERENCES Supplier(id_supplier),
    FOREIGN KEY(id_processed_by) REFERENCES Employees(id_employee),
-   FOREIGN KEY(id_payment_method) REFERENCES Payment_method(id_payment_method),
-   FOREIGN KEY(id_supplier_invoice) REFERENCES Supplier_invoice(id_supplier_invoice)
+   FOREIGN KEY(id_payment_method) REFERENCES Payment_method(id_payment_method)
+);
+
+-- Répartition d'un paiement vers plusieurs destinations
+CREATE TABLE Supplier_payment_allocation(
+   id_allocation UUID DEFAULT uuid_generate_v4(),
+   id_supplier_payment UUID NOT NULL,
+   allocation_type VARCHAR(20) NOT NULL,   -- DELIVERY | DEPOSIT | SUPPLIER_CREDIT
+   id_delivery UUID,                       -- rempli si DELIVERY
+   id_purchase UUID,                       -- rempli si DEPOSIT
+   amount NUMERIC(15,2) NOT NULL,
+   PRIMARY KEY(id_allocation),
+   FOREIGN KEY(id_supplier_payment) REFERENCES Supplier_payment(id_supplier_payment),
+   FOREIGN KEY(id_delivery) REFERENCES Product_delivery(id_delivery),
+   FOREIGN KEY(id_purchase) REFERENCES Purchases(id_purchase),
+   CHECK (allocation_type IN ('DELIVERY', 'DEPOSIT', 'SUPPLIER_CREDIT')),
+   CONSTRAINT chk_allocation_consistency CHECK (
+      (allocation_type = 'DELIVERY'       AND id_delivery IS NOT NULL AND id_purchase IS NULL) OR
+      (allocation_type = 'DEPOSIT'        AND id_purchase IS NOT NULL AND id_delivery IS NULL) OR
+      (allocation_type = 'SUPPLIER_CREDIT' AND id_delivery IS NULL    AND id_purchase IS NULL)
+   )
+);
+
+CREATE TABLE supplier_balance (
+   id_supplier_balance  UUID          DEFAULT uuid_generate_v4(),
+   id_supplier          UUID          NOT NULL UNIQUE,
+   credit               NUMERIC(15,2) NOT NULL DEFAULT 0,  -- Total credit accumule (avances excedentaires, trop-payes)
+   debit                NUMERIC(15,2) NOT NULL DEFAULT 0,  -- Total debit (credit affecte sur livraisons)
+   PRIMARY KEY(id_supplier_balance),
+   FOREIGN KEY(id_supplier) REFERENCES Supplier(id_supplier)
 );
 
 CREATE SEQUENCE stock_mvmt_ref_seq;
