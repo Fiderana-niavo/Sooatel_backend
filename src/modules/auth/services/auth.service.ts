@@ -27,8 +27,7 @@ import { Employee } from "../../../database/Entities/Employee";
 const SECRET = new TextEncoder().encode(process.env["JWT_SECRET"] ?? "sooatel_secret_key");
 const ACCESS_EXPIRY = "1h";
 const REFRESH_EXPIRY = "7d";
-
-const activeRefreshTokens: string[] = [];
+const REFRESH_EXPIRY_DAYS = 7;
 
 export class AuthService {
   async login(dto: LoginDto): Promise<LoginPayload> {
@@ -58,8 +57,8 @@ export class AuthService {
     const accessToken = await this.signToken(payload, ACCESS_EXPIRY);
     const refreshToken = await this.signToken(payload, REFRESH_EXPIRY);
 
-    // Track active refresh token
-    activeRefreshTokens.push(refreshToken);
+    // Persist hashed refresh token in DB
+    await this.saveRefreshToken(user.idUser, refreshToken);
 
     const permissions = await this.resolvePermissions(user.idUser);
 
@@ -78,23 +77,67 @@ export class AuthService {
   // ─────────────────────────────────────────────
   // REFRESH TOKEN
   // ─────────────────────────────────────────────
-  async refresh(token: string): Promise<{ accessToken: string }> {
-    const idx = activeRefreshTokens.indexOf(token);
-    if (idx === -1) throw new Error("Refresh token invalide ou expiré.");
+  async refresh(token: string): Promise<{ accessToken: string; refreshToken: string }> {
+    // 1. Verify JWT signature and expiry
+    let payload: Record<string, unknown>;
+    try {
+      const verified = await jwtVerify(token, SECRET);
+      payload = verified.payload as Record<string, unknown>;
+    } catch {
+      throw new Error("Refresh token expiré ou invalide.");
+    }
 
-    const { payload } = await jwtVerify(token, SECRET);
+    // 2. Check token exists in DB and is not used/revoked
+    const tokenRepo = AppDataSource.getRepository(UserToken);
+    const records = await tokenRepo.find({
+      where: { idUser: payload["idUser"] as string, tokenType: "REFRESH", used: false },
+    });
 
-    const newAccess = await this.signToken(
-      {
-        idUser: payload["idUser"] as string,
-        ref: payload["ref"] as string,
-        username: payload["username"] as string,
-        idEmployee: payload["idEmployee"] as string,
-      },
-      ACCESS_EXPIRY,
-    );
+    let validRecord: UserToken | null = null;
+    for (const record of records) {
+      const match = await bcrypt.compare(token, record.token);
+      if (match) {
+        validRecord = record;
+        break;
+      }
+    }
 
-    return { accessToken: newAccess };
+    if (!validRecord) throw new Error("Refresh token invalide ou révoqué.");
+    if (validRecord.expiresAt < new Date()) throw new Error("Refresh token expiré.");
+
+    // 3. Rotate: revoke old token and issue a new pair
+    await tokenRepo.update({ idToken: validRecord.idToken }, { used: true });
+
+    const tokenPayload: TokenPayload = {
+      idUser: payload["idUser"] as string,
+      ref: payload["ref"] as string,
+      username: payload["username"] as string,
+      idEmployee: payload["idEmployee"] as string,
+    };
+
+    const newAccessToken = await this.signToken(tokenPayload, ACCESS_EXPIRY);
+    const newRefreshToken = await this.signToken(tokenPayload, REFRESH_EXPIRY);
+
+    await this.saveRefreshToken(tokenPayload.idUser, newRefreshToken);
+
+    return { accessToken: newAccessToken, refreshToken: newRefreshToken };
+  }
+
+  private async saveRefreshToken(idUser: string, rawToken: string): Promise<void> {
+    const tokenRepo = AppDataSource.getRepository(UserToken);
+    const hashedToken = await bcrypt.hash(rawToken, 10);
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + REFRESH_EXPIRY_DAYS);
+
+    const record = tokenRepo.create({
+      token: hashedToken,
+      tokenType: "REFRESH",
+      expiresAt,
+      used: false,
+      createdAt: new Date(),
+      idUser,
+    });
+    await tokenRepo.save(record);
   }
 
   async generateUserToken(idUser: string, type = "ACCESS"): Promise<GeneratedToken> {

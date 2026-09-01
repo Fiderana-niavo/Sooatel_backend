@@ -1,4 +1,4 @@
-﻿import { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from "express";
 import { SupplierPaymentService } from "../services/supplier-payment.service";
 import { ApiResponse } from "../../../shared/types/ApiResponse";
 import { BadRequestError } from "../../../shared/errors/AppError";
@@ -39,6 +39,14 @@ export class SupplierPaymentController {
     try {
       const row = await service.getSupplierBalanceRow(req.params.id as string);
       res.json(ApiResponse.success(row));
+    } catch (err) { next(err); }
+  };
+
+  // POST /supplier-payments/supplier/:id/apply-credit
+  applyCredit = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      await service.applySupplierCredit(req.params.id as string, req.body);
+      res.json(ApiResponse.success(null));
     } catch (err) { next(err); }
   };
 

@@ -1,24 +1,17 @@
-﻿import { Router } from "express";
+import { Router } from "express";
 import { supplierPaymentController } from "../controllers/supplier-payment.controller";
 import { authMiddleware } from "../../../shared/middlewares/auth.middleware";
+import { authorize } from "../../../shared/middlewares/authorize.middleware";
 
 const router = Router();
 router.use(authMiddleware);
 
-// Créer un paiement avec allocations
-router.post("/", supplierPaymentController.createPayment);
-
-// Résumé de paiement d une livraison
-router.get("/delivery/:id/summary", supplierPaymentController.getDeliverySummary);
-
-// Destinations disponibles pour un fournisseur
-router.get("/supplier/:id/destinations", supplierPaymentController.getAvailableDestinations);
-
-// Solde fournisseur
-router.get("/supplier/:id/balance", supplierPaymentController.getBalance);
-
-
-router.get("/:id", supplierPaymentController.getPaymentById);
-router.put("/:id", supplierPaymentController.updatePayment);
-router.get("/purchase/:id/summary", supplierPaymentController.getPurchaseSummary);
+router.get("/delivery/:id/summary", authorize("supplier.read"), supplierPaymentController.getDeliverySummary);
+router.get("/supplier/:id/destinations", authorize("supplier.read"), supplierPaymentController.getAvailableDestinations);
+router.get("/supplier/:id/balance", authorize("supplier.read"), supplierPaymentController.getBalance);
+router.get("/purchase/:id/summary", authorize("supplier.read"), supplierPaymentController.getPurchaseSummary);
+router.get("/:id", authorize("supplier.read"), supplierPaymentController.getPaymentById);
+router.post("/", authorize("supplier.manage"), supplierPaymentController.createPayment);
+router.put("/:id", authorize("supplier.manage"), supplierPaymentController.updatePayment);
+router.post("/supplier/:id/apply-credit", authorize("supplier.manage"), supplierPaymentController.applyCredit);
 export default router;

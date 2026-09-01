@@ -102,8 +102,8 @@ export class PurchaseService {
 
     if (dto.details && dto.details.length > 0) {
       for (const detailDto of dto.details) {
-        if (detailDto.quantity < 1) throw new BadRequestError(`La quantitÃƒÂ© doit ÃƒÂªtre au moins 1.`);
-        if (detailDto.unitPrice < 0) throw new BadRequestError(`Le prix unitaire ne peut pas ÃƒÂªtre nÃƒÂ©gatif.`);
+        if (detailDto.quantity < 1) throw new BadRequestError(`La quantité doit être au moins 1.`);
+        if (detailDto.unitPrice < 0) throw new BadRequestError(`Le prix unitaire ne peut pas être négatif.`);
 
         const suppliedItem = await queryRunner.manager.findOne(SuppliedItem, { where: { idSuppliedItem: detailDto.idSuppliedItem } });
         if (!suppliedItem) throw new NotFoundError(`Article fournisseur ${detailDto.idSuppliedItem} introuvable`);
@@ -144,7 +144,7 @@ export class PurchaseService {
 
   private validatePurchaseCanBeUpdated(purchase: Purchase): void {
     if (purchase.lifecycleStatus !== 5 && purchase.lifecycleStatus !== 0) {
-      throw new BadRequestError("Cette commande ne peut plus ÃƒÂªtre modifiÃƒÂ©e (statut invalide).");
+      throw new BadRequestError("Cette commande ne peut plus être modifiée (statut invalide).");
     }
   }
 
@@ -183,7 +183,7 @@ export class PurchaseService {
 
   private validateSupplierChange(purchase: Purchase, dto: PurchaseDto, deliveredQuantities: Map<string, number>): void {
     if (deliveredQuantities.size > 0 && purchase.idSupplier !== dto.idSupplier) {
-      throw new BadRequestError("Impossible de changer le fournisseur d'une commande partiellement livrÃƒÂ©e.");
+      throw new BadRequestError("Impossible de changer le fournisseur d'une commande partiellement livrée.");
     }
   }
 
@@ -197,7 +197,7 @@ export class PurchaseService {
     const deliveredQty = deliveredQuantities.get(detailDto.idSuppliedItem) || 0;
     if (detailDto.quantity < deliveredQty) {
       const itemName = suppliedItem.item?.label || detailDto.idSuppliedItem;
-      throw new BadRequestError(`La quantitÃƒÂ© de l'article "${itemName}" ne peut pas ÃƒÂªtre infÃƒÂ©rieure ÃƒÂ  la quantitÃƒÂ© dÃƒÂ©jÃƒÂ  livrÃƒÂ©e (${deliveredQty}).`);
+      throw new BadRequestError(`La quantité de l'article "${itemName}" ne peut pas être inférieure à  la quantité déjà  livrée (${deliveredQty}).`);
     }
   }
 
@@ -208,8 +208,8 @@ export class PurchaseService {
 
     if (dto.details && dto.details.length > 0) {
       for (const detailDto of dto.details) {
-        if (detailDto.quantity < 1) throw new BadRequestError("La quantitÃƒÂ© doit ÃƒÂªtre au moins 1.");
-        if (detailDto.unitPrice < 0) throw new BadRequestError("Le prix unitaire ne peut pas ÃƒÂªtre nÃƒÂ©gatif.");
+        if (detailDto.quantity < 1) throw new BadRequestError("La quantité doit être au moins 1.");
+        if (detailDto.unitPrice < 0) throw new BadRequestError("Le prix unitaire ne peut pas être négatif.");
 
         await this.validateSuppliedItemQuantity(queryRunner, detailDto, deliveredQuantities);
 
@@ -229,7 +229,7 @@ export class PurchaseService {
       if (!newDetailIds.includes(oldDetail.idSuppliedItem)) {
         const deliveredQty = deliveredQuantities.get(oldDetail.idSuppliedItem) || 0;
         if (deliveredQty > 0) {
-          throw new BadRequestError(`Impossible de supprimer l'article ${oldDetail.idSuppliedItem} car ${deliveredQty} unitÃƒÂ©s ont dÃƒÂ©jÃƒÂ  ÃƒÂ©tÃƒÂ© livrÃƒÂ©es.`);
+          throw new BadRequestError(`Impossible de supprimer l'article ${oldDetail.idSuppliedItem} car ${deliveredQty} unités ont déjà  été livrées.`);
         }
       }
     }
@@ -261,10 +261,10 @@ export class PurchaseService {
     const purchase = await Purchase.findOne({ where: { idPurchase } });
     if (!purchase) throw new NotFoundError("Commande introuvable");
     if (purchase.lifecycleStatus !== 5) { // 5 = Ouvert
-      throw new BadRequestError("Seule une commande au statut 'Ouvert' peut ÃƒÂªtre confirmÃƒÂ©e.");
+      throw new BadRequestError("Seule une commande au statut 'Ouvert' peut être confirmée.");
     }
 
-    purchase.lifecycleStatus = 0; // 0 = ConfirmÃƒÂ©
+    purchase.lifecycleStatus = 0; // 0 = Confirmé
     await purchase.save();
     return {
       ...purchase,
@@ -275,12 +275,12 @@ export class PurchaseService {
   async cancelPurchase(idPurchase: string, userId: string, options?: { forceAction?: "delete" | "confirm" }): Promise<Purchase> {
     const purchase = await Purchase.findOne({ where: { idPurchase } });
     if (!purchase) throw new NotFoundError("Commande introuvable");
-    if (purchase.lifecycleStatus === -3) { // -3 = AnnulÃƒÂ©
-      throw new BadRequestError("Cette commande est dÃƒÂ©jÃƒÂ  annulÃƒÂ©e.");
+    if (purchase.lifecycleStatus === -3) { // -3 = Annulé
+      throw new BadRequestError("Cette commande est déjà  annulée.");
     }
 
-    if (purchase.status === PURCHASE_STATUS.DELIVERED) { // 0 = LivrÃƒÂ©
-      throw new BadRequestError("Impossible d'annuler une commande dÃƒÂ©jÃƒÂ  entiÃƒÂ¨rement livrÃƒÂ©e.");
+    if (purchase.status === PURCHASE_STATUS.DELIVERED) { // 0 = Livré
+      throw new BadRequestError("Impossible d'annuler une commande déjà  entièrement livrée.");
     }
 
     // Handle open deliveries
@@ -293,7 +293,7 @@ export class PurchaseService {
     if (openDelivery && openDelivery.productDelivery) {
       const deliveryId = openDelivery.productDelivery.idDelivery;
       if (!options?.forceAction) {
-        throw new BadRequestError("livraison non validÃƒÂ©e");
+        throw new BadRequestError("livraison non validée");
       }
       
       const { DeliveryService } = require("../../delivery/services/delivery.service");
@@ -313,11 +313,10 @@ export class PurchaseService {
       purchase.status = PURCHASE_STATUS.DELIVERED;
     }
 
-    purchase.lifecycleStatus = -3; // AnnulÃƒÂ©
+    purchase.lifecycleStatus = -3; // Annulé
     await purchase.save();
 
-    // Check if any advance payments were made Ã¢â‚¬â€  create supplier credit if excess
-    await this.handleCancellationCredit(idPurchase, purchase.idSupplier, userId);
+    
 
     return {
       ...purchase,
@@ -325,44 +324,6 @@ export class PurchaseService {
     } as any;
   }
 
-  private async handleCancellationCredit(idPurchase: string, idSupplier: string, _idEmployee: string): Promise<void> {
-    // Calculer le total des acomptes versés depuis les allocations DEPOSIT
-    const result = await AppDataSource.getRepository(SupplierPaymentAllocation)
-      .createQueryBuilder("spa")
-      .select("COALESCE(SUM(spa.amount), 0)", "total")
-      .where("spa.id_purchase = :idPurchase", { idPurchase })
-      .andWhere("spa.allocation_type = 'DEPOSIT'")
-      .getRawOne() as { total: string };
-
-    const totalAdvances = Number(result.total);
-    if (totalAdvances <= 0) return;
-
-
-    // Sum of validated deliveries for this purchase
-    const deliveriesResult = await PurchaseDelivery
-      .createQueryBuilder("pd")
-      .innerJoin("pd.productDelivery", "d")
-      .select("COALESCE(SUM(d.total_amount), 0)", "total")
-      .where("pd.id_purchase = :idPurchase", { idPurchase })
-      .andWhere("d.status = 0") // Validated
-      .getRawOne() as { total: string };
-
-    const totalDelivered = Number(deliveriesResult.total);
-    const excess = totalAdvances - totalDelivered;
-
-    if (excess > 0) {
-      let row = await SupplierBalance.findOne({ where: { idSupplier } });
-      if (!row) {
-        row = new SupplierBalance();
-        row.idSupplier = idSupplier;
-        row.credit = 0;
-        row.debit = 0;
-      }
-      row.credit = Number(row.credit) + excess;
-      await row.save();
-    }
-
-  }
   async findAll(options: {
     page?: number;
     limit?: number;
@@ -421,7 +382,7 @@ export class PurchaseService {
 
     const mappedRecords = records.map((record) => ({
       ...record,
-      status: record.lifecycleStatus === -3 ? "AnnulÃƒÂ©" : getPurchaseStatusName(record.status),
+      status: record.lifecycleStatus === -3 ? "Annulé" : getPurchaseStatusName(record.status),
       lifecycleStatus: record.lifecycleStatus ?? 5
     }));
 
@@ -465,18 +426,9 @@ export class PurchaseService {
 
     if (!purchase) return null;
 
-    const result = await AppDataSource.getRepository(SupplierPaymentAllocation)
-      .createQueryBuilder("spa")
-      .select("COALESCE(SUM(spa.amount), 0)", "total")
-      .where("spa.id_purchase = :idPurchase", { idPurchase })
-      .andWhere("spa.allocation_type = 'DEPOSIT'")
-      .getRawOne() as { total: string };
-    const advanceAmount = Number(result.total);
-
     return {
       ...purchase,
-      advanceAmount,
-      status: purchase.lifecycleStatus === -3 ? "AnnulÃƒÂ©" : getPurchaseStatusName(purchase.status)
+      status: purchase.lifecycleStatus === -3 ? "Annulé" : getPurchaseStatusName(purchase.status)
     };
   }
 

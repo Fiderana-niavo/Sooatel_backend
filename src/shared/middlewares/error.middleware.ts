@@ -20,7 +20,7 @@ export const globalErrorMiddleware = (
 ): void => {
   // 1. Business errors (AppError, NotFoundError, etc.)
   if (err instanceof AppError) {
-    res.status(err.statusCode).json(ApiResponse.error(err.message));
+    res.status(err.statusCode).json(ApiResponse.error("BAD_REQUEST", err.message));
     return;
   }
 
