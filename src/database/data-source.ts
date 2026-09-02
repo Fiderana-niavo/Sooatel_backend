@@ -13,6 +13,7 @@ const AppDataSource = new DataSource({
   database: process.env["DB_NAME"] as string,
   synchronize: false,
   logging: ["error"],
+  // logging: true,
   entities: [__dirname + "/Entities/**/*{.ts,.js}"],
   migrations: [],
   subscribers: [],

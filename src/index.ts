@@ -19,6 +19,7 @@ import roomRouter from "./modules/rooms/routes/room.router";
 import roomTypeRouter from "./modules/rooms/routes/room-type.router";
 import itemRouter from "./modules/items/routes/item.router";
 import itemTypeRouter from "./modules/items/routes/item-type.router";
+import itemUnitRouter from "./modules/items/routes/item-unit.router";
 import unitOfMeasureRouter from "./modules/items/routes/unit-of-measure.router";
 import menuItemRouter from "./modules/menus/routes/menu-item.router";
 import menuCategoryRouter from "./modules/menus/routes/menu-category.router";
@@ -66,6 +67,7 @@ AppDataSource.initialize()
     app.use("/api/room-types", roomTypeRouter);
     app.use("/api/items", itemRouter);
     app.use("/api/item-types", itemTypeRouter);
+    app.use("/api/item-units", itemUnitRouter);
     app.use("/api/unit-of-measures", unitOfMeasureRouter);
     app.use("/api/menu-items", menuItemRouter);
     app.use("/api/menu-categories", menuCategoryRouter);
@@ -97,3 +99,6 @@ AppDataSource.initialize()
     console.error("Database connection failed:", err.message);
     process.exit(1);
   });
+// trigger restart
+// trigger restart 2
+// trigger restart 3

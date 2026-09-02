@@ -7,9 +7,9 @@ const router = Router();
 
 router.use(authMiddleware);
 
-router.get("/", authorize("supplier.read"), deliveryController.findAll);
-router.get("/pending/:idSupplier", authorize("supplier.read"), deliveryController.getPendingBySupplier);
-router.get("/:id/details", authorize("supplier.read"), deliveryController.getDetails);
+router.get("/", authorize("stock.manage"), deliveryController.findAll);
+router.get("/pending/:idSupplier", authorize("stock.manage"), deliveryController.getPendingBySupplier);
+router.get("/:id/details", authorize("stock.manage"), deliveryController.getDetails);
 router.post("/", authorize("stock.manage"), deliveryController.create);
 router.put("/:id", authorize("stock.manage"), deliveryController.update);
 router.delete("/:id", authorize("stock.manage"), deliveryController.delete);

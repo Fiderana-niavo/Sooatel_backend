@@ -18,6 +18,7 @@ export class ItemService extends CrudService<Item, ItemDto, ItemDto> {
 
     const qb = this.repository
       .createQueryBuilder("entity")
+      .leftJoinAndSelect("entity.unit", "unit")
       .skip((pageNum - 1) * limitNum)
       .take(limitNum);
     if (search) {
