@@ -36,6 +36,12 @@ import supplierPaymentRouter from "./modules/supplier-payment/routes/supplier-pa
 import { startTokenPurgeJob } from "./shared/jobs/tokenPurge.job";
 import { startSupplierPriceJob } from "./modules/suppliers/jobs/supplier-price.job";
 import { globalErrorMiddleware } from "./shared/middlewares/error.middleware";
+import recipeRouter from "./modules/recipes/routes/recipe.routes";
+import supplierProductRouter from "./modules/suppliers/routes/supplier-product.router";
+import suppliedItemRouter from "./modules/suppliers/routes/supplied-item.router";
+import purchaseRouter from "./modules/purchases/routes/purchase.routes";
+import deliveryRouter from "./modules/delivery/routes/delivery.routes";
+
 
 configDotenv();
 
@@ -80,11 +86,12 @@ AppDataSource.initialize()
     app.use("/api/cash-movements", cashMovementRouter);
     app.use("/api/cash-journals", cashJournalRouter);
     app.use("/api/suppliers", supplierRouter);
-    app.use("/api/supplier-products", require("./modules/suppliers/routes/supplier-product.router").default);
-    app.use("/api/supplied-items", require("./modules/suppliers/routes/supplied-item.router").default);
-    app.use("/api/purchases", require("./modules/purchases/routes/purchase.routes").default);
-    app.use("/api/deliveries", require("./modules/delivery/routes/delivery.routes").default);
+    app.use("/api/supplier-products", supplierProductRouter);
+    app.use("/api/supplied-items", suppliedItemRouter);
+    app.use("/api/purchases", purchaseRouter);
+    app.use("/api/deliveries", deliveryRouter);
     app.use("/api/supplier-payments", supplierPaymentRouter);
+    app.use("/api/recipes", recipeRouter);
 
     app.use(globalErrorMiddleware);
 
@@ -99,6 +106,3 @@ AppDataSource.initialize()
     console.error("Database connection failed:", err.message);
     process.exit(1);
   });
-// trigger restart
-// trigger restart 2
-// trigger restart 3

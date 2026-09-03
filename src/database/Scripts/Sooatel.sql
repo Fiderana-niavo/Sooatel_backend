@@ -210,6 +210,7 @@ CREATE TABLE Items(
    id_product_type UUID NOT NULL,
    id_unit UUID NOT NULL,
    description VARCHAR(255) ,
+   weighted_average_cost NUMERIC(15,6) ,
    PRIMARY KEY(id_item),
    UNIQUE(label),
    UNIQUE(ref),
@@ -558,15 +559,29 @@ CREATE TABLE Event(
 
 CREATE TABLE Recipes(
    id_recipe UUID DEFAULT uuid_generate_v4(),
-   id_parent UUID NOT NULL,
-   id_ingredient UUID NOT NULL,
-   quantity NUMERIC(15,2)   NOT NULL,
-   cost NUMERIC(15,2)  ,
-   id_item_unit UUID NOT NULL,
+   recipe_cost NUMERIC(15,2),
+   yield_quantity NUMERIC(15,4) NOT NULL DEFAULT 1,
+   id_item UUID NOT NULL,
+   version INT NOT NULL DEFAULT 1,
+   is_active BOOLEAN NOT NULL DEFAULT TRUE,
+   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
    PRIMARY KEY(id_recipe),
+   UNIQUE(id_item, version),
+   FOREIGN KEY(id_item) REFERENCES Items(id_item)
+);
+
+CREATE TABLE Recipe_details(
+   id_recipe_detail UUID DEFAULT uuid_generate_v4(),
+   quantity NUMERIC(15,2) NOT NULL,
+   id_item_unit UUID,
+   id_ingredient UUID NOT NULL,
+   id_recipe UUID NOT NULL,
+   version INT NOT NULL DEFAULT 1,
+   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+   PRIMARY KEY(id_recipe_detail),
    FOREIGN KEY(id_item_unit) REFERENCES Item_unit(id_item_unit),
-   FOREIGN KEY(id_parent) REFERENCES Items(id_item),
-   FOREIGN KEY(id_ingredient) REFERENCES Items(id_item)
+   FOREIGN KEY(id_ingredient) REFERENCES Items(id_item),
+   FOREIGN KEY(id_recipe) REFERENCES Recipes(id_recipe)
 );
 
 CREATE TABLE Dish_production(
@@ -658,6 +673,7 @@ CREATE TABLE Sale_items(
    id_sale UUID NOT NULL,
    quantity INTEGER CHECK (quantity >= 1),
    unit_price NUMERIC(15,2) NOT NULL CHECK (unit_price >= 0),
+   unit_cost NUMERIC(15,2),
    total_amount NUMERIC(15,2) CHECK (total_amount >= 0),
    PRIMARY KEY(id_sale_item),
    FOREIGN KEY(id_menu) REFERENCES Menu_Items(id_menu),

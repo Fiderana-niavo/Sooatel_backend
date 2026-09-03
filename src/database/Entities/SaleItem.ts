@@ -19,6 +19,9 @@ export class SaleItem extends BaseEntity {
   @Column({ type: "numeric", precision: 15, scale: 2, name: "unit_price" })
   unitPrice: number;
 
+  @Column({ type: "numeric", precision: 15, scale: 2, nullable: true, name: "unit_cost" })
+  unitCost: number;
+
   @Column({ type: "numeric", precision: 15, scale: 2, nullable: true, name: "total_amount" })
   totalAmount: number;
 

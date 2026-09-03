@@ -1,7 +1,7 @@
 import { type Granularity } from "../../../../shared/utils/date.util";
 
 export const CA_EXPR = "SUM(si.total_amount)";
-export const BENEFIT_EXPR = "SUM(si.total_amount - (mi.unit_cost * si.quantity))";
+export const BENEFIT_EXPR = "SUM(si.total_amount - (si.unit_cost * si.quantity))";
 
 export const groupByExpr = (col: string, granularity: Granularity): string => {
   if (granularity === "day")

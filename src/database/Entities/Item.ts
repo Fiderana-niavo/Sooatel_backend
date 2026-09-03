@@ -40,6 +40,9 @@ export class Item extends BaseEntity {
   @Column({ type: "varchar", length: 255, nullable: true, name: "description" })
   description: string;
 
+  @Column({ type: "numeric", precision: 15, scale: 6, nullable: true, name: "weighted_average_cost" })
+  weightedAverageCost: number;
+
   @ManyToOne(() => ItemType)
   @JoinColumn({ name: "id_product_type" })
   productType: ItemType;

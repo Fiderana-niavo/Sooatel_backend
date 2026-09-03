@@ -15,6 +15,7 @@ import { Paginated } from "../../../shared/types/Paginated";
 import { StockMovement } from "../../../database/Entities/StockMovement";
 import { Item } from "../../../database/Entities/Item";
 import { STOCK_MOVEMENT_TYPE } from "../../items/constants/stock.constants";
+import { calculateNewCMP } from "../../items/utils/item.utils";
 
 export class DeliveryService {
   /**
@@ -353,12 +354,25 @@ export class DeliveryService {
 
         stockMovements.push(movement);
 
-        // Update item quantity
+        // Update item quantity and CMP
         if (!itemsToUpdate.has(item.idItem)) {
           itemsToUpdate.set(item.idItem, item);
         }
         const mappedItem = itemsToUpdate.get(item.idItem)!;
-        mappedItem.quantity = Number(mappedItem.quantity ?? 0) + Number(detail.quantity);
+
+        const currentStock = Number(mappedItem.quantity ?? 0);
+        const currentCMP = mappedItem.weightedAverageCost !== null && mappedItem.weightedAverageCost !== undefined 
+          ? Number(mappedItem.weightedAverageCost) 
+          : null;
+        const receivedQty = Number(detail.quantity ?? 0);
+        const newPrice = Number(detail.unitPrice ?? 0);
+
+        // Calculate and update CMP if the incoming price is different
+        if (newPrice !== currentCMP) {
+          mappedItem.weightedAverageCost = calculateNewCMP(currentStock, currentCMP, receivedQty, newPrice);
+        }
+
+        mappedItem.quantity = currentStock + receivedQty;
       }
     }
 
