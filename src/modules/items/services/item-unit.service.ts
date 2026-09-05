@@ -6,6 +6,7 @@ import { Item } from "../../../database/Entities/Item";
 import { CrudService } from "../../../shared/crud/services/CrudService";
 import { Paginated } from "../../../shared/types/Paginated";
 import { CreateItemUnitDto, UpdateItemUnitDto } from "../type/item-unit.type";
+import { recipeService } from "../../recipes/services/recipe.service";
 
 export class ItemUnitService extends CrudService<ItemUnit, CreateItemUnitDto, UpdateItemUnitDto> {
   constructor(repository: Repository<ItemUnit> = AppDataSource.getRepository(ItemUnit)) {
@@ -69,8 +70,8 @@ export class ItemUnitService extends CrudService<ItemUnit, CreateItemUnitDto, Up
     if (data.idItem !== undefined) itemUnit.idItem = data.idItem;
     if (data.alternativeUnitId !== undefined) itemUnit.alternativeUnitId = data.alternativeUnitId;
     if (data.toStockRatio !== undefined) itemUnit.toStockRatio = data.toStockRatio;
-
     await this.repository.save(itemUnit);
+    recipeService.recalculateAllActiveCosts().catch(console.error);
   }
 }
 

@@ -16,6 +16,7 @@ import { StockMovement } from "../../../database/Entities/StockMovement";
 import { Item } from "../../../database/Entities/Item";
 import { STOCK_MOVEMENT_TYPE } from "../../items/constants/stock.constants";
 import { calculateNewCMP } from "../../items/utils/item.utils";
+import { recipeService } from "../../recipes/services/recipe.service";
 
 export class DeliveryService {
   /**
@@ -135,6 +136,7 @@ export class DeliveryService {
       await this.updatePurchasesStatuses(queryRunner, purchases, deliveredMap);
 
       await queryRunner.commitTransaction();
+      recipeService.recalculateAllActiveCosts().catch(console.error);
       return { idDelivery: savedDelivery.idDelivery, ref: savedDelivery.ref };
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -301,6 +303,7 @@ export class DeliveryService {
       }
 
       await queryRunner.commitTransaction();
+      recipeService.recalculateAllActiveCosts().catch(console.error);
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;

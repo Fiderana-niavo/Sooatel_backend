@@ -59,7 +59,9 @@ export class RecipeController {
 
   setActive = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const result = await recipeService.setActive(req.params.id as string);
+      const force = req.query.force === 'true';
+      const checkOnly = req.query.checkOnly === 'true';
+      const result = await recipeService.setActive(req.params.id as string, force, checkOnly);
       res.json(ApiResponse.success(result));
     } catch (err) {
       next(err);

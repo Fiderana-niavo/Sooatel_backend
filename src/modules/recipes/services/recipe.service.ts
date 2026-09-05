@@ -62,6 +62,16 @@ export class RecipeService {
     return versions;
   }
 
+  async recalculateAllActiveCosts(): Promise<void> {
+    const activeRecipes = await this.recipeRepo.find({ where: { isActive: true } });
+    for (const recipe of activeRecipes) {
+      const newCost = await this.calculateCost(recipe.idRecipe);
+      if (newCost !== Number(recipe.recipeCost)) {
+        await this.recipeRepo.update({ idRecipe: recipe.idRecipe }, { recipeCost: newCost });
+      }
+    }
+  }
+
   async getDetails(idRecipe: string): Promise<RecipeDetail[]> {
     return this.detailRepo.find({
       where: { idRecipe },
@@ -115,11 +125,13 @@ export class RecipeService {
       );
       await queryRunner.manager.save(RecipeDetail, details);
 
+      await queryRunner.commitTransaction();
+
       // Calculate and persist the recipe cost based on current CMUPs
       const cost = await this.calculateCost(savedRecipe.idRecipe);
-      await queryRunner.manager.update(Recipe, { idRecipe: savedRecipe.idRecipe }, { recipeCost: cost });
+      await this.recipeRepo.update({ idRecipe: savedRecipe.idRecipe }, { recipeCost: cost });
 
-      await queryRunner.commitTransaction();
+      await this.recalculateAllActiveCosts();
       return savedRecipe;
     } catch (err) {
       await queryRunner.rollbackTransaction();
@@ -166,11 +178,13 @@ export class RecipeService {
       );
       await queryRunner.manager.save(RecipeDetail, details);
 
+      await queryRunner.commitTransaction();
+
       // Recalculate and persist the recipe cost based on current CMUPs
       const cost = await this.calculateCost(idRecipe);
-      await queryRunner.manager.update(Recipe, { idRecipe }, { recipeCost: cost });
+      await this.recipeRepo.update({ idRecipe }, { recipeCost: cost });
 
-      await queryRunner.commitTransaction();
+      await this.recalculateAllActiveCosts();
     } catch (err) {
       await queryRunner.rollbackTransaction();
       throw err;
@@ -179,7 +193,14 @@ export class RecipeService {
     }
   }
 
-  async setActive(idRecipe: string): Promise<{ createdNewVersion: boolean; newVersion?: number; activatedExistingVersion?: number }> {
+  async setActive(idRecipe: string, force: boolean = false, checkOnly: boolean = false): Promise<{
+    createdNewVersion?: boolean;
+    newVersion?: number;
+    activatedExistingVersion?: number;
+    requiresConfirmation?: boolean;
+    currentCost?: number;
+    siblingVersion?: number;
+  }> {
     const recipe = await this.recipeRepo.findOne({
       where: { idRecipe } as any,
       relations: { item: { unit: true } },
@@ -204,15 +225,41 @@ export class RecipeService {
         // Same cost: just reactivate as-is
         await queryRunner.manager.update(Recipe, { idRecipe }, { isActive: true });
         await queryRunner.commitTransaction();
+        await this.recalculateAllActiveCosts();
         return { createdNewVersion: false };
       }
 
       // Different cost: check if another version already has same composition AND same new cost
       const sibling = await this.findMatchingVersion(recipe.idItem, idRecipe, currentCost);
+
+      if (checkOnly) {
+        await queryRunner.rollbackTransaction();
+        if (isSameCost) {
+          return { requiresConfirmation: false };
+        } else {
+          return {
+            requiresConfirmation: true,
+            currentCost,
+            siblingVersion: sibling ? sibling.version : undefined,
+          };
+        }
+      }
+
+      if (!force && !isSameCost) {
+        // Return a special payload so the frontend can ask for confirmation
+        await queryRunner.rollbackTransaction();
+        return {
+          requiresConfirmation: true,
+          currentCost,
+          siblingVersion: sibling ? sibling.version : undefined,
+        };
+      }
+
       if (sibling) {
         // An existing version already matches — activate it directly
         await queryRunner.manager.update(Recipe, { idRecipe: sibling.idRecipe }, { isActive: true });
         await queryRunner.commitTransaction();
+        await this.recalculateAllActiveCosts();
         return { createdNewVersion: false, activatedExistingVersion: sibling.version };
       }
 
@@ -243,6 +290,7 @@ export class RecipeService {
       await queryRunner.manager.save(RecipeDetail, newDetails);
 
       await queryRunner.commitTransaction();
+      await this.recalculateAllActiveCosts();
       return { createdNewVersion: true, newVersion };
     } catch (err) {
       await queryRunner.rollbackTransaction();
@@ -266,15 +314,20 @@ export class RecipeService {
     });
     if (!recipe || !recipe.item) throw new NotFoundError("Recette introuvable.");
 
+    const yieldQty = Number(recipe.yieldQuantity) || 1;
+
     const accumulator = new Map<string, FlatIngredient>();
     const tree = await this.resolveRecursive(idRecipe, 1, accumulator, new Set());
+
+    const rawCost = tree.reduce((sum, child) => sum + child.cost, 0);
+    const unitCost = rawCost / yieldQty;
 
     const rootNode: RecipeTreeNode = {
       idIngredient: recipe.idItem,
       label: recipe.item.label,
       qty: 1,
       unit: recipe.item.unit?.symbol ?? "",
-      cost: tree.reduce((sum, child) => sum + child.cost, 0),
+      cost: unitCost,
       isProduced: true,
       subRecipeId: idRecipe,
       subRecipeVersion: recipe.version,
@@ -286,7 +339,7 @@ export class RecipeService {
     return {
       tree: rootNode,
       flatIngredients,
-      totalCost: rootNode.cost,
+      totalCost: unitCost,
     };
   }
 
@@ -303,14 +356,14 @@ export class RecipeService {
   private async calculateCost(idRecipe: string): Promise<number> {
     const recipe = await this.recipeRepo.findOne({ where: { idRecipe } as any });
     if (!recipe) return 0;
-    
+
     const accumulator = new Map<string, FlatIngredient>();
     await this.resolveRecursive(idRecipe, 1, accumulator, new Set());
     let total = 0;
     for (const ing of accumulator.values()) {
       total += ing.totalCost;
     }
-    
+
     const yieldQty = Number(recipe.yieldQuantity) || 1;
     return total / yieldQty;
   }
@@ -379,7 +432,7 @@ export class RecipeService {
       if (detail.idItemUnit && detail.itemUnit) {
         qty /= Number(detail.itemUnit.toStockRatio);
       }
-      
+
       const cmup = Number(ingredient.weightedAverageCost) || 0;
       const nodeCost = qty * cmup;
       const unit = ingredient.unit?.symbol ?? "";
@@ -425,7 +478,7 @@ export class RecipeService {
         }
       }
     }
-    
+
     return nodes;
   }
 }
