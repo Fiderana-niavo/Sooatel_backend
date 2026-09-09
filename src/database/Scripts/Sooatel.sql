@@ -366,6 +366,11 @@ CREATE TABLE Stock_movement(
    FOREIGN KEY(id_operator) REFERENCES Employees(id_employee)
 );
 
+-- Migration: new columns for manual stock movements
+ALTER TABLE stock_movement ADD COLUMN IF NOT EXISTS direction INTEGER;
+ALTER TABLE stock_movement ADD COLUMN IF NOT EXISTS reason VARCHAR(500);
+ALTER TABLE stock_movement ADD COLUMN IF NOT EXISTS status INTEGER NOT NULL DEFAULT 0;
+
 -- =========================================================================
 -- FINANCES (Journaux de caisse, Sorties)
 -- =========================================================================
@@ -592,6 +597,13 @@ CREATE TABLE Dish_production(
    PRIMARY KEY(id_dish_production),
    FOREIGN KEY(id_item) REFERENCES Items(id_item)
 );
+
+-- Migration: new columns for dish production module
+ALTER TABLE dish_production ADD COLUMN IF NOT EXISTS ref VARCHAR(50);
+ALTER TABLE dish_production ADD COLUMN IF NOT EXISTS status INTEGER NOT NULL DEFAULT 5;
+ALTER TABLE dish_production ADD COLUMN IF NOT EXISTS id_operator UUID;
+ALTER TABLE dish_production ADD COLUMN IF NOT EXISTS notes VARCHAR(500);
+
 
 CREATE TABLE Room(
    id_room UUID DEFAULT uuid_generate_v4(),

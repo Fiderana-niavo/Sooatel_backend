@@ -27,6 +27,9 @@ export class ItemService extends CrudService<Item, ItemDto, ItemDto> {
     if (options.isProduced !== undefined) {
       qb.andWhere("entity.isProduced = :isProduced", { isProduced: options.isProduced });
     }
+    if (options.idProductType) {
+      qb.andWhere("entity.idProductType = :idProductType", { idProductType: options.idProductType });
+    }
     
     if (options.unlinkedSupplierId) {
       const subQuery = qb.subQuery()

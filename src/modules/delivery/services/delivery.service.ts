@@ -14,7 +14,7 @@ import { deliveryHelper } from "../utils/delivery.helper";
 import { Paginated } from "../../../shared/types/Paginated";
 import { StockMovement } from "../../../database/Entities/StockMovement";
 import { Item } from "../../../database/Entities/Item";
-import { STOCK_MOVEMENT_TYPE } from "../../items/constants/stock.constants";
+import { STOCK_MOVEMENT_TYPE, STOCK_MOVEMENT_STATUS, STOCK_MOVEMENT_DIRECTION } from "../../items/constants/stock.constants";
 import { calculateNewCMP } from "../../items/utils/item.utils";
 import { recipeService } from "../../recipes/services/recipe.service";
 
@@ -353,6 +353,9 @@ export class DeliveryService {
         movement.movementDate = new Date();
         movement.quantity = detail.quantity;
         movement.movementType = STOCK_MOVEMENT_TYPE.RECEPTION_FOURNISSEUR;
+        movement.direction = STOCK_MOVEMENT_DIRECTION.IN;
+        movement.reason = "Entrée en stock - Réception fournisseur";
+        movement.status = STOCK_MOVEMENT_STATUS.VALIDATED;
         movement.idOperator = idOperator;
 
         stockMovements.push(movement);

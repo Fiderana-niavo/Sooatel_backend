@@ -22,6 +22,15 @@ export class StockMovement extends BaseEntity {
   @Column({ type: "integer", nullable: true, name: "movement_type" })
   movementType: number;
 
+  @Column({ type: "integer", nullable: true, name: "direction" })
+  direction: number | null;
+
+  @Column({ type: "varchar", length: 500, nullable: true, name: "reason" })
+  reason: string | null;
+
+  @Column({ type: "integer", default: 0, name: "status" })
+  status: number;
+
   @Column({ type: "uuid", name: "id_operator" })
   idOperator: string;
 
