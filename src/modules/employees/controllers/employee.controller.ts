@@ -124,6 +124,19 @@ export class EmployeeController extends CrudController<
       next(err);
     }
   };
+
+  recentDeactivations = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const page = req.query["page"] ? parseInt(req.query["page"] as string, 10) : undefined;
+      const limit = req.query["limit"] ? parseInt(req.query["limit"] as string, 10) : undefined;
+      const days = req.query["days"] ? parseInt(req.query["days"] as string, 10) : undefined;
+      
+      const data = await (this.service as EmployeeService).getRecentDeactivations({ page, limit, days });
+      res.json(ApiResponse.success(data));
+    } catch (err: unknown) {
+      next(err);
+    }
+  };
 }
 
 export const employeeController = new EmployeeController(new EmployeeService());

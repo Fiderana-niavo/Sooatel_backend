@@ -125,10 +125,14 @@ export class EmployeeService extends CrudService<
 
     const internship = await AppDataSource.getRepository(Internship)
       .createQueryBuilder("intern")
+      .leftJoin("intern.school", "school")
       .select([
         'intern.id_internship AS "idInternship"',
-        'intern.school_name AS "schoolName"',
+        'intern.id_school AS "idSchool"',
+        'school.name AS "schoolName"',
         'intern.academic_supervisor_name AS "academicSupervisorName"',
+        'intern.academic_supervisor_email AS "academicSupervisorEmail"',
+        'intern.academic_supervisor_number AS "academicSupervisorNumber"',
         'intern.professionnal_supervisor_name AS "professionnalSupervisorName"',
       ])
       .where("intern.id_employee = :id", { id })
@@ -241,7 +245,7 @@ export class EmployeeService extends CrudService<
 
     if (dto.phoneNumber) {
       const existingPhone = await AppDataSource.getRepository(Employee).findOneBy({ phoneNumber: dto.phoneNumber });
-      if (existingPhone) erreurs.push("Ce numéro de téléphone est déjà pris.");
+      if (existingPhone) erreurs.push("Le numéro de téléphone attribué à l'utilisateur est déjà pris.");
     }
     if (dto.emailContact) {
       const existingEmail = await AppDataSource.getRepository(Employee).findOneBy({ emailContact: dto.emailContact });
@@ -292,8 +296,10 @@ export class EmployeeService extends CrudService<
       if (dto.internship) {
         const intern = manager.create(Internship, {
           idEmployee: saved.idEmployee,
-          schoolName: dto.internship.schoolName ?? undefined,
+          idSchool: dto.internship.idSchool ?? undefined,
           academicSupervisorName: dto.internship.academicSupervisorName ?? undefined,
+          academicSupervisorEmail: dto.internship.academicSupervisorEmail ?? undefined,
+          academicSupervisorNumber: dto.internship.academicSupervisorNumber ?? undefined,
           professionnalSupervisorName: dto.internship.professionnalSupervisorName ?? undefined,
         });
         await manager.save(Internship, intern);
@@ -369,7 +375,7 @@ export class EmployeeService extends CrudService<
 
     if (dto.phoneNumber) {
       const existingPhone = await AppDataSource.getRepository(Employee).findOneBy({ phoneNumber: dto.phoneNumber, idEmployee: Not(id) });
-      if (existingPhone) erreurs.push("Ce numéro de téléphone est déjà pris.");
+      if (existingPhone) erreurs.push("Le numéro de téléphone attribué à l'utilisateur est déjà pris.");
     }
     if (dto.emailContact) {
       const existingEmail = await AppDataSource.getRepository(Employee).findOneBy({ emailContact: dto.emailContact, idEmployee: Not(id) });
@@ -433,8 +439,10 @@ export class EmployeeService extends CrudService<
       if (dto.internship) {
         if (existingIntern) {
           await manager.update(Internship, existingIntern.idInternship, {
-            schoolName: dto.internship.schoolName ?? undefined,
+            idSchool: dto.internship.idSchool ?? undefined,
             academicSupervisorName: dto.internship.academicSupervisorName ?? undefined,
+            academicSupervisorEmail: dto.internship.academicSupervisorEmail ?? undefined,
+            academicSupervisorNumber: dto.internship.academicSupervisorNumber ?? undefined,
             professionnalSupervisorName: dto.internship.professionnalSupervisorName ?? undefined,
           });
         } else {
@@ -442,8 +450,10 @@ export class EmployeeService extends CrudService<
             Internship,
             manager.create(Internship, {
               idEmployee: id,
-              schoolName: dto.internship.schoolName ?? undefined,
+              idSchool: dto.internship.idSchool ?? undefined,
               academicSupervisorName: dto.internship.academicSupervisorName ?? undefined,
+              academicSupervisorEmail: dto.internship.academicSupervisorEmail ?? undefined,
+              academicSupervisorNumber: dto.internship.academicSupervisorNumber ?? undefined,
               professionnalSupervisorName: dto.internship.professionnalSupervisorName ?? undefined,
             }),
           );
@@ -555,7 +565,7 @@ export class EmployeeService extends CrudService<
           throw new AppError("Conflit détecté : Il n'est pas possible de définir plusieurs disponibilités pour un même jour.");
         }
         seenDays.add(dto.dayOfWeek);
-        
+
         await manager.save(
           EmployeeAvailability,
           manager.create(EmployeeAvailability, {
@@ -616,6 +626,10 @@ export class EmployeeService extends CrudService<
           hasFixedSchedule: dto.hasFixedSchedule,
         }),
       );
+
+      if (dto.reactivateAccount) {
+        await manager.update(Employee, id, { activeStatus: 0 });
+      }
     });
   }
 
@@ -634,8 +648,10 @@ export class EmployeeService extends CrudService<
         }),
       );
 
-      // 2. Reactivate the employee
-      await manager.update(Employee, id, { activeStatus: 0 });
+      // 2. Reactivate the employee if requested
+      if (dto.reactivateAccount) {
+        await manager.update(Employee, id, { activeStatus: 0 });
+      }
     });
   }
 
@@ -653,11 +669,11 @@ export class EmployeeService extends CrudService<
       const closingDate = new Date(dto.endDate);
       const oldAssignment = new Date(activeJob.assignmentDate);
       const today = new Date();
-      
+
       if (closingDate < oldAssignment) {
         throw new AppError("La date de fin de contrat ne peut pas être antérieure à sa date de début.");
       }
-      
+
       if (closingDate > today) {
         throw new AppError("La date de fin de contrat ne peut pas être ultérieure à la date d'aujourd'hui.");
       }
@@ -699,6 +715,58 @@ export class EmployeeService extends CrudService<
       value: emp.idEmployee,
       label: `${emp.name} ${emp.lastname || ""}`.trim()
     }));
+  }
+
+  async getRecentDeactivations(options: { days?: number, page?: number, limit?: number } = {}): Promise<Paginated<{ idEmployee: string; fullName: string; endDate: string }>> {
+    const qb = this.repository.createQueryBuilder("employee")
+      .innerJoin("employee.employeeJobs", "ej")
+      .select([
+        'employee.id_employee AS "idEmployee"',
+        'employee.name AS "name"',
+        'employee.lastname AS "lastname"',
+        'ej.end_date AS "endDate"'
+      ])
+      .where("employee.active_status = -1");
+
+    if (options.days !== undefined) {
+      const fromDate = new Date();
+      fromDate.setDate(fromDate.getDate() - options.days);
+      qb.andWhere("ej.end_date >= :fromDate", { fromDate });
+    }
+
+    qb.orderBy("ej.end_date", "DESC");
+
+    const rows = await qb.getRawMany();
+
+    // Map and deduplicate by employee
+    const seen = new Set<string>();
+    const results: { idEmployee: string; fullName: string; endDate: string }[] = [];
+
+    for (const r of rows) {
+      if (!seen.has(r.idEmployee)) {
+        seen.add(r.idEmployee);
+        results.push({
+          idEmployee: r.idEmployee,
+          fullName: `${r.name || ""} ${r.lastname || ""}`.trim(),
+          endDate: r.endDate ? new Date(r.endDate).toISOString().substring(0, 10) : ""
+        });
+      }
+    }
+
+    const total = results.length;
+    const pageNum = options.page ?? 1;
+    const limitNum = options.limit ?? (results.length || 10);
+    
+    // In-memory pagination since we did in-memory deduplication
+    const startIndex = (pageNum - 1) * limitNum;
+    const paginatedResults = results.slice(startIndex, startIndex + limitNum);
+
+    return new Paginated<{ idEmployee: string; fullName: string; endDate: string }>(
+      paginatedResults,
+      total,
+      pageNum,
+      limitNum
+    );
   }
 }
 

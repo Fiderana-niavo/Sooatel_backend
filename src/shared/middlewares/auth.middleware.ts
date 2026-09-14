@@ -6,6 +6,9 @@ const SECRET = new TextEncoder().encode(
   process.env["JWT_SECRET"] ?? "sooatel_secret_key",
 );
 
+import AppDataSource from "../../database/data-source";
+import { User } from "../../database/Entities/User";
+
 // Extend Express Request to carry the authenticated user identity
 declare global {
   namespace Express {
@@ -39,6 +42,19 @@ export const authMiddleware = async (
     req.userId = payload["idUser"] as string;
     req.username = payload["username"] as string;
     req.idEmployee = payload["idEmployee"] as string;
+
+    // Check if the user is still active in the database
+    // This immediately disconnects deactivated accounts
+    if (req.userId) {
+      const user = await AppDataSource.getRepository(User).findOne({
+        where: { idUser: req.userId },
+        relations: { employee: true },
+      });
+
+      if (!user || user.activeStatus === -1 || (user.employee && user.employee.activeStatus === -1)) {
+        return next(new UnauthorizedError("Ce compte a été désactivé."));
+      }
+    }
 
     next();
   } catch {

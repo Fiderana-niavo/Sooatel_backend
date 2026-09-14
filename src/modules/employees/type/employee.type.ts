@@ -22,8 +22,11 @@ export interface EmployeeListItem {
 
 export interface InternshipInfo {
   idInternship: string;
-  schoolName: string | null;
+  idSchool: string | null;
+  schoolName: string | null; // Keep for backwards compatibility or easy read
   academicSupervisorName: string | null;
+  academicSupervisorEmail: string | null;
+  academicSupervisorNumber: string | null;
   professionnalSupervisorName: string | null;
 }
 
@@ -99,8 +102,10 @@ export interface EmployeeJobDto {
 }
 
 export interface EmployeeInternshipDto {
-  schoolName: string | null;
+  idSchool: string | null;
   academicSupervisorName: string | null;
+  academicSupervisorEmail: string | null;
+  academicSupervisorNumber: string | null;
   professionnalSupervisorName: string | null;
 }
 
@@ -134,6 +139,7 @@ export interface ChangeJobDto {
   endDate: string | null;
   hasFixedSchedule: boolean;
   lastJobEndDate?: string;
+  reactivateAccount?: boolean;
 }
 
 export interface EndJobDto {

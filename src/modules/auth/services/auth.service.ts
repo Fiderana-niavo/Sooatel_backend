@@ -42,10 +42,16 @@ export class AuthService {
 
     if (!user) throw new Error("Identifiants invalides.");
 
+    if (user.activeStatus === -1 || (user.employee && user.employee.activeStatus === -1)) {
+      throw new Error("Compte désactivé, contactez l'administrateur.");
+    }
+
+    if (user.activeStatus === 0) {
+      throw new Error("Compte en attente d'activation.");
+    }
+
     const match = await bcrypt.compare(dto.password, user.passwordHash);
     if (!match) throw new Error("Identifiants invalides.");
-
-    if (user.activeStatus !== 1) throw new Error("Compte désactivé.");
 
     const payload: TokenPayload = {
       idUser: user.idUser,
@@ -104,6 +110,16 @@ export class AuthService {
 
     if (!validRecord) throw new Error("Refresh token invalide ou révoqué.");
     if (validRecord.expiresAt < new Date()) throw new Error("Refresh token expiré.");
+
+    // 2.5. Check if the user is still active
+    const user = await AppDataSource.getRepository(User).findOne({
+      where: { idUser: payload["idUser"] as string },
+      relations: { employee: true },
+    });
+
+    if (!user || user.activeStatus === -1 || (user.employee && user.employee.activeStatus === -1)) {
+      throw new Error("Ce compte a été désactivé.");
+    }
 
     // 3. Rotate: revoke old token and issue a new pair
     await tokenRepo.update({ idToken: validRecord.idToken }, { used: true });

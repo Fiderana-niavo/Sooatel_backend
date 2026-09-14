@@ -4,6 +4,7 @@ import cors from "cors";
 import { configDotenv } from "dotenv";
 import AppDataSource from "./database/data-source";
 import employeeRouter from "./modules/employees/routes/employee.router";
+import schoolRouter from "./modules/schools/routes/school.routes";
 import roleRouter from "./modules/roles/routes/role.router";
 import {
   permissionRouter,
@@ -35,6 +36,7 @@ import supplierRouter from "./modules/suppliers/routes/supplier.router";
 import supplierPaymentRouter from "./modules/supplier-payment/routes/supplier-payment.routes";
 import { startTokenPurgeJob } from "./shared/jobs/tokenPurge.job";
 import { startSupplierPriceJob } from "./modules/suppliers/jobs/supplier-price.job";
+import { initContractExpirationJob } from "./modules/employees/jobs/contract-expiration.job";
 import { globalErrorMiddleware } from "./shared/middlewares/error.middleware";
 import recipeRouter from "./modules/recipes/routes/recipe.routes";
 import supplierProductRouter from "./modules/suppliers/routes/supplier-product.router";
@@ -61,6 +63,7 @@ AppDataSource.initialize()
     console.log("Database connected.");
 
     app.use("/api/employees", employeeRouter);
+    app.use("/api/schools", schoolRouter);
     app.use("/api/roles", roleRouter);
     app.use("/api/permissions", permissionRouter);
     app.use("/api/permission-categories", permissionCategoryRouter);
@@ -105,6 +108,7 @@ AppDataSource.initialize()
       console.log(`Server running on port ${PORT}`);
       startTokenPurgeJob();
       startSupplierPriceJob();
+      initContractExpirationJob();
     });
   })
   .catch((err: Error) => {

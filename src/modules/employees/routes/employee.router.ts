@@ -10,6 +10,7 @@ const employeeRouter = Router();
 employeeRouter.use(authMiddleware);
 
 employeeRouter.get("/salers", employeeController.getSalers);
+employeeRouter.get("/recent-deactivations", authorize("employee.read"), employeeController.recentDeactivations);
 
 employeeRouter.get("/", authorize("employee.read"), employeeController.getAllEmployees);
 employeeRouter.get("/:id", authorize("employee.read"), employeeController.getById);
