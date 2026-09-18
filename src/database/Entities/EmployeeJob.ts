@@ -3,6 +3,7 @@ import { Employee } from "./Employee";
 import { EmployeeAvailability } from "./EmployeeAvailability";
 import { EmploymentType } from "./EmploymentType";
 import { JobTitle } from "./JobTitle";
+import { JOB_STATUS } from "../../shared/constants/leave.constants";
 
 @Entity("employees_job")
 export class EmployeeJob extends BaseEntity {
@@ -14,6 +15,15 @@ export class EmployeeJob extends BaseEntity {
 
   @Column({ type: "date", nullable: true, name: "end_date" })
   endDate: Date;
+
+  @Column({ type: "integer", default: JOB_STATUS.PENDING, name: "status" })
+  status: number;
+
+  @Column({ type: "timestamptz", nullable: true, name: "confirmed_date" })
+  confirmedDate: Date | null;
+
+  @Column({ type: "decimal", precision: 12, scale: 2, nullable: true, name: "base_salary" })
+  baseSalary: number | null;
 
   @Column({ type: "boolean", nullable: true, name: "has_fixed_schedule" })
   hasFixedSchedule: boolean;

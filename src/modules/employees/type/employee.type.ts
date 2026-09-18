@@ -18,6 +18,7 @@ export interface EmployeeListItem {
   jobTitle: string | null;
   isInternship: boolean;
   hasAccount: boolean;
+  status: number;
 }
 
 export interface InternshipInfo {

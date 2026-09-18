@@ -38,6 +38,9 @@ export class Employee extends BaseEntity {
   @Column({ type: "varchar", length: 255, nullable: true, name: "notes" })
   notes: string;
 
+  @Column({ type: "decimal", precision: 12, scale: 2, nullable: true, name: "base_salary" })
+  baseSalary: number | null;
+
   @Column({ type: "integer", default: 0, name: "active_status" })
   activeStatus: number;
 

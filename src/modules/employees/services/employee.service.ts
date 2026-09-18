@@ -1,4 +1,4 @@
-import { IsNull, Repository, Not } from "typeorm";
+import { Repository, Not, IsNull } from "typeorm";
 import bcrypt from "bcrypt";
 import { z } from "zod";
 import AppDataSource from "../../../database/data-source";
@@ -98,6 +98,7 @@ export class EmployeeService extends CrudService<
       jobTitle: emp.employeeJobs?.[0]?.jobTitle?.title || null,
       isInternship: emp.internships && emp.internships.length > 0,
       hasAccount: emp.users && emp.users.length > 0,
+      status: emp.employeeJobs?.[0]?.status ?? 0,
     }));
 
     return new Paginated<Employee>(records as unknown as Employee[], total, pageNum, limitNum);
@@ -404,7 +405,8 @@ export class EmployeeService extends CrudService<
 
       // 2. Synchronize job
       const existingJob = await manager.findOne(EmployeeJob, {
-        where: { idEmployee: id },
+        where: { idEmployee: id, endDate: IsNull() },
+        order: { assignmentDate: "DESC" }
       });
       if (dto.job) {
         if (existingJob) {

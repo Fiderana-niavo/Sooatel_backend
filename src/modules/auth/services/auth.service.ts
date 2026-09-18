@@ -141,6 +141,13 @@ export class AuthService {
 
   private async saveRefreshToken(idUser: string, rawToken: string): Promise<void> {
     const tokenRepo = AppDataSource.getRepository(UserToken);
+    
+    // Invalidate all previous unused refresh tokens for this user
+    await tokenRepo.update(
+      { idUser, tokenType: "REFRESH", used: false },
+      { used: true }
+    );
+    
     const hashedToken = await bcrypt.hash(rawToken, 10);
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + REFRESH_EXPIRY_DAYS);

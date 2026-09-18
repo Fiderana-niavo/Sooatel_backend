@@ -46,6 +46,10 @@ import deliveryRouter from "./modules/delivery/routes/delivery.routes";
 import stockMovementRouter from "./modules/stock-movement/routes/stock-movement.routes";
 import dishProductionRouter from "./modules/dish-production/routes/dish-production.routes";
 import inventoryRouter from "./modules/inventory/routes/inventory.routes";
+import employeeRequirementRouter from "./modules/employee-requirements/routes/employee-requirement.router";
+import leaveRouter from "./modules/leaves/routes/leave.router";
+import settingsRouter from "./modules/settings/routes/settings.router";
+
 
 configDotenv();
 
@@ -100,6 +104,10 @@ AppDataSource.initialize()
     app.use("/api/supplier-payments", supplierPaymentRouter);
     app.use("/api/recipes", recipeRouter);
     app.use("/api/inventories", inventoryRouter);
+    app.use("/api/employee-requirements", employeeRequirementRouter);
+    app.use("/api/leaves", leaveRouter);
+    app.use("/api/settings", settingsRouter);
+
 
     app.use(globalErrorMiddleware);
 
