@@ -23,6 +23,52 @@ export class TeamController extends CrudController<Team, TeamDto, TeamDto> {
       next(err);
     }
   };
+
+  getMembers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const id = req.params.id as string;
+      const members = await (this.service as TeamService).getMembers(id);
+      res.json(ApiResponse.success(members));
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  getAvailableEmployees = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const employees = await (this.service as TeamService).getAvailableEmployees();
+      res.json(ApiResponse.success(employees));
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  addMembers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const id = req.params.id as string;
+      const { employeeIds } = req.body;
+      if (!employeeIds || !Array.isArray(employeeIds) || employeeIds.length === 0) {
+        throw new Error("employeeIds (array) est requis.");
+      }
+      await (this.service as TeamService).addMembers(id, employeeIds);
+      res.json(ApiResponse.success({ success: true }));
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  removeMember = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const id = req.params.id as string;
+      const idEmployee = req.params.idEmployee as string;
+      await (this.service as TeamService).removeMember(id, idEmployee);
+      res.json(ApiResponse.success({ success: true }));
+    } catch (err) {
+      next(err);
+    }
+  };
+
 }
+
 
 export const teamController = new TeamController(new TeamService());

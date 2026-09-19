@@ -73,6 +73,9 @@ CREATE TABLE leave_types(
    label VARCHAR(50)  NOT NULL,
    is_paid BOOLEAN,
    requires_proof BOOLEAN,
+   deduction_mode VARCHAR(20) DEFAULT 'NEVER',
+   cap INTEGER,
+   cap_period VARCHAR(20),
    PRIMARY KEY(id_leave_type),
    UNIQUE(label)
 );
@@ -501,17 +504,20 @@ CREATE TABLE Leave_transactions(
    transaction_type VARCHAR(20)  NOT NULL,
    amount NUMERIC(5,2)  ,
    created_at TIMESTAMPTZ,
+   id_leave UUID,
    id_leave_type UUID NOT NULL,
    id_employee UUID NOT NULL,
    PRIMARY KEY(id_transaction),
+   FOREIGN KEY(id_leave) REFERENCES Leaves(id_leave),
    FOREIGN KEY(id_leave_type) REFERENCES leave_types(id_leave_type),
    FOREIGN KEY(id_employee) REFERENCES Employees(id_employee)
 );
 
 CREATE TABLE Employee_leave_balances(
    id_employee_leave_balance UUID DEFAULT uuid_generate_v4(),
-   allocated_days INTEGER NOT NULL DEFAULT 0,
-   used_days INTEGER,
+   allocated_days NUMERIC(6,2) NOT NULL DEFAULT 0,
+   used_days NUMERIC(6,2) DEFAULT 0,
+   advance_days NUMERIC(6,2) DEFAULT 0,
    id_employee UUID NOT NULL,
    id_leave_type UUID NOT NULL,
    PRIMARY KEY(id_employee_leave_balance),

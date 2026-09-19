@@ -37,6 +37,7 @@ import supplierPaymentRouter from "./modules/supplier-payment/routes/supplier-pa
 import { startTokenPurgeJob } from "./shared/jobs/tokenPurge.job";
 import { startSupplierPriceJob } from "./modules/suppliers/jobs/supplier-price.job";
 import { initContractExpirationJob } from "./modules/employees/jobs/contract-expiration.job";
+import { initLeaveAccrualJob } from "./modules/leaves/jobs/leave-accrual.job";
 import { globalErrorMiddleware } from "./shared/middlewares/error.middleware";
 import recipeRouter from "./modules/recipes/routes/recipe.routes";
 import supplierProductRouter from "./modules/suppliers/routes/supplier-product.router";
@@ -49,6 +50,8 @@ import inventoryRouter from "./modules/inventory/routes/inventory.routes";
 import employeeRequirementRouter from "./modules/employee-requirements/routes/employee-requirement.router";
 import leaveRouter from "./modules/leaves/routes/leave.router";
 import settingsRouter from "./modules/settings/routes/settings.router";
+import scheduleRouter from "./modules/schedules/routes/schedule.router";
+
 
 
 configDotenv();
@@ -107,6 +110,8 @@ AppDataSource.initialize()
     app.use("/api/employee-requirements", employeeRequirementRouter);
     app.use("/api/leaves", leaveRouter);
     app.use("/api/settings", settingsRouter);
+    app.use("/api/schedules", scheduleRouter);
+
 
 
     app.use(globalErrorMiddleware);
@@ -117,6 +122,7 @@ AppDataSource.initialize()
       startTokenPurgeJob();
       startSupplierPriceJob();
       initContractExpirationJob();
+      initLeaveAccrualJob();
     });
   })
   .catch((err: Error) => {
