@@ -1,9 +1,7 @@
 export interface ScheduleDto {
   idEmployee: string;
   scheduleDate: string;
-  idShiftType?: string | null;
-  customStartTime?: string | null;
-  customEndTime?: string | null;
+  idShiftType: string;
 }
 
 export interface SaveSchedulesPayload {
@@ -22,8 +20,6 @@ export interface ScheduleResponse {
   jobTitle: string | null;
   idShiftType: string | null;
   shiftLabel: string | null;
-  customStartTime: string | null;
-  customEndTime: string | null;
 }
 
 export interface GenerateByTeamDto {
@@ -43,8 +39,6 @@ export interface GeneratedScheduleRow {
   scheduleDate: string;
   idShiftType: string | null;
   shiftLabel: string | null;
-  customStartTime: string | null;
-  customEndTime: string | null;
   isOnLeave: boolean;
 }
 
@@ -53,13 +47,11 @@ export interface AvailableEmployee {
   employeeName: string | null;
   idJobTitle: string | null;
   jobTitle: string | null;
-  availabilities: Array<{
+  availabilities: {
     dayOfWeek: number;
     idShiftType: string | null;
     shiftLabel: string | null;
-    customStartTime: string | null;
-    customEndTime: string | null;
-  }>;
+  }[];
 }
 
 export interface ScheduleRangeSearchOptions {

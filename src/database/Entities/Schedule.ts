@@ -11,13 +11,7 @@ export class Schedule extends BaseEntity {
   @Column({ type: "date", nullable: true, name: "schedule_date" })
   scheduleDate: Date;
 
-  @Column({ type: "time", nullable: true, name: "custom_start_time" })
-  customStartTime: string;
-
-  @Column({ type: "time", nullable: true, name: "custom_end_time" })
-  customEndTime: string;
-
-  @Column({ type: "uuid", nullable: true, name: "id_shift_type" })
+  @Column({ type: "uuid", name: "id_shift_type" })
   idShiftType: string;
 
   @Column({ type: "uuid", name: "id_employee" })

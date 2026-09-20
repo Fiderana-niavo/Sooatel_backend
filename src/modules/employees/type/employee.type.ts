@@ -53,17 +53,13 @@ export interface EmployeeTeamInfo {
 
 export interface EmployeeAvailabilityDto {
   dayOfWeek: number;
-  customStartTime: string | null;
-  customEndTime: string | null;
-  idShiftType: string | null;
+  idShiftType: string;
 }
 
 export interface EmployeeAvailabilityInfo {
   idAvailability: string;
   dayOfWeek: number;
-  customStartTime: string | null;
-  customEndTime: string | null;
-  idShiftType: string | null;
+  idShiftType: string;
   shiftLabel: string | null;
 }
 

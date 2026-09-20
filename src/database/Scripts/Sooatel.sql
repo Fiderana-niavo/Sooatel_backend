@@ -83,8 +83,8 @@ CREATE TABLE leave_types(
 CREATE TABLE Shift_type(
    id_shift_type UUID DEFAULT uuid_generate_v4(),
    label VARCHAR(50)  NOT NULL,
-   custom_start_time TIME NOT NULL,
-   custom_end_time TIME NOT NULL,
+   start_time TIME NOT NULL,
+   end_time TIME NOT NULL,
    description VARCHAR(255) ,
    PRIMARY KEY(id_shift_type)
 );
@@ -447,18 +447,11 @@ CREATE TABLE Employee_team(
 CREATE TABLE Schedules(
    id_schedule UUID DEFAULT uuid_generate_v4(),
    schedule_date DATE,
-   custom_start_time TIME,
-   custom_end_time TIME,
-   id_shift_type UUID,
+   id_shift_type UUID NOT NULL,
    id_employee UUID NOT NULL,
    PRIMARY KEY(id_schedule),
    FOREIGN KEY(id_shift_type) REFERENCES Shift_type(id_shift_type),
-   FOREIGN KEY(id_employee) REFERENCES Employees(id_employee),
-   CONSTRAINT chk_schedule_time_or_shift 
-    CHECK (
-    (id_shift_type IS NOT NULL AND custom_start_time IS NULL AND custom_end_time IS NULL) OR
-    (id_shift_type IS NULL AND custom_start_time IS NOT NULL AND custom_end_time IS NOT NULL)
-    )
+   FOREIGN KEY(id_employee) REFERENCES Employees(id_employee)
 );
 
 CREATE TABLE Employee_requirements(
@@ -542,18 +535,11 @@ CREATE TABLE Employees_job(
 CREATE TABLE Employee_availabilities(
    id_availability UUID DEFAULT uuid_generate_v4(),
    day_of_week INTEGER,
-   custom_start_time TIME,
-   custom_end_time TIME,
-   id_shift_type UUID,
+   id_shift_type UUID NOT NULL,
    id_emp_job UUID NOT NULL,
    PRIMARY KEY(id_availability),
    FOREIGN KEY(id_shift_type) REFERENCES Shift_type(id_shift_type),
-   FOREIGN KEY(id_emp_job) REFERENCES Employees_job(id_emp_job),
-   CONSTRAINT chk_schedule_time_or_shift_avai
-    CHECK (
-    (id_shift_type IS NOT NULL AND custom_start_time IS NULL AND custom_end_time IS NULL) OR
-    (id_shift_type IS NULL AND custom_start_time IS NOT NULL AND custom_end_time IS NOT NULL)
-    )
+   FOREIGN KEY(id_emp_job) REFERENCES Employees_job(id_emp_job)
 );
 
 -- =========================================================================

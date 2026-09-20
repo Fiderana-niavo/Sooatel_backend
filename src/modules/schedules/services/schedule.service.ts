@@ -1,4 +1,4 @@
-import { Between, IsNull, LessThanOrEqual, MoreThanOrEqual } from "typeorm";
+import { Between, IsNull, LessThan, LessThanOrEqual, MoreThanOrEqual } from "typeorm";
 import AppDataSource from "../../../database/data-source";
 import { Schedule } from "../../../database/Entities/Schedule";
 import { EmployeeTeam } from "../../../database/Entities/EmployeeTeam";
@@ -49,10 +49,8 @@ export class ScheduleService {
         : null,
       idJobTitle: activeJob?.idJobTitle ?? null,
       jobTitle: activeJob?.jobTitle?.title ?? null,
-      idShiftType: schedule.idShiftType ?? null,
+      idShiftType: schedule.idShiftType,
       shiftLabel: schedule.shiftType?.label ?? null,
-      customStartTime: schedule.customStartTime ?? null,
-      customEndTime: schedule.customEndTime ?? null,
     };
   }
 
@@ -131,9 +129,7 @@ export class ScheduleService {
       const entity = repo.create();
       entity.idEmployee = dto.idEmployee;
       entity.scheduleDate = new Date(dto.scheduleDate) as unknown as Date;
-      entity.idShiftType = (dto.idShiftType ?? null) as unknown as string;
-      entity.customStartTime = (dto.customStartTime ?? null) as unknown as string;
-      entity.customEndTime = (dto.customEndTime ?? null) as unknown as string;
+      entity.idShiftType = dto.idShiftType as string;
       return entity;
     });
 
@@ -173,9 +169,32 @@ export class ScheduleService {
     // Number of rotation slots over the total period
     const rotationSlots = Math.ceil(totalDurationMs / rotationDurationMs);
 
+    let startIndex = 0;
+
+    // Check if there are schedules before this date for the given shift
+    const lastSchedule = await AppDataSource.getRepository(Schedule).findOne({
+      where: { 
+        idShiftType: dto.shiftIds[0],
+        scheduleDate: LessThan(new Date(dto.startDate + "T00:00:00Z")) as unknown as Date
+      },
+      order: { scheduleDate: "DESC" },
+      relations: { employee: { employeeTeams: true } }
+    });
+
+    if (lastSchedule && lastSchedule.employee && lastSchedule.employee.employeeTeams && lastSchedule.employee.employeeTeams.length > 0) {
+      const lastTeamId = lastSchedule.employee.employeeTeams[0]?.idTeam;
+      if (lastTeamId) {
+        const idx = dto.teamIds.indexOf(lastTeamId);
+        if (idx !== -1) {
+          // The next slot should start with the team AFTER the last one
+          startIndex = (idx + 1) % dto.teamIds.length;
+        }
+      }
+    }
+
     for (let slot = 0; slot < rotationSlots; slot++) {
       // Pick the team whose turn it is for this slot
-      const idTeam = dto.teamIds[slot % dto.teamIds.length];
+      const idTeam = dto.teamIds[(slot + startIndex) % dto.teamIds.length];
       const idShiftType = dto.shiftIds[0];
 
       if (!idTeam || !idShiftType) continue;
@@ -211,8 +230,6 @@ export class ScheduleService {
             scheduleDate: dateStr,
             idShiftType: shift?.idShiftType ?? null,
             shiftLabel: shift?.label ?? null,
-            customStartTime: shift?.customStartTime ?? null,
-            customEndTime: shift?.customEndTime ?? null,
             isOnLeave,
           });
         }
@@ -258,8 +275,6 @@ export class ScheduleService {
             dayOfWeek: a.dayOfWeek,
             idShiftType: a.idShiftType ?? null,
             shiftLabel: a.shiftType?.label ?? null,
-            customStartTime: a.customStartTime ?? null,
-            customEndTime: a.customEndTime ?? null,
           })),
       }));
   }
@@ -312,13 +327,15 @@ export class ScheduleService {
         order: { assignmentDate: "DESC" },
       });
 
+      if (!activeJob) continue;
+
       result.push({
         idEmployee: link.idEmployee,
         employeeName: link.employee
           ? `${link.employee.name ?? ""} ${link.employee.lastname ?? ""}`.trim()
           : null,
-        idJobTitle: activeJob?.idJobTitle ?? null,
-        jobTitle: activeJob?.jobTitle?.title ?? null,
+        idJobTitle: activeJob.idJobTitle,
+        jobTitle: activeJob.jobTitle?.title ?? null,
       });
     }
     return result;

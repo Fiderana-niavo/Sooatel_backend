@@ -158,8 +158,6 @@ export class EmployeeService extends CrudService<
         .select([
           'ea.id_availability AS "idAvailability"',
           'ea.day_of_week AS "dayOfWeek"',
-          'ea.custom_start_time AS "customStartTime"',
-          'ea.custom_end_time AS "customEndTime"',
           'ea.id_shift_type AS "idShiftType"',
           'st.label AS "shiftLabel"',
         ])
@@ -573,8 +571,6 @@ export class EmployeeService extends CrudService<
           manager.create(EmployeeAvailability, {
             idEmpJob: activeJob.idEmpJob,
             dayOfWeek: dto.dayOfWeek,
-            customStartTime: dto.customStartTime ?? undefined,
-            customEndTime: dto.customEndTime ?? undefined,
             idShiftType: dto.idShiftType ?? undefined,
           }),
         );

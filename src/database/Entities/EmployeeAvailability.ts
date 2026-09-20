@@ -11,13 +11,7 @@ export class EmployeeAvailability extends BaseEntity {
   @Column({ type: "integer", nullable: true, name: "day_of_week" })
   dayOfWeek: number;
 
-  @Column({ type: "time", nullable: true, name: "custom_start_time" })
-  customStartTime: string;
-
-  @Column({ type: "time", nullable: true, name: "custom_end_time" })
-  customEndTime: string;
-
-  @Column({ type: "uuid", nullable: true, name: "id_shift_type" })
+  @Column({ type: "uuid", name: "id_shift_type" })
   idShiftType: string;
 
   @Column({ type: "uuid", name: "id_emp_job" })
