@@ -7,8 +7,8 @@ export class PurchaseController {
 
   create = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      // Access user ID from token payload
-      const userId = req.userId;
+      // Access user/employee ID from token payload
+      const userId = req.idEmployee || req.userId;
       if (!userId) {
         res.status(401).json(ApiResponse.error("Non authentifié"));
         return;
@@ -22,7 +22,7 @@ export class PurchaseController {
 
   update = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const userId = req.userId;
+      const userId = req.idEmployee || req.userId;
       if (!userId) {
         res.status(401).json(ApiResponse.error("Non authentifié"));
         return;
@@ -36,7 +36,7 @@ export class PurchaseController {
 
   confirm = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const userId = req.userId;
+      const userId = req.idEmployee || req.userId;
       if (!userId) {
         res.status(401).json(ApiResponse.error("Non authentifié"));
         return;

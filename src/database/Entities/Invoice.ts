@@ -21,6 +21,8 @@ export class Invoice extends BaseEntity {
     length: 30,
     unique: true,
     name: "invoice_number_system",
+    insert: false,
+    update: false
   })
   invoiceNumberSystem: string;
 

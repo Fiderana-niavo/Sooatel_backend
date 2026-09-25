@@ -7,7 +7,7 @@ export class Item extends BaseEntity {
   @PrimaryGeneratedColumn("uuid", { name: "id_item" })
   idItem: string;
 
-  @Column({ type: "varchar", length: 20, unique: true, name: "ref" })
+  @Column({ type: "varchar", length: 20, unique: true, name: "ref" , insert: false, update: false })
   ref: string;
 
   @Column({ type: "varchar", length: 100, unique: true, name: "label" })

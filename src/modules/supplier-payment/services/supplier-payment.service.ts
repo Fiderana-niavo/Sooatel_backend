@@ -49,9 +49,6 @@ export class SupplierPaymentService {
     await queryRunner.startTransaction();
 
     try {
-      const count = await queryRunner.manager.count(SupplierPayment);
-      const ref = "PAY-" + String(count + 1).padStart(4, "0");
-
       const payment = queryRunner.manager.create(SupplierPayment, {
         idSupplier,
         idProcessedBy: idEmployee,
@@ -59,7 +56,6 @@ export class SupplierPaymentService {
         amount: dto.amount,
         paymentDate: dto.paymentDate ? new Date(dto.paymentDate) : new Date(),
         notes: dto.notes ?? null,
-        ref,
       });
       await queryRunner.manager.save(SupplierPayment, payment);
       if (dto.idPaymentMethod) {
@@ -103,8 +99,8 @@ export class SupplierPaymentService {
             ref: mvmtRef,
             amount: dto.amount,
             movementDate: payment.paymentDate,
-            reason: dto.notes || "Paiement fournisseur " + ref,
-            invoiceReference: ref,
+            reason: dto.notes || "Paiement fournisseur " + (payment.ref || ""),
+            invoiceReference: payment.ref || null,
             direction: -5,
             idProcessedBy: idEmployee,
             idJournal: activeJournal.idJournal,
@@ -652,8 +648,8 @@ export class SupplierPaymentService {
       }
 
       await this.syncSupplierBalance(idSupplier, queryRunner.manager);
-        await queryRunner.commitTransaction();
-      } catch (error) {
+      await queryRunner.commitTransaction();
+    } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;
     } finally {

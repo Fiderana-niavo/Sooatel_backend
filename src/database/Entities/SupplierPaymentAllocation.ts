@@ -1,7 +1,6 @@
 import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { SupplierPayment } from "./SupplierPayment";
 import { ProductDelivery } from "./ProductDelivery";
-import { Purchase } from "./Purchase";
 
 export type AllocationType = "DELIVERY" | "SUPPLIER_CREDIT";
 

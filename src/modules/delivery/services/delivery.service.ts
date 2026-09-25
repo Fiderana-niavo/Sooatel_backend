@@ -1,9 +1,13 @@
-import { Brackets } from "typeorm";
+import { Brackets, IsNull } from "typeorm";
 import AppDataSource from "../../../database/data-source";
 import { Purchase } from "../../../database/Entities/Purchase";
 import { ProductDelivery } from "../../../database/Entities/ProductDelivery";
 import { SupplierBalance } from "../../../database/Entities/SupplierBalance";
 import { SupplierPaymentAllocation } from "../../../database/Entities/SupplierPaymentAllocation";
+import { SupplierPayment } from "../../../database/Entities/SupplierPayment";
+import { CashMovement } from "../../../database/Entities/CashMovement";
+import { CashJournal } from "../../../database/Entities/CashJournal";
+import { PaymentMethodBalance } from "../../../database/Entities/PaymentMethodBalance";
 import { DeliveryDetail } from "../../../database/Entities/DeliveryDetail";
 import { PurchaseDelivery } from "../../../database/Entities/PurchaseDelivery";
 import { PURCHASE_STATUS, getPurchaseStatusName } from "../../purchases/constants/purchase.constants";
@@ -287,9 +291,16 @@ export class DeliveryService {
 
       await this.saveStockUpdates(queryRunner, stockMovements, itemsArray);
 
-      // Initialiser balance_due et mettre à jour le debit fournisseur
+      // Initialize balance_due, accounting for any advance payments already recorded
       const totalDelivery = Number(delivery.totalAmount ?? 0);
-      delivery.balanceDue = totalDelivery;
+      const existingAllocsResult = await queryRunner.manager.query(
+        `SELECT COALESCE(SUM(amount), 0) AS already_paid
+         FROM supplier_payment_allocation
+         WHERE id_delivery = $1 AND allocation_type = 'DELIVERY'`,
+        [idDelivery]
+      ) as { already_paid: string }[];
+      const alreadyPaid = Number(existingAllocsResult[0]?.already_paid ?? 0);
+      delivery.balanceDue = Math.max(0, totalDelivery - alreadyPaid);
       await queryRunner.manager.save(ProductDelivery, delivery);
 
       const idSupplier = delivery.purchaseDeliveries?.[0]?.purchase?.idSupplier;
@@ -394,7 +405,7 @@ export class DeliveryService {
     }
   }
 
-  async deleteDelivery(idDelivery: string): Promise<void> {
+  async deleteDelivery(idDelivery: string, strategy: "SUPPLIER_CREDIT" | "CORRECTION" = "SUPPLIER_CREDIT", idOperator?: string): Promise<void> {
     const queryRunner = AppDataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -402,22 +413,100 @@ export class DeliveryService {
     try {
       const delivery = await queryRunner.manager.getRepository(ProductDelivery).findOne({
         where: { idDelivery },
-        relations: { purchaseDeliveries: true }
+        relations: { purchaseDeliveries: { purchase: true } }
       });
 
       if (!delivery) throw new NotFoundError("Livraison introuvable.");
       if (delivery.status === DELIVERY_STATUS.VALIDATED) throw new BadRequestError("Impossible de supprimer une livraison validée.");
 
       const purchaseIds = delivery.purchaseDeliveries?.map(pd => pd.idPurchase) || [];
+      const idSupplier = delivery.purchaseDeliveries?.[0]?.purchase?.idSupplier;
 
-      // 1. Delete details and links
+      // 1. Handle payment allocations based on the chosen strategy
+      if (strategy === "SUPPLIER_CREDIT") {
+        // Convert allocations linked to this delivery into supplier credit
+        await queryRunner.manager.update(
+          SupplierPaymentAllocation,
+          { idDelivery },
+          { allocationType: "SUPPLIER_CREDIT", idDelivery: null }
+        );
+      } else {
+        // CORRECTION: reverse the cash movements and delete the allocations
+        const allocations = await queryRunner.manager.find(SupplierPaymentAllocation, {
+          where: { idDelivery },
+          relations: { supplierPayment: true },
+        });
+
+        if (allocations.length > 0) {
+          const activeJournal = await queryRunner.manager.findOne(CashJournal, {
+            where: { journalClosing: IsNull() },
+            order: { journalOpening: "DESC" },
+          });
+
+          if (activeJournal) {
+            // Group amounts by payment method to avoid duplicate PMB updates
+            const refundByMethod = new Map<string, { amount: number; paymentRef: string }>();
+            for (const alloc of allocations) {
+              const payment = alloc.supplierPayment as SupplierPayment;
+              if (!payment?.idPaymentMethod) continue;
+              const existing = refundByMethod.get(payment.idPaymentMethod);
+              if (existing) {
+                existing.amount += Number(alloc.amount);
+              } else {
+                refundByMethod.set(payment.idPaymentMethod, {
+                  amount: Number(alloc.amount),
+                  paymentRef: payment.ref ?? "",
+                });
+              }
+            }
+
+            for (const [idPaymentMethod, { amount, paymentRef }] of refundByMethod) {
+              // Restore PaymentMethodBalance
+              let pmb = await queryRunner.manager.findOne(PaymentMethodBalance, {
+                where: { idJournal: activeJournal.idJournal, idPaymentMethod },
+              });
+              if (pmb) {
+                pmb.amount = Number(pmb.amount) + amount;
+                await queryRunner.manager.save(PaymentMethodBalance, pmb);
+              }
+
+              // Create a CashMovement IN to record the reversal
+              const reversal = queryRunner.manager.create(CashMovement, {
+                idJournal: activeJournal.idJournal,
+                idPaymentMethod,
+                amount,
+                direction: 5,
+                movementDate: new Date(),
+                reason: `Correction – annulation paiement ${paymentRef} (suppression livraison)`,
+                idProcessedBy: idOperator ?? "00000000-0000-0000-0000-000000000000",
+                status: 0,
+              });
+              await queryRunner.manager.save(CashMovement, reversal);
+            }
+
+            // Recalculate expectedClosingBalance
+            const { totalExpected } = await queryRunner.manager
+              .createQueryBuilder(PaymentMethodBalance, "pmb")
+              .select("SUM(pmb.amount)", "totalExpected")
+              .where("pmb.id_journal = :idJournal", { idJournal: activeJournal.idJournal })
+              .getRawOne() as { totalExpected: string };
+            activeJournal.expectedClosingBalance = Number(totalExpected || 0);
+            await queryRunner.manager.save(CashJournal, activeJournal);
+          }
+        }
+
+        // Delete the allocations
+        await queryRunner.manager.delete(SupplierPaymentAllocation, { idDelivery });
+      }
+
+      // 2. Delete details and links
       await queryRunner.manager.delete(DeliveryDetail, { idDelivery });
       await queryRunner.manager.delete(PurchaseDelivery, { idDelivery });
 
-      // 2. Delete delivery
+      // 3. Delete delivery
       await queryRunner.manager.delete(ProductDelivery, { idDelivery });
 
-      // 3. Recalculate purchase statuses if any purchase was linked
+      // 4. Recalculate purchase statuses if any purchase was linked
       if (purchaseIds.length > 0) {
         const purchases = await queryRunner.manager
           .createQueryBuilder(Purchase, "p")
@@ -446,6 +535,36 @@ export class DeliveryService {
         if (createdIds && createdIds.length > 0) {
           await queryRunner.manager.update(Purchase, createdIds, { status: PURCHASE_STATUS.CREATED });
         }
+      }
+
+      // 5. Update supplier balance if supplier is known
+      if (idSupplier) {
+        const debitResult = await queryRunner.manager.query(
+          `SELECT SUM(d.balance_due) as total_debit
+           FROM product_delivery d
+           JOIN purchase_delivery pd ON pd.id_delivery = d.id_delivery
+           JOIN purchases p ON p.id_purchase = pd.id_purchase
+           WHERE p.id_supplier = $1 AND d.status = 0`,
+          [idSupplier],
+        );
+        const debit = Number(debitResult[0]?.total_debit || 0);
+
+        const creditResult = await queryRunner.manager.query(
+          `SELECT SUM(spa.amount) as total_credit
+           FROM supplier_payment_allocation spa
+           JOIN supplier_payment sp ON sp.id_supplier_payment = spa.id_supplier_payment
+           WHERE sp.id_supplier = $1 AND spa.allocation_type = 'SUPPLIER_CREDIT'`,
+          [idSupplier],
+        );
+        const credit = Number(creditResult[0]?.total_credit || 0);
+
+        let balance = await queryRunner.manager.findOne(SupplierBalance, { where: { idSupplier } });
+        if (!balance) {
+          balance = queryRunner.manager.create(SupplierBalance, { idSupplier });
+        }
+        balance.debit = debit;
+        balance.credit = credit;
+        await queryRunner.manager.save(SupplierBalance, balance);
       }
 
       await queryRunner.commitTransaction();

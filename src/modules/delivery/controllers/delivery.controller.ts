@@ -72,7 +72,10 @@ export class DeliveryController {
 
   delete = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      await deliveryService.deleteDelivery(req.params.id as string);
+      const strategy = req.body?.strategy as "SUPPLIER_CREDIT" | "CORRECTION" | undefined;
+      const idOperator = req.idEmployee || req.userId;
+      if (!idOperator) throw new Error("Operator ID not found in request");
+      await deliveryService.deleteDelivery(req.params.id as string, strategy, idOperator);
       res.json(ApiResponse.success({ message: "Livraison supprimée" }));
     } catch (err: unknown) {
       next(err);

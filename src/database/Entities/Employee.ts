@@ -14,7 +14,7 @@ export class Employee extends BaseEntity {
   @PrimaryGeneratedColumn("uuid", { name: "id_employee" })
   idEmployee: string;
 
-  @Column({ type: "varchar", length: 20, unique: true, name: "employee_code" })
+  @Column({ type: "varchar", length: 20, unique: true, name: "employee_code" , insert: false, update: false })
   employeeCode: string;
 
   @Column({ type: "varchar", length: 100, nullable: true, name: "name" })

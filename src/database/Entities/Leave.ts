@@ -7,7 +7,7 @@ export class Leave extends BaseEntity {
   @PrimaryGeneratedColumn("uuid", { name: "id_leave" })
   idLeave: string;
 
-  @Column({ type: "varchar", length: 20, unique: true, name: "ref" })
+  @Column({ type: "varchar", length: 20, unique: true, name: "ref" , insert: false, update: false })
   ref: string;
 
   @Column({ type: "timestamptz", name: "start_date" })

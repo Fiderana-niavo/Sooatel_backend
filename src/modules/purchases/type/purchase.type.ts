@@ -1,10 +1,16 @@
-﻿export interface PurchaseDetailDto {
+export interface PurchaseDetailDto {
   idPurchaseDetail?: string;
   idPurchase?: string;
   idSuppliedItem: string;
   quantity: number;
   unitPrice: number;
   totalAmount: number;
+}
+
+export interface DeliveryLineDto {
+  idSuppliedItem: string;
+  quantity: number;
+  unitPrice: number;
 }
 
 export interface PurchaseDto {
@@ -19,4 +25,6 @@ export interface PurchaseDto {
   details?: PurchaseDetailDto[];
   advanceAmount?: number;
   idPaymentMethod?: string;
+  deliveryDone?: boolean;
+  deliveryLines?: DeliveryLineDto[];
 }

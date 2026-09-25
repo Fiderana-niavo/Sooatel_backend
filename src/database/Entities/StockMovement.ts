@@ -7,7 +7,7 @@ export class StockMovement extends BaseEntity {
   @PrimaryGeneratedColumn("uuid", { name: "id_stock_movement" })
   idStockMovement: string;
 
-  @Column({ type: "varchar", length: 20, unique: true, name: "ref" })
+  @Column({ type: "varchar", length: 20, unique: true, name: "ref" , insert: false, update: false })
   ref: string;
 
   @Column({ type: "uuid", name: "id_item" })
