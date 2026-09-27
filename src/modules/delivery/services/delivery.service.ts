@@ -434,7 +434,7 @@ export class DeliveryService {
         // CORRECTION: reverse the cash movements and delete the allocations
         const allocations = await queryRunner.manager.find(SupplierPaymentAllocation, {
           where: { idDelivery },
-          relations: { supplierPayment: true },
+          relations: { supplierPayment: { paymentLines: true } },
         });
 
         if (allocations.length > 0) {
@@ -447,16 +447,26 @@ export class DeliveryService {
             // Group amounts by payment method to avoid duplicate PMB updates
             const refundByMethod = new Map<string, { amount: number; paymentRef: string }>();
             for (const alloc of allocations) {
-              const payment = alloc.supplierPayment as SupplierPayment;
-              if (!payment?.idPaymentMethod) continue;
-              const existing = refundByMethod.get(payment.idPaymentMethod);
-              if (existing) {
-                existing.amount += Number(alloc.amount);
-              } else {
-                refundByMethod.set(payment.idPaymentMethod, {
-                  amount: Number(alloc.amount),
-                  paymentRef: payment.ref ?? "",
-                });
+              const payment = alloc.supplierPayment;
+              if (!payment || !payment.paymentLines || payment.paymentLines.length === 0) continue;
+
+              // Distribute the allocation refund amount proportionally across payment lines
+              const totalPaymentAmount = Number(payment.amount);
+              if (totalPaymentAmount <= 0) continue;
+
+              for (const line of payment.paymentLines) {
+                const lineRatio = Number(line.amount) / totalPaymentAmount;
+                const refundAmountForLine = Number(alloc.amount) * lineRatio;
+
+                const existing = refundByMethod.get(line.idPaymentMethod);
+                if (existing) {
+                  existing.amount += refundAmountForLine;
+                } else {
+                  refundByMethod.set(line.idPaymentMethod, {
+                    amount: refundAmountForLine,
+                    paymentRef: payment.ref ?? "",
+                  });
+                }
               }
             }
 

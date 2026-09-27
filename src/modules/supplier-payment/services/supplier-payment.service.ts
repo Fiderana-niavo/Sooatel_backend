@@ -4,6 +4,7 @@ import {
   SupplierPaymentAllocation,
   AllocationType,
 } from "../../../database/Entities/SupplierPaymentAllocation";
+import { SupplierPaymentLine } from "../../../database/Entities/SupplierPaymentLine";
 import { SupplierBalance } from "../../../database/Entities/SupplierBalance";
 import { CashJournal } from "../../../database/Entities/CashJournal";
 import { CashMovement } from "../../../database/Entities/CashMovement";
@@ -16,6 +17,7 @@ import { NotFoundError, BadRequestError } from "../../../shared/errors/AppError"
 import {
   CreateSupplierPaymentDto,
   AllocationDto,
+  PaymentLineDto,
   DeliveryPaymentSummary,
   AvailableDestinations,
 } from "../types/supplier-payment.type";
@@ -30,19 +32,29 @@ export class SupplierPaymentService {
     if (!dto.allocations || dto.allocations.length === 0) {
       throw new BadRequestError("Au moins une allocation est requise.");
     }
+    if (!dto.paymentLines || dto.paymentLines.length === 0) {
+      throw new BadRequestError("Au moins un mode de paiement est requis.");
+    }
 
     const supplier = await Supplier.findOne({ where: { idSupplier } });
     if (!supplier) throw new NotFoundError("Fournisseur introuvable.");
+
     const totalAllocated = dto.allocations.reduce((sum, a) => sum + a.amount, 0);
     if (Math.abs(totalAllocated - dto.amount) > 0.01) {
       throw new BadRequestError(
         `La somme des allocations (${totalAllocated}) doit être égale au montant du paiement (${dto.amount}).`,
       );
     }
-    const errors = await this.validateAllocations(dto.allocations);
-    if (errors.length > 0) {
-      throw new BadRequestError(errors.join(" | "));
+
+    const totalLines = dto.paymentLines.reduce((sum, l) => sum + l.amount, 0);
+    if (Math.abs(totalLines - dto.amount) > 0.01) {
+      throw new BadRequestError(
+        `La somme des modes de paiement (${totalLines}) doit être égale au montant total (${dto.amount}).`,
+      );
     }
+
+    const errors = await this.validateAllocations(dto.allocations);
+    if (errors.length > 0) throw new BadRequestError(errors.join(" | "));
 
     const queryRunner = AppDataSource.createQueryRunner();
     await queryRunner.connect();
@@ -52,73 +64,47 @@ export class SupplierPaymentService {
       const payment = queryRunner.manager.create(SupplierPayment, {
         idSupplier,
         idProcessedBy: idEmployee,
-        idPaymentMethod: dto.idPaymentMethod,
+        idPaymentMethod: null,
         amount: dto.amount,
         paymentDate: dto.paymentDate ? new Date(dto.paymentDate) : new Date(),
         notes: dto.notes ?? null,
       });
       await queryRunner.manager.save(SupplierPayment, payment);
-      if (dto.idPaymentMethod) {
-        const activeJournal = await queryRunner.manager.findOne(CashJournal, {
-          where: { journalClosing: IsNull() },
-          order: { journalOpening: "DESC" },
+
+      const activeJournal = await queryRunner.manager.findOne(CashJournal, {
+        where: { journalClosing: IsNull() },
+        order: { journalOpening: "DESC" },
+      });
+
+      for (const line of dto.paymentLines) {
+        const paymentLine = queryRunner.manager.create(SupplierPaymentLine, {
+          idSupplierPayment: payment.idSupplierPayment,
+          idPaymentMethod: line.idPaymentMethod,
+          amount: line.amount,
         });
+        await queryRunner.manager.save(SupplierPaymentLine, paymentLine);
 
         if (activeJournal) {
-          let pmb = await queryRunner.manager.findOne(PaymentMethodBalance, {
-            where: { idJournal: activeJournal.idJournal, idPaymentMethod: dto.idPaymentMethod },
-          });
-
-          if (!pmb) {
-            pmb = queryRunner.manager.create(PaymentMethodBalance, {
-              idJournal: activeJournal.idJournal,
-              idPaymentMethod: dto.idPaymentMethod,
-              amount: 0,
-            });
-          }
-
-          if (Number(pmb.amount) < dto.amount) {
-            throw new BadRequestError(
-              `Solde insuffisant pour ce mode de paiement. Disponible : ${Number(pmb.amount).toFixed(2)}, Requis : ${dto.amount.toFixed(2)}.`
-            );
-          }
-
-          pmb.amount = Number(pmb.amount) - dto.amount;
-          await queryRunner.manager.save(PaymentMethodBalance, pmb);
-          const { totalExpected } = await queryRunner.manager
-            .createQueryBuilder(PaymentMethodBalance, "pmb")
-            .select("SUM(pmb.amount)", "totalExpected")
-            .where("pmb.id_journal = :idJournal", { idJournal: activeJournal.idJournal })
-            .getRawOne();
-
-          activeJournal.expectedClosingBalance = Number(totalExpected || 0);
-          await queryRunner.manager.save(CashJournal, activeJournal);
-          const movementCount = await queryRunner.manager.count(CashMovement);
-          const mvmtRef = "CM-" + String(movementCount + 1).padStart(4, "0");
-          const cashMovement = queryRunner.manager.create(CashMovement, {
-            ref: mvmtRef,
-            amount: dto.amount,
-            movementDate: payment.paymentDate,
-            reason: dto.notes || "Paiement fournisseur " + (payment.ref || ""),
-            invoiceReference: payment.ref || null,
-            direction: -5,
-            idProcessedBy: idEmployee,
-            idJournal: activeJournal.idJournal,
-            idPaymentMethod: dto.idPaymentMethod,
-            status: 0,
-          });
-          await queryRunner.manager.save(CashMovement, cashMovement);
+          await this.debitPaymentMethod(
+            queryRunner.manager,
+            activeJournal,
+            line,
+            payment,
+            idEmployee,
+          );
         }
+      }
+
+      if (activeJournal) {
+        await this.syncJournalExpectedBalance(queryRunner.manager, activeJournal);
       }
 
       for (const allocDto of dto.allocations) {
         if (allocDto.amount <= 0) continue;
-
         const allocation = queryRunner.manager.create(SupplierPaymentAllocation, {
           idSupplierPayment: payment.idSupplierPayment,
           allocationType: allocDto.allocationType,
           idDelivery: allocDto.idDelivery ?? null,
-
           amount: allocDto.amount,
         });
         await queryRunner.manager.save(SupplierPaymentAllocation, allocation);
@@ -144,6 +130,62 @@ export class SupplierPaymentService {
       await queryRunner.release();
     }
   }
+
+  private async debitPaymentMethod(
+    manager: any,
+    activeJournal: CashJournal,
+    line: PaymentLineDto,
+    payment: SupplierPayment,
+    idEmployee: string,
+  ): Promise<void> {
+    let pmb = await manager.findOne(PaymentMethodBalance, {
+      where: { idJournal: activeJournal.idJournal, idPaymentMethod: line.idPaymentMethod },
+    });
+
+    if (!pmb) {
+      pmb = manager.create(PaymentMethodBalance, {
+        idJournal: activeJournal.idJournal,
+        idPaymentMethod: line.idPaymentMethod,
+        amount: 0,
+      });
+    }
+
+    if (Number(pmb.amount) < line.amount) {
+      throw new BadRequestError(
+        `Solde insuffisant pour ce mode de paiement. Disponible : ${Number(pmb.amount).toFixed(2)}, Requis : ${line.amount.toFixed(2)}.`,
+      );
+    }
+
+    pmb.amount = Number(pmb.amount) - line.amount;
+    await manager.save(PaymentMethodBalance, pmb);
+
+    const movementCount = await manager.count(CashMovement);
+    const mvmtRef = "CM-" + String(movementCount + 1).padStart(4, "0");
+    const cashMovement = manager.create(CashMovement, {
+      ref: mvmtRef,
+      amount: line.amount,
+      movementDate: payment.paymentDate,
+      reason: payment.notes || "Paiement fournisseur " + (payment.ref || ""),
+      invoiceReference: payment.ref || null,
+      direction: -5,
+      idProcessedBy: idEmployee,
+      idJournal: activeJournal.idJournal,
+      idPaymentMethod: line.idPaymentMethod,
+      status: 0,
+    });
+    await manager.save(CashMovement, cashMovement);
+  }
+
+  private async syncJournalExpectedBalance(manager: any, activeJournal: CashJournal): Promise<void> {
+    const { totalExpected } = await manager
+      .createQueryBuilder(PaymentMethodBalance, "pmb")
+      .select("SUM(pmb.amount)", "totalExpected")
+      .where("pmb.id_journal = :idJournal", { idJournal: activeJournal.idJournal })
+      .getRawOne();
+    activeJournal.expectedClosingBalance = Number(totalExpected || 0);
+    await manager.save(CashJournal, activeJournal);
+  }
+
   async getDeliveryPaymentSummary(idDelivery: string): Promise<DeliveryPaymentSummary> {
     const delivery = await ProductDelivery.findOne({
       where: { idDelivery },
@@ -168,7 +210,7 @@ export class SupplierPaymentService {
     else if (totalPaid > 0) paymentStatus = "PARTIAL";
     const deliveryAllocations = await SupplierPaymentAllocation.find({
       where: { idDelivery, allocationType: "DELIVERY" as AllocationType },
-      relations: { supplierPayment: { paymentMethod: true } },
+      relations: { supplierPayment: { paymentLines: { paymentMethod: true } } },
     });
 
     const activeJournal = await CashJournal.findOne({
@@ -187,14 +229,17 @@ export class SupplierPaymentService {
 
     const allocations = [...deliveryAllocations];
     const payments = allocations.map((a) => {
-      const idPaymentMethod = a.supplierPayment?.idPaymentMethod;
+      const lines = a.supplierPayment?.paymentLines || [];
+      const methods = lines.map((l: any) => l.paymentMethod?.label).filter(Boolean);
+      const methodLabel = methods.length > 1 ? "Mixte (" + methods.join(", ") + ")" : (methods[0] || "Inconnu");
+
       return {
         idPayment: a.supplierPayment?.idSupplierPayment ?? "",
         ref: a.supplierPayment?.ref ?? "",
         date: a.supplierPayment?.paymentDate ?? new Date(),
         amount: Number(a.amount),
-        method: a.supplierPayment?.paymentMethod?.label ?? "Inconnu",
-        methodBalance: idPaymentMethod ? (methodBalances.get(idPaymentMethod) ?? 0) : 0,
+        method: methodLabel,
+        methodBalance: 0, // Not highly relevant for mixed payments in this simplified summary
       };
     });
 
@@ -310,7 +355,7 @@ export class SupplierPaymentService {
       where: { idSupplierPayment: idPayment },
       relations: {
         allocations: true,
-        paymentMethod: true,
+        paymentLines: { paymentMethod: true },
       },
     });
 
@@ -326,6 +371,16 @@ export class SupplierPaymentService {
     if (dto.amount <= 0) throw new BadRequestError("Le montant doit être positif.");
     if (!dto.allocations || dto.allocations.length === 0) {
       throw new BadRequestError("Au moins une allocation est requise.");
+    }
+
+    if (!dto.paymentLines || dto.paymentLines.length === 0) {
+      throw new BadRequestError("Au moins un mode de paiement est requis.");
+    }
+    const totalLines = dto.paymentLines.reduce((sum, l) => sum + l.amount, 0);
+    if (Math.abs(totalLines - dto.amount) > 0.01) {
+      throw new BadRequestError(
+        `La somme des modes de paiement (${totalLines}) doit être égale au montant total (${dto.amount}).`,
+      );
     }
 
     const payment = await SupplierPayment.findOne({
@@ -352,14 +407,12 @@ export class SupplierPaymentService {
 
     try {
       const oldAmount = Number(payment.amount);
-      const amountDiff = dto.amount - oldAmount;
-      const oldMethodId = payment.idPaymentMethod;
       payment.amount = dto.amount;
-      payment.idPaymentMethod = dto.idPaymentMethod;
       payment.paymentDate = dto.paymentDate ? new Date(dto.paymentDate) : payment.paymentDate;
       payment.notes = dto.notes ?? payment.notes;
       payment.idProcessedBy = idEmployee;
       await queryRunner.manager.save(SupplierPayment, payment);
+      const amountDiff = dto.amount - oldAmount;
       if (amountDiff !== 0) {
         let balance = await queryRunner.manager.findOne(SupplierBalance, { where: { idSupplier } });
         if (balance) {
@@ -373,57 +426,57 @@ export class SupplierPaymentService {
       });
 
       if (activeJournal) {
-        if (oldMethodId) {
-          let oldPmb = await queryRunner.manager.findOne(PaymentMethodBalance, {
-            where: { idJournal: activeJournal.idJournal, idPaymentMethod: oldMethodId },
+        // Reverse old payment lines in journal
+        const oldLines = await queryRunner.manager.find(SupplierPaymentLine, {
+          where: { idSupplierPayment: idPayment },
+        });
+        for (const oldLine of oldLines) {
+          const oldPmb = await queryRunner.manager.findOne(PaymentMethodBalance, {
+            where: { idJournal: activeJournal.idJournal, idPaymentMethod: oldLine.idPaymentMethod },
           });
           if (oldPmb) {
-            oldPmb.amount = Number(oldPmb.amount) + oldAmount;
+            oldPmb.amount = Number(oldPmb.amount) + Number(oldLine.amount);
             await queryRunner.manager.save(PaymentMethodBalance, oldPmb);
           }
-        }
-        if (dto.idPaymentMethod) {
-          let newPmb = await queryRunner.manager.findOne(PaymentMethodBalance, {
-            where: { idJournal: activeJournal.idJournal, idPaymentMethod: dto.idPaymentMethod },
+          const refundMove = queryRunner.manager.create(CashMovement, {
+            idJournal: activeJournal.idJournal,
+            idPaymentMethod: oldLine.idPaymentMethod,
+            type: "IN",
+            amount: Number(oldLine.amount),
+            description: `Annulation du paiement ${payment.ref} pour modification`,
+            idProcessedBy: idEmployee,
           });
-          if (!newPmb) {
-            newPmb = queryRunner.manager.create(PaymentMethodBalance, {
-              idJournal: activeJournal.idJournal,
-              idPaymentMethod: dto.idPaymentMethod,
-              amount: 0,
-            });
-          }
-          newPmb.amount = Number(newPmb.amount) - dto.amount;
-          await queryRunner.manager.save(PaymentMethodBalance, newPmb);
+          await queryRunner.manager.save(CashMovement, refundMove);
         }
-        const { totalExpected } = await queryRunner.manager
-          .createQueryBuilder(PaymentMethodBalance, "pmb")
-          .select("SUM(pmb.amount)", "totalExpected")
-          .where("pmb.id_journal = :idJournal", { idJournal: activeJournal.idJournal })
-          .getRawOne();
-        activeJournal.expectedClosingBalance = Number(totalExpected || 0);
-        await queryRunner.manager.save(CashJournal, activeJournal);
-        const refundMove = queryRunner.manager.create(CashMovement, {
-          idJournal: activeJournal.idJournal,
-          idPaymentMethod: oldMethodId,
-          type: "IN",
-          amount: oldAmount,
-          description: `Annulation du paiement ${payment.ref} pour modification`,
-          idProcessedBy: idEmployee,
-        });
-        await queryRunner.manager.save(CashMovement, refundMove);
 
-        const newMove = queryRunner.manager.create(CashMovement, {
-          idJournal: activeJournal.idJournal,
-          idPaymentMethod: dto.idPaymentMethod,
-          type: "OUT",
-          amount: dto.amount,
-          description: `Nouveau montant pour le paiement ${payment.ref} modifié`,
-          idProcessedBy: idEmployee,
-        });
-        await queryRunner.manager.save(CashMovement, newMove);
+        // Apply new payment lines
+        await queryRunner.manager.delete(SupplierPaymentLine, { idSupplierPayment: idPayment });
+        for (const line of dto.paymentLines) {
+          const paymentLine = queryRunner.manager.create(SupplierPaymentLine, {
+            idSupplierPayment: payment.idSupplierPayment,
+            idPaymentMethod: line.idPaymentMethod,
+            amount: line.amount,
+          });
+          await queryRunner.manager.save(SupplierPaymentLine, paymentLine);
+          await this.debitPaymentMethod(queryRunner.manager, activeJournal, line, payment, idEmployee);
+        }
+
+        await this.syncJournalExpectedBalance(queryRunner.manager, activeJournal);
+      } else {
+        // No active journal: just replace the lines
+        await queryRunner.manager.delete(SupplierPaymentLine, { idSupplierPayment: idPayment });
+        for (const line of dto.paymentLines) {
+          const paymentLine = queryRunner.manager.create(SupplierPaymentLine, {
+            idSupplierPayment: payment.idSupplierPayment,
+            idPaymentMethod: line.idPaymentMethod,
+            amount: line.amount,
+          });
+          await queryRunner.manager.save(SupplierPaymentLine, paymentLine);
+        }
       }
+
       await queryRunner.manager.delete(SupplierPaymentAllocation, { idSupplierPayment: idPayment });
+
       const deliveryDeltas = new Map<string, number>();
       const purchaseDeltas = new Map<string, number>();
 
@@ -494,7 +547,7 @@ export class SupplierPaymentService {
     if (deliveryIds.length > 0) {
       deliveryAllocations = await AppDataSource.getRepository(SupplierPaymentAllocation).find({
         where: { idDelivery: In(deliveryIds), allocationType: "DELIVERY" },
-        relations: { supplierPayment: { paymentMethod: true }, delivery: true },
+        relations: { supplierPayment: { paymentLines: { paymentMethod: true } }, delivery: true },
       });
     }
 
@@ -514,14 +567,17 @@ export class SupplierPaymentService {
 
     const allocations = [...deliveryAllocations];
     const payments = allocations.map((a) => {
-      const idPaymentMethod = a.supplierPayment?.idPaymentMethod;
+      const lines = a.supplierPayment?.paymentLines || [];
+      const methods = lines.map((l: any) => l.paymentMethod?.label).filter(Boolean);
+      const methodLabel = methods.length > 1 ? "Mixte (" + methods.join(", ") + ")" : (methods[0] || "Inconnu");
+
       return {
         idPayment: a.supplierPayment?.idSupplierPayment ?? "",
         ref: a.supplierPayment?.ref ?? "",
         date: a.supplierPayment?.paymentDate ?? new Date(),
         amount: Number(a.amount),
-        method: a.supplierPayment?.paymentMethod?.label ?? "Inconnu",
-        methodBalance: idPaymentMethod ? (methodBalances.get(idPaymentMethod) ?? 0) : 0,
+        method: methodLabel,
+        methodBalance: 0,
       };
     });
     const advanceAmount = allocations.reduce((sum, a) => sum + Number(a.amount), 0);

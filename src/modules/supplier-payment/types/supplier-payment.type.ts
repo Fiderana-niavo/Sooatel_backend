@@ -16,9 +16,14 @@ export interface PaymentSummaryItem {
   amount: number;
 }
 
+export interface PaymentLineDto {
+  idPaymentMethod: string;
+  amount: number;
+}
+
 export interface CreateSupplierPaymentDto {
   amount: number;
-  idPaymentMethod: string;
+  paymentLines: PaymentLineDto[];
   paymentDate?: string;
   notes?: string;
   allocations: AllocationDto[];

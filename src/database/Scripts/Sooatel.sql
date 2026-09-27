@@ -316,13 +316,11 @@ CREATE TABLE Supplier_payment(
    payment_date DATE NOT NULL,
    amount NUMERIC(15,2),
    id_processed_by UUID NOT NULL,          -- Employé responsable du paiement
-   id_payment_method UUID NOT NULL,
    notes TEXT,
    PRIMARY KEY(id_supplier_payment),
    UNIQUE(ref),
    FOREIGN KEY(id_supplier) REFERENCES Supplier(id_supplier),
-   FOREIGN KEY(id_processed_by) REFERENCES Employees(id_employee),
-   FOREIGN KEY(id_payment_method) REFERENCES Payment_method(id_payment_method)
+   FOREIGN KEY(id_processed_by) REFERENCES Employees(id_employee)
 );
 
 -- Répartition d'un paiement vers plusieurs destinations
@@ -344,6 +342,19 @@ CREATE TABLE Supplier_payment_allocation(
       (allocation_type = 'SUPPLIER_CREDIT' AND id_delivery IS NULL    AND id_purchase IS NULL)
    )
 );
+
+-- Lignes de paiement : d'où vient l'argent (pour les paiements multi-modes)
+CREATE TABLE Supplier_payment_line(
+   id_payment_line     UUID          DEFAULT uuid_generate_v4(),
+   id_supplier_payment UUID          NOT NULL,
+   id_payment_method   UUID          NOT NULL,
+   amount              NUMERIC(15,2) NOT NULL,
+   PRIMARY KEY(id_payment_line),
+   FOREIGN KEY(id_supplier_payment) REFERENCES Supplier_payment(id_supplier_payment) ON DELETE CASCADE,
+   FOREIGN KEY(id_payment_method)   REFERENCES Payment_method(id_payment_method)
+);
+
+CREATE INDEX idx_spl_supplier_payment ON Supplier_payment_line(id_supplier_payment);
 
 CREATE TABLE supplier_balance (
    id_supplier_balance  UUID          DEFAULT uuid_generate_v4(),

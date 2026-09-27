@@ -1,8 +1,9 @@
-﻿import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Employee } from "./Employee";
 import { PaymentMethod } from "./PaymentMethod";
 import { Supplier } from "./Supplier";
 import { SupplierPaymentAllocation } from "./SupplierPaymentAllocation";
+import { SupplierPaymentLine } from "./SupplierPaymentLine";
 
 @Entity("supplier_payment")
 export class SupplierPayment extends BaseEntity {
@@ -24,8 +25,6 @@ export class SupplierPayment extends BaseEntity {
   @Column({ type: "uuid", name: "id_processed_by" })
   idProcessedBy: string;
 
-  @Column({ type: "uuid", name: "id_payment_method" })
-  idPaymentMethod: string;
 
   @Column({ type: "text", nullable: true, name: "notes" })
   notes: string | null;
@@ -34,9 +33,7 @@ export class SupplierPayment extends BaseEntity {
   @JoinColumn({ name: "id_processed_by" })
   processedBy: Employee;
 
-  @ManyToOne(() => PaymentMethod)
-  @JoinColumn({ name: "id_payment_method" })
-  paymentMethod: PaymentMethod;
+
 
   @ManyToOne(() => Supplier)
   @JoinColumn({ name: "id_supplier" })
@@ -44,4 +41,7 @@ export class SupplierPayment extends BaseEntity {
 
   @OneToMany(() => SupplierPaymentAllocation, (alloc) => alloc.supplierPayment)
   allocations: SupplierPaymentAllocation[];
+
+  @OneToMany(() => SupplierPaymentLine, (line) => line.supplierPayment, { cascade: true })
+  paymentLines: SupplierPaymentLine[];
 }
