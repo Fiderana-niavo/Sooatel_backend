@@ -258,6 +258,7 @@ export class SupplierPaymentService {
     return deliveryPaid;
   }
   async getSupplierNetBalance(idSupplier: string): Promise<number> {
+    if (!idSupplier || idSupplier.trim() === "" || idSupplier === "undefined" || idSupplier === "null") return 0;
     const row = await SupplierBalance.findOne({ where: { idSupplier } });
     if (!row) return 0;
     return Math.max(0, Number(row.credit) - Number(row.debit));
@@ -270,6 +271,7 @@ export class SupplierPaymentService {
   async getSupplierBalanceRow(
     idSupplier: string,
   ): Promise<{ credit: number; debit: number; balance: number }> {
+    if (!idSupplier || idSupplier.trim() === "" || idSupplier === "undefined" || idSupplier === "null") return { credit: 0, debit: 0, balance: 0 };
     const row = await SupplierBalance.findOne({ where: { idSupplier } });
     if (!row) return { credit: 0, debit: 0, balance: 0 };
     const credit = Number(row.credit);
@@ -657,6 +659,7 @@ export class SupplierPaymentService {
     }
   }
   private async syncSupplierBalance(idSupplier: string, manager: any): Promise<void> {
+    if (!idSupplier) return;
     const debitResult = await manager.query(
       `SELECT SUM(d.balance_due) as total_debit
        FROM product_delivery d

@@ -782,6 +782,7 @@ export class PurchaseService {
   }
 
   private async syncSupplierBalance(idSupplier: string, manager: any): Promise<void> {
+    if (!idSupplier) return;
     const debitResult = await manager.query(
       `SELECT SUM(d.balance_due) as total_debit
        FROM product_delivery d

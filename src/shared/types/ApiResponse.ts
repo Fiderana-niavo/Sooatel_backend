@@ -13,7 +13,7 @@ export class ApiResponse<T = any> {
     return response;
   }
 
-  static error(error: string, message = "Request failed"): ApiResponse<null> {
+  static error(message: string, error = "Request failed"): ApiResponse<null> {
     const response = new ApiResponse<null>();
     response.ok = false;
     response.payload = null;

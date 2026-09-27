@@ -378,8 +378,8 @@ export class DeliveryService {
         const mappedItem = itemsToUpdate.get(item.idItem)!;
 
         const currentStock = Number(mappedItem.quantity ?? 0);
-        const currentCMP = mappedItem.weightedAverageCost !== null && mappedItem.weightedAverageCost !== undefined 
-          ? Number(mappedItem.weightedAverageCost) 
+        const currentCMP = mappedItem.weightedAverageCost !== null && mappedItem.weightedAverageCost !== undefined
+          ? Number(mappedItem.weightedAverageCost)
           : null;
         const receivedQty = Number(detail.quantity ?? 0);
         const newPrice = Number(detail.unitPrice ?? 0);
@@ -668,8 +668,16 @@ export class DeliveryService {
     const mappedRecords = records.map((record) => {
       // Find supplier from the first linked purchase if any
       const purchaseLink = record.purchaseDeliveries?.[0]?.purchase;
-      
+
       const balanceDue = Number(record.balanceDue ?? 0);
+
+      let paymentStatus = "UNPAID";
+      if (record.status === 0) {
+        if (balanceDue <= 0) paymentStatus = "PAID";
+        else if (balanceDue < Number(record.totalAmount)) paymentStatus = "PARTIAL";
+      } else {
+        paymentStatus = "N/A";
+      }
 
       return {
         idDelivery: record.idDelivery,
@@ -678,7 +686,7 @@ export class DeliveryService {
         totalAmount: record.totalAmount,
         balanceDue: balanceDue,
         status: getDeliveryStatusName(record.status),
-        purchaseRef: purchaseLink?.ref,
+        paymentStatus,
         idSupplier: purchaseLink?.supplier?.idSupplier,
         supplierName: purchaseLink?.supplier?.name,
       };
