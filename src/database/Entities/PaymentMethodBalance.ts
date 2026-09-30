@@ -1,8 +1,9 @@
-import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, Unique } from "typeorm";
 import { CashJournal } from "./CashJournal";
 import { PaymentMethod } from "./PaymentMethod";
 
 @Entity("payment_method_balance")
+@Unique(["idJournal", "idPaymentMethod"])
 export class PaymentMethodBalance extends BaseEntity {
   @PrimaryGeneratedColumn("uuid", { name: "id_payment_method_balance" })
   idPaymentMethodBalance: string;

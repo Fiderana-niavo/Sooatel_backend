@@ -229,23 +229,22 @@ export class RevenueService {
       `, [activeJournal.idJournal, previousJournal?.idJournal ?? null]);
 
       if (balanceRows.length > 0) {
+        const upsertValues = [];
         for (const row of balanceRows) {
-          const newAmount = Number(row.prevAmount) + Number(row.movementSum);
-          const existing = await queryRunner.manager.findOne(PaymentMethodBalance, {
-            where: { idJournal: activeJournal.idJournal, idPaymentMethod: row.idPaymentMethod }
+          upsertValues.push({
+            idJournal: activeJournal.idJournal,
+            idPaymentMethod: row.idPaymentMethod,
+            amount: Number(row.prevAmount) + Number(row.movementSum)
           });
-          
-          if (existing) {
-            existing.amount = newAmount;
-            await queryRunner.manager.save(PaymentMethodBalance, existing);
-          } else {
-            await queryRunner.manager.insert(PaymentMethodBalance, {
-              idJournal: activeJournal.idJournal,
-              idPaymentMethod: row.idPaymentMethod,
-              amount: newAmount
-            });
-          }
         }
+
+        await queryRunner.manager
+          .createQueryBuilder()
+          .insert()
+          .into(PaymentMethodBalance)
+          .values(upsertValues)
+          .orUpdate(["amount"], ["id_journal", "id_payment_method"])
+          .execute();
       }
 
       const { totalExpected } = await queryRunner.manager
