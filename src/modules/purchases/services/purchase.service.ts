@@ -286,6 +286,23 @@ export class PurchaseService {
 
       this.updatePurchaseData(purchase, dto, preparedDetails.totalAmount, userId);
 
+      // Re-evaluate purchase status based on new quantities vs delivered quantities
+      let isFullyDelivered = true;
+      let hasAnyDelivery = false;
+      for (const detail of preparedDetails.details) {
+        const delivered = deliveredQuantities.get(detail.idSuppliedItem) || 0;
+        if (delivered > 0) hasAnyDelivery = true;
+        if (delivered < detail.quantity) {
+          isFullyDelivered = false;
+        }
+      }
+      
+      if (hasAnyDelivery) {
+        purchase.status = isFullyDelivered ? PURCHASE_STATUS.DELIVERED : PURCHASE_STATUS.PARTIALLY_DELIVERED;
+      } else {
+        purchase.status = PURCHASE_STATUS.CREATED;
+      }
+
       // Prevent TypeORM from syncing the old details relation and deleting the newly inserted details
       delete (purchase as any).details;
 
@@ -521,6 +538,14 @@ export class PurchaseService {
   async confirmPurchase(idPurchase: string, userId: string): Promise<Purchase> {
     const purchase = await Purchase.findOne({ where: { idPurchase } });
     if (!purchase) throw new NotFoundError("Commande introuvable");
+    if (purchase.lifecycleStatus === 0) {
+      // Already confirmed, just return it (idempotent)
+      return {
+        ...purchase,
+        status: getPurchaseStatusName(purchase.status),
+      } as any;
+    }
+
     if (purchase.lifecycleStatus !== 5) {
       // 5 = Ouvert
       throw new BadRequestError("Seule une commande au statut 'Ouvert' peut être confirmée.");

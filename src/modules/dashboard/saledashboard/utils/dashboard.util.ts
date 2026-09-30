@@ -21,7 +21,7 @@ export const formatLabel = (raw: string, granularity: Granularity): string => {
 };
 
 export const baseWhere = `
-  s.sale_date BETWEEN $1 AND $2
+  s.sale_date::date BETWEEN $1::date AND $2::date
   AND s.total_amount > 0
   AND s.status >= 0
 `;
