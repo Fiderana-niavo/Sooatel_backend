@@ -407,6 +407,7 @@ export class SaleService {
       .leftJoinAndSelect("sale.invoice", "invoice")
       .leftJoinAndSelect("invoice.payments", "payments")
       .leftJoinAndSelect("payments.cashMovement", "cashMovement")
+      .leftJoinAndSelect("payments.paymentMethod", "paymentMethod")
       .orderBy("sale.createdAt", "DESC")
       .skip((pageNum - 1) * limitNum)
       .take(limitNum);
@@ -446,10 +447,18 @@ export class SaleService {
   }
 
   async getSaleById(idSale: string): Promise<Sale | null> {
-    return Sale.findOne({
-      where: { idSale },
-      relations: { saler: true, room: true, saleItems: { menu: { item: true } }, invoice: { payments: true } }
-    });
+    return Sale.createQueryBuilder("sale")
+      .leftJoinAndSelect("sale.saler", "saler")
+      .leftJoinAndSelect("sale.room", "room")
+      .leftJoinAndSelect("sale.saleItems", "saleItems")
+      .leftJoinAndSelect("saleItems.menu", "menu")
+      .leftJoinAndSelect("menu.item", "item")
+      .leftJoinAndSelect("sale.invoice", "invoice")
+      .leftJoinAndSelect("invoice.payments", "payments")
+      .leftJoinAndSelect("payments.cashMovement", "cashMovement")
+      .leftJoinAndSelect("payments.paymentMethod", "paymentMethod")
+      .where("sale.id_sale = :idSale", { idSale })
+      .getOne();
   }
 
   async cancelSale(idSale: string, userId: string, overpaymentAction?: "REFUND" | "ADJUST", idPaymentMethodRefund?: string): Promise<Sale> {
@@ -748,6 +757,7 @@ export class SaleService {
         .leftJoinAndSelect("sale.invoice", "invoice")
         .leftJoinAndSelect("invoice.payments", "payments")
         .leftJoinAndSelect("payments.cashMovement", "cashMovement")
+        .leftJoinAndSelect("payments.paymentMethod", "paymentMethod")
         .where("sale.id_sale = :idSale", { idSale })
         .getOne()) as Sale;
     } catch (error) {
@@ -834,6 +844,7 @@ export class SaleService {
         .leftJoinAndSelect("sale.invoice", "invoice")
         .leftJoinAndSelect("invoice.payments", "payments")
         .leftJoinAndSelect("payments.cashMovement", "cashMovement")
+        .leftJoinAndSelect("payments.paymentMethod", "paymentMethod")
         .where("sale.id_sale = :idSale", { idSale })
         .getOne()) as Sale;
     } catch (error) {
