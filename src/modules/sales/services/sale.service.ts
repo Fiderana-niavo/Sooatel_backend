@@ -12,6 +12,7 @@ import { CreateSaleDto, UpdateSaleDto, SaleSearchOptions, ALLOWED_AUDIT_KEYS } f
 import { getDiff } from "../utils/diff.util";
 import { NotFoundError, BadRequestError } from "../../../shared/errors/AppError";
 import { Paginated } from "../../../shared/types/Paginated";
+import { deductStockForSale, restoreStockForSale } from "../utils/sale-stock.util";
 
 const sanitize = (obj: any): any => JSON.parse(JSON.stringify(obj));
 
@@ -102,7 +103,8 @@ export class SaleService {
           await queryRunner.manager.save(Payment, payment);
         }
 
-        savedInvoice.balanceDue = Number(savedInvoice.totalAmount) - Number(payment.amount);
+        savedInvoice.totalAmount = calculatedTotal;
+        savedInvoice.balanceDue = calculatedTotal - Number(payment.amount);
         if (savedInvoice.balanceDue <= 0) {
           savedInvoice.balanceDue = 0;
           savedInvoice.status = 0;
@@ -595,6 +597,16 @@ export class SaleService {
       const sale = await queryRunner.manager.createQueryBuilder(Sale, "sale").setLock("pessimistic_write").where("sale.id_sale = :idSale", { idSale }).getOne();
       if (!sale) throw new NotFoundError("Vente introuvable");
 
+      // Only restore stock if the sale was closed (status = 0)
+      if (sale.status === 0) {
+        const invoice = sale.idInvoice
+          ? await queryRunner.manager.findOne(Invoice, { where: { idInvoice: sale.idInvoice } })
+          : null;
+        const saleItems = await queryRunner.manager.find(SaleItem, { where: { idSale } });
+        const idOperator = await resolveEmployeeId(queryRunner, userId);
+        await restoreStockForSale(queryRunner, saleItems, invoice?.invoiceNumber ?? null, idOperator);
+      }
+
       const oldValue = { ...sale };
       sale.status = 5; // 5 = Ouverte/Réouverte
       sale.updatedBy = userId;
@@ -918,6 +930,15 @@ export class SaleService {
       if (!sale) throw new NotFoundError("Vente introuvable");
       if (sale.status === -3) throw new BadRequestError("Impossible de fermer une vente annulée");
       if (sale.status === 0) throw new BadRequestError("La vente est déjà fermée");
+
+      const invoice = sale.idInvoice
+        ? await queryRunner.manager.findOne(Invoice, { where: { idInvoice: sale.idInvoice } })
+        : null;
+
+      const saleItems = await queryRunner.manager.find(SaleItem, { where: { idSale } });
+      const idOperator = await resolveEmployeeId(queryRunner, userId);
+
+      await deductStockForSale(queryRunner, saleItems, invoice?.invoiceNumber ?? null, idOperator);
 
       const oldValue = { ...sale };
       sale.status = 0;

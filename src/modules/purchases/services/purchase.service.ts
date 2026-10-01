@@ -724,6 +724,7 @@ export class PurchaseService {
     return {
       ...purchase,
       status: purchase.lifecycleStatus === -3 ? "Annulé" : getPurchaseStatusName(purchase.status),
+      lifecycleStatus: purchase.lifecycleStatus ?? 5,
     };
   }
 

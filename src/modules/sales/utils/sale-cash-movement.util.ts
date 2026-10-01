@@ -3,6 +3,8 @@ import { CashMovementCategory } from "../../../database/Entities/CashMovementCat
 import { CashJournal } from "../../../database/Entities/CashJournal";
 import { CashMovement } from "../../../database/Entities/CashMovement";
 import { User } from "../../../database/Entities/User";
+import { PaymentMethodBalance } from "../../../database/Entities/PaymentMethodBalance";
+import { BadRequestError } from "../../../shared/errors/AppError";
 
 export async function getOrCreateCategory(queryRunner: QueryRunner, label: string, allowedDirection: number): Promise<CashMovementCategory> {
   let cat = await queryRunner.manager.findOne(CashMovementCategory, { where: { label } });
@@ -38,6 +40,27 @@ export async function createCashOutflow(
   journalId: string,
   paymentMethodId: string
 ): Promise<CashMovement> {
+  let pmb = await queryRunner.manager.findOne(PaymentMethodBalance, {
+    where: { idJournal: journalId, idPaymentMethod: paymentMethodId },
+  });
+
+  if (!pmb) {
+    pmb = queryRunner.manager.create(PaymentMethodBalance, {
+      idJournal: journalId,
+      idPaymentMethod: paymentMethodId,
+      amount: 0,
+    });
+  }
+
+  if (Number(pmb.amount) < amount) {
+    throw new BadRequestError(
+      `Solde en caisse insuffisant pour effectuer ce remboursement/ajustement. Disponible : ${Number(pmb.amount).toFixed(2)}, Requis : ${amount.toFixed(2)}.`
+    );
+  }
+
+  pmb.amount = Number(pmb.amount) - amount;
+  await queryRunner.manager.save(PaymentMethodBalance, pmb);
+
   const cm = new CashMovement();
   cm.amount = amount;
   cm.movementDate = new Date();
@@ -62,6 +85,21 @@ export async function createCashInflow(
   journalId: string,
   paymentMethodId: string
 ): Promise<CashMovement> {
+  let pmb = await queryRunner.manager.findOne(PaymentMethodBalance, {
+    where: { idJournal: journalId, idPaymentMethod: paymentMethodId },
+  });
+
+  if (!pmb) {
+    pmb = queryRunner.manager.create(PaymentMethodBalance, {
+      idJournal: journalId,
+      idPaymentMethod: paymentMethodId,
+      amount: 0,
+    });
+  }
+
+  pmb.amount = Number(pmb.amount) + amount;
+  await queryRunner.manager.save(PaymentMethodBalance, pmb);
+
   const cm = new CashMovement();
   cm.amount = amount;
   cm.movementDate = new Date();
