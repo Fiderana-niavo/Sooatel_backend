@@ -30,7 +30,7 @@ export class ItemService extends CrudService<Item, ItemDto, ItemDto> {
     if (options.idProductType) {
       qb.andWhere("entity.idProductType = :idProductType", { idProductType: options.idProductType });
     }
-    
+
     if (options.unlinkedSupplierId) {
       const subQuery = qb.subQuery()
         .select("si.id_item")
@@ -38,7 +38,7 @@ export class ItemService extends CrudService<Item, ItemDto, ItemDto> {
         .innerJoin("supplier_products", "sp", "sp.id_supplier_product = si.id_supplier_product")
         .where("sp.id_supplier = :unlinkedSupplierId")
         .getQuery();
-        
+
       qb.andWhere(`entity.idItem NOT IN ${subQuery}`, { unlinkedSupplierId: options.unlinkedSupplierId });
     }
 
@@ -54,7 +54,7 @@ export class ItemService extends CrudService<Item, ItemDto, ItemDto> {
 
   async create(dto: ItemDto): Promise<Item> {
     const entity = this.repository.create({
-      ref: dto.ref || `ART-${Date.now().toString().slice(-6)}`,
+      ref: dto.ref,
       label: dto.label,
       isProduced: dto.isProduced,
       minimumStockLevel: dto.minimumStockLevel,

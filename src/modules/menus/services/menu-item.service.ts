@@ -15,7 +15,7 @@ export class MenuItemService extends CrudService<MenuItem, MenuItemDto, MenuItem
     const qb = this.repository.createQueryBuilder("entity");
     qb.leftJoin("entity.item", "item");
     qb.select([
-      "entity.idMenu AS value", 
+      "entity.idMenu AS value",
       "item.label AS label",
       "entity.salePrice AS \"salePrice\""
     ]);
@@ -33,7 +33,7 @@ export class MenuItemService extends CrudService<MenuItem, MenuItemDto, MenuItem
       .skip((pageNum - 1) * limitNum)
       .take(limitNum);
     if (search) {
-      qb.andWhere("entity.ref ILIKE :s", { s: `%${search}%` });
+      qb.andWhere("item.label ILIKE :s", { s: `%${search}%` });
     }
     if (options.idCategory) {
       qb.andWhere("entity.idCategory = :idCategory", { idCategory: options.idCategory });
@@ -51,7 +51,7 @@ export class MenuItemService extends CrudService<MenuItem, MenuItemDto, MenuItem
 
   async create(dto: MenuItemDto): Promise<MenuItem> {
     const entity = this.repository.create({
-      ref: dto.ref || `MENU-${Date.now().toString().slice(-6)}`,
+      ref: dto.ref,
       idItem: dto.idItem,
       salePrice: dto.salePrice,
       unitCost: dto.unitCost,
