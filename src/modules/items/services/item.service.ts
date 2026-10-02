@@ -54,7 +54,7 @@ export class ItemService extends CrudService<Item, ItemDto, ItemDto> {
 
   async create(dto: ItemDto): Promise<Item> {
     const entity = this.repository.create({
-      ref: dto.ref,
+      ref: dto.ref || `ART-${Date.now().toString().slice(-6)}`,
       label: dto.label,
       isProduced: dto.isProduced,
       minimumStockLevel: dto.minimumStockLevel,

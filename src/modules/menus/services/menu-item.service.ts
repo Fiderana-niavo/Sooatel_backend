@@ -51,7 +51,7 @@ export class MenuItemService extends CrudService<MenuItem, MenuItemDto, MenuItem
 
   async create(dto: MenuItemDto): Promise<MenuItem> {
     const entity = this.repository.create({
-      ref: dto.ref,
+      ref: dto.ref || `MENU-${Date.now().toString().slice(-6)}`,
       idItem: dto.idItem,
       salePrice: dto.salePrice,
       unitCost: dto.unitCost,
