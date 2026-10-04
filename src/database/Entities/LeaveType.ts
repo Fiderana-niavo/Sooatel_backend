@@ -50,4 +50,3 @@ export class LeaveType extends BaseEntity {
   @OneToMany(() => LeaveTransaction, (lt) => lt.leaveType)
   leaveTransactions: LeaveTransaction[];
 }
-

@@ -4,14 +4,27 @@ import AppDataSource from "../../../../database/data-source";
 import { CashMovementCategory } from "../../../../database/Entities/CashMovementCategory";
 import { CrudService } from "../../../../shared/crud/services/CrudService";
 import { Paginated } from "../../../../shared/types/Paginated";
-import { CashMovementCategoryDto, CashMovementCategorySearchOptions } from "../type/cash-movement-category.type";
+import {
+  CashMovementCategoryDto,
+  CashMovementCategorySearchOptions,
+} from "../type/cash-movement-category.type";
 
-export class CashMovementCategoryService extends CrudService<CashMovementCategory, CashMovementCategoryDto, CashMovementCategoryDto> {
-  constructor(repository: Repository<CashMovementCategory> = AppDataSource.getRepository(CashMovementCategory)) {
+export class CashMovementCategoryService extends CrudService<
+  CashMovementCategory,
+  CashMovementCategoryDto,
+  CashMovementCategoryDto
+> {
+  constructor(
+    repository: Repository<CashMovementCategory> = AppDataSource.getRepository(
+      CashMovementCategory,
+    ),
+  ) {
     super(repository);
   }
 
-  async findAll(options: CashMovementCategorySearchOptions = {}): Promise<Paginated<CashMovementCategory>> {
+  async findAll(
+    options: CashMovementCategorySearchOptions = {},
+  ): Promise<Paginated<CashMovementCategory>> {
     const pageNum = options.page ?? 1;
     const limitNum = options.limit ?? 10;
     const search = options.search ?? "";

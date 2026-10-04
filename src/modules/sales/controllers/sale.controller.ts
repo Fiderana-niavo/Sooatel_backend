@@ -25,7 +25,14 @@ export const createSale = async (req: Request, res: Response): Promise<void> => 
     const sale = await saleService.createSale(dto, userId);
     res.status(201).json(ApiResponse.success(sale, "Sale created successfully"));
   } catch (error: any) {
-    res.status(error.statusCode || 500).json(ApiResponse.error(error instanceof Error ? error.message : "Unknown error", "Failed to create sale"));
+    res
+      .status(error.statusCode || 500)
+      .json(
+        ApiResponse.error(
+          error instanceof Error ? error.message : "Unknown error",
+          "Failed to create sale",
+        ),
+      );
   }
 };
 
@@ -43,7 +50,14 @@ export const updateSale = async (req: Request, res: Response): Promise<void> => 
     res.status(200).json(ApiResponse.success(updatedSale, "Sale updated successfully"));
   } catch (error: any) {
     console.error("[updateSale controller] ERROR:", error);
-    res.status(error.statusCode || 500).json(ApiResponse.error(error instanceof Error ? error.message : "Unknown error", "Failed to update sale"));
+    res
+      .status(error.statusCode || 500)
+      .json(
+        ApiResponse.error(
+          error instanceof Error ? error.message : "Unknown error",
+          "Failed to update sale",
+        ),
+      );
   }
 };
 
@@ -53,18 +67,28 @@ export const findAll = async (req: Request, res: Response): Promise<void> => {
     const limit = parseInt(req.query.limit as string) || 10;
     const idMenu = req.query.idMenu as string;
     const date = req.query.date as string;
-    
+
     const paymentStatus = req.query.paymentStatus as PaymentStatus | undefined;
 
     let status: number[] | undefined = undefined;
     if (req.query.status) {
-      status = (req.query.status as string).split(',').map(Number).filter(n => !isNaN(n));
+      status = (req.query.status as string)
+        .split(",")
+        .map(Number)
+        .filter((n) => !isNaN(n));
     }
 
     const result = await saleService.findAll({ page, limit, idMenu, date, status, paymentStatus });
     res.status(200).json(ApiResponse.success(result, "Sales fetched successfully"));
   } catch (error: any) {
-    res.status(500).json(ApiResponse.error(error instanceof Error ? error.message : "Unknown error", "Failed to retrieve sales"));
+    res
+      .status(500)
+      .json(
+        ApiResponse.error(
+          error instanceof Error ? error.message : "Unknown error",
+          "Failed to retrieve sales",
+        ),
+      );
   }
 };
 
@@ -77,7 +101,14 @@ export const getSaleById = async (req: Request, res: Response): Promise<void> =>
     }
     res.status(200).json(ApiResponse.success(sale, "Sale retrieved successfully"));
   } catch (error: unknown) {
-    res.status(500).json(ApiResponse.error(error instanceof Error ? error.message : "Unknown error", "Failed to retrieve sale"));
+    res
+      .status(500)
+      .json(
+        ApiResponse.error(
+          error instanceof Error ? error.message : "Unknown error",
+          "Failed to retrieve sale",
+        ),
+      );
   }
 };
 
@@ -88,11 +119,18 @@ export const cancelSale = async (req: Request, res: Response): Promise<void> => 
       throw new AppError("Unauthorized", 401);
     }
     const { overpaymentAction, idPaymentMethodRefund } = req.body;
-    const updated = await saleService.cancelSale(req.params.id as string, userId, overpaymentAction, idPaymentMethodRefund);
+    const updated = await saleService.cancelSale(
+      req.params.id as string,
+      userId,
+      overpaymentAction,
+      idPaymentMethodRefund,
+    );
     res.status(200).json(ApiResponse.success(updated, "Sale cancelled successfully"));
   } catch (error: unknown) {
     const err = error as { statusCode?: number; message?: string };
-    res.status(err.statusCode || 500).json(ApiResponse.error(err.message || "Unknown error", "Failed to cancel sale"));
+    res
+      .status(err.statusCode || 500)
+      .json(ApiResponse.error(err.message || "Unknown error", "Failed to cancel sale"));
   }
 };
 
@@ -110,7 +148,9 @@ export const reopenSale = async (req: Request, res: Response): Promise<void> => 
     res.status(200).json(ApiResponse.success(updated, "Sale reopened successfully"));
   } catch (error: unknown) {
     const err = error as { statusCode?: number; message?: string };
-    res.status(err.statusCode || 500).json(ApiResponse.error(err.message || "Unknown error", "Failed to reopen sale"));
+    res
+      .status(err.statusCode || 500)
+      .json(ApiResponse.error(err.message || "Unknown error", "Failed to reopen sale"));
   }
 };
 
@@ -124,11 +164,11 @@ export const deleteSale = async (req: Request, res: Response): Promise<void> => 
     res.status(200).json(ApiResponse.success(null, "Sale deleted successfully"));
   } catch (error: unknown) {
     const err = error as { statusCode?: number; message?: string };
-    res.status(err.statusCode || 500).json(ApiResponse.error(err.message || "Unknown error", "Failed to delete sale"));
+    res
+      .status(err.statusCode || 500)
+      .json(ApiResponse.error(err.message || "Unknown error", "Failed to delete sale"));
   }
 };
-
-
 
 export const closeSale = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -138,7 +178,9 @@ export const closeSale = async (req: Request, res: Response): Promise<void> => {
     res.status(200).json(ApiResponse.success(updated, "Sale closed successfully"));
   } catch (error: unknown) {
     const err = error as { statusCode?: number; message?: string };
-    res.status(err.statusCode || 500).json(ApiResponse.error(err.message || "Unknown error", "Failed to close sale"));
+    res
+      .status(err.statusCode || 500)
+      .json(ApiResponse.error(err.message || "Unknown error", "Failed to close sale"));
   }
 };
 
@@ -146,19 +188,26 @@ export const adjustPayment = async (req: Request, res: Response): Promise<void> 
   try {
     const userId = (req as Request & { userId: string }).userId;
     if (!userId) throw new AppError("Unauthorized", 401);
-    
+
     const { id, idPayment } = req.params;
     const { newAmount } = req.body;
-    
+
     if (newAmount === undefined) {
       throw new BadRequestError("newAmount is required");
     }
 
-    const updated = await saleService.adjustPayment(id as string, idPayment as string, userId, newAmount);
+    const updated = await saleService.adjustPayment(
+      id as string,
+      idPayment as string,
+      userId,
+      newAmount,
+    );
     res.status(200).json(ApiResponse.success(updated, "Payment adjusted successfully"));
   } catch (error: unknown) {
     const err = error as { statusCode?: number; message?: string };
-    res.status(err.statusCode || 500).json(ApiResponse.error(err.message || "Unknown error", "Failed to adjust payment"));
+    res
+      .status(err.statusCode || 500)
+      .json(ApiResponse.error(err.message || "Unknown error", "Failed to adjust payment"));
   }
 };
 
@@ -170,13 +219,23 @@ export const refundPayment = async (req: Request, res: Response): Promise<void> 
     const { id } = req.params;
     const { amount, idPaymentMethod, reason } = req.body;
 
-    if (!amount || amount <= 0) throw new BadRequestError("Un montant positif est requis pour le remboursement.");
-    if (!idPaymentMethod) throw new BadRequestError("Le mode de paiement est requis pour le remboursement.");
+    if (!amount || amount <= 0)
+      throw new BadRequestError("Un montant positif est requis pour le remboursement.");
+    if (!idPaymentMethod)
+      throw new BadRequestError("Le mode de paiement est requis pour le remboursement.");
 
-    const updated = await saleService.refundPayment(id as string, userId, Number(amount), idPaymentMethod as string, reason as string);
+    const updated = await saleService.refundPayment(
+      id as string,
+      userId,
+      Number(amount),
+      idPaymentMethod as string,
+      reason as string,
+    );
     res.status(200).json(ApiResponse.success(updated, "Remboursement effectué avec succès"));
   } catch (error: unknown) {
     const err = error as { statusCode?: number; message?: string };
-    res.status(err.statusCode || 500).json(ApiResponse.error(err.message || "Unknown error", "Failed to refund payment"));
+    res
+      .status(err.statusCode || 500)
+      .json(ApiResponse.error(err.message || "Unknown error", "Failed to refund payment"));
   }
 };

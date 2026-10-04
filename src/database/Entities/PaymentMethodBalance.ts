@@ -1,4 +1,12 @@
-import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, Unique } from "typeorm";
+import {
+  BaseEntity,
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  Unique,
+} from "typeorm";
 import { CashJournal } from "./CashJournal";
 import { PaymentMethod } from "./PaymentMethod";
 

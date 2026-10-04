@@ -602,7 +602,9 @@ CREATE TABLE Dish_production(
 );
 
 -- Migration: new columns for dish production module
-ALTER TABLE dish_production ADD COLUMN IF NOT EXISTS ref VARCHAR(50);
+CREATE SEQUENCE IF NOT EXISTS dish_production_ref_seq START WITH 1;
+ALTER TABLE dish_production ADD COLUMN IF NOT EXISTS ref VARCHAR(50) NOT NULL DEFAULT 'PRD' || to_char(nextval('dish_production_ref_seq'), 'fm0000');
+ALTER TABLE dish_production ALTER COLUMN ref SET DEFAULT 'PRD' || to_char(nextval('dish_production_ref_seq'), 'fm0000');
 ALTER TABLE dish_production ADD COLUMN IF NOT EXISTS status INTEGER NOT NULL DEFAULT 5;
 ALTER TABLE dish_production ADD COLUMN IF NOT EXISTS id_operator UUID;
 ALTER TABLE dish_production ADD COLUMN IF NOT EXISTS notes VARCHAR(500);

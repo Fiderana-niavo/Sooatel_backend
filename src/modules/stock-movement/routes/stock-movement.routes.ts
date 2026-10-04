@@ -15,4 +15,3 @@ router.put("/:id/validate", authorize("stock.manage"), stockMovementController.v
 router.delete("/:id", authorize("stock.manage"), stockMovementController.delete);
 
 export default router;
-

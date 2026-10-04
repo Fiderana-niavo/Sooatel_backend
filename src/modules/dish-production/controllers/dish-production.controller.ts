@@ -26,7 +26,9 @@ export class DishProductionController {
       const dto = req.body as DishProductionDto;
       const idOperator = (req as Request & { idEmployee?: string }).idEmployee;
       if (!idOperator) {
-        res.status(400).json(ApiResponse.error("Votre compte n'est pas lié à un employé. Action impossible."));
+        res
+          .status(400)
+          .json(ApiResponse.error("Votre compte n'est pas lié à un employé. Action impossible."));
         return;
       }
       const result = await dishProductionService.create(dto, idOperator);
@@ -59,7 +61,9 @@ export class DishProductionController {
     try {
       const idOperator = (req as Request & { idEmployee?: string }).idEmployee;
       if (!idOperator) {
-        res.status(400).json(ApiResponse.error("Votre compte n'est pas lié à un employé. Action impossible."));
+        res
+          .status(400)
+          .json(ApiResponse.error("Votre compte n'est pas lié à un employé. Action impossible."));
         return;
       }
       await dishProductionService.validate(req.params.id as string, idOperator);

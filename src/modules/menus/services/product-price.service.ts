@@ -6,7 +6,11 @@ import { CrudService } from "../../../shared/crud/services/CrudService";
 import { Paginated } from "../../../shared/types/Paginated";
 import { ProductPriceDto, ProductPriceSearchOptions } from "../type/product-price.type";
 
-export class ProductPriceService extends CrudService<ProductPrice, ProductPriceDto, ProductPriceDto> {
+export class ProductPriceService extends CrudService<
+  ProductPrice,
+  ProductPriceDto,
+  ProductPriceDto
+> {
   constructor(repository: Repository<ProductPrice> = AppDataSource.getRepository(ProductPrice)) {
     super(repository);
   }

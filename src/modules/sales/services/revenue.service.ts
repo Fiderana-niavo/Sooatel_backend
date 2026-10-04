@@ -9,7 +9,6 @@ import { PaymentMethodBalance } from "../../../database/Entities/PaymentMethodBa
 import { IsNull, LessThan } from "typeorm";
 import { SALE_CONSTANTS } from "../constants/sale.constants";
 
-
 export interface RevenueFilters {
   page?: number;
   limit?: number;
@@ -24,7 +23,8 @@ export class RevenueService {
     const limit = options.limit || 20;
     const skip = (page - 1) * limit;
 
-    const qb = AppDataSource.getRepository(Sale).createQueryBuilder("sale")
+    const qb = AppDataSource.getRepository(Sale)
+      .createQueryBuilder("sale")
       .innerJoinAndSelect("sale.invoice", "invoice")
       .innerJoinAndSelect("invoice.payments", "payment")
       .leftJoinAndSelect("sale.room", "room")
@@ -62,13 +62,14 @@ export class RevenueService {
 
     const [sales, total] = await qb.getManyAndCount();
 
-    const groupedData: Record<string, { date: string, totaldelajournee: number, liste: any[] }> = {};
+    const groupedData: Record<string, { date: string; totaldelajournee: number; liste: any[] }> =
+      {};
 
     for (const sale of sales) {
       const d = sale.saleDate instanceof Date ? sale.saleDate : new Date(sale.saleDate);
       const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
       const dateStr = `${year}-${month}-${day}`;
 
       if (!groupedData[dateStr]) {
@@ -76,7 +77,9 @@ export class RevenueService {
       }
 
       const payments = sale.invoice?.payments || [];
-      payments.sort((a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime());
+      payments.sort(
+        (a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime(),
+      );
       const lastPayment = payments[0];
 
       const amount = Number(sale.totalAmount);
@@ -90,7 +93,7 @@ export class RevenueService {
           amount: Number(p.amount),
           paymentCode: p.paymentCode || null,
           paymentMethod: p.paymentMethod?.label || null,
-          ref: p.ref
+          ref: p.ref,
         });
       }
 
@@ -99,19 +102,20 @@ export class RevenueService {
         saleDate: sale.saleDate,
         amount: amount,
         paymentCode: lastPayment?.paymentCode || null,
-        invoiceNumber: sale.invoice?.invoiceNumber || sale.invoice?.invoiceNumberSystem || sale.ref || null,
+        invoiceNumber:
+          sale.invoice?.invoiceNumber || sale.invoice?.invoiceNumberSystem || sale.ref || null,
         tableNumber: sale.tableNumber,
         chargeToRoom: sale.chargeToRoom,
         roomNumber: sale.room?.roomNumber,
         paymentMethod: lastPayment?.paymentMethod?.label || null,
-        payments: mappedPayments
+        payments: mappedPayments,
       });
     }
 
     const groupedArray = Object.values(groupedData).sort((a, b) => b.date.localeCompare(a.date));
 
-    const isNotJournalised = sales.some(sale =>
-      sale.invoice?.payments?.some(p => p.idCashMovement === null)
+    const isNotJournalised = sales.some((sale) =>
+      sale.invoice?.payments?.some((p) => p.idCashMovement === null),
     );
 
     return {
@@ -120,8 +124,7 @@ export class RevenueService {
       page,
       limit,
       totalPages: Math.ceil(total / limit),
-      isNotJournalised
-
+      isNotJournalised,
     };
   }
 
@@ -133,14 +136,18 @@ export class RevenueService {
     try {
       // 1. Get active cash journal
       const activeJournal = await queryRunner.manager.findOne(CashJournal, {
-        where: { journalClosing: IsNull() }
+        where: { journalClosing: IsNull() },
       });
 
       if (!activeJournal) {
         throw new Error("Aucun journal de caisse ouvert.");
       }
 
-      const paymentRows: { id_payment: string; id_payment_method: string; amount: string | number }[] = await queryRunner.query(`
+      const paymentRows: {
+        id_payment: string;
+        id_payment_method: string;
+        amount: string | number;
+      }[] = await queryRunner.query(`
         SELECT p.id_payment, p.id_payment_method, p.amount
         FROM payment p
         WHERE p.id_cash_movement IS NULL
@@ -157,10 +164,10 @@ export class RevenueService {
       for (const row of paymentRows) {
         const pMethod = row.id_payment_method;
         const amt = Number(row.amount);
-        
+
         // Group amounts
         groupedPaymentsMap.set(pMethod, (groupedPaymentsMap.get(pMethod) || 0) + amt);
-        
+
         // Group ids
         const list = paymentsByMethod.get(pMethod) ?? [];
         list.push(row.id_payment);
@@ -168,7 +175,7 @@ export class RevenueService {
       }
 
       const today = new Date();
-      const dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
+      const dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}`;
 
       const movementValues = [];
       for (const [idPaymentMethod, total] of groupedPaymentsMap.entries()) {
@@ -181,38 +188,41 @@ export class RevenueService {
           idProcessedBy,
           idJournal: activeJournal.idJournal,
           status: 5,
-          idPaymentMethod
+          idPaymentMethod,
         });
       }
 
-      const insertedMovements: { id_cash_movement: string; id_payment_method: string }[] = await queryRunner.manager
-        .createQueryBuilder()
-        .insert()
-        .into(CashMovement)
-        .values(movementValues)
-        .returning(["idCashMovement", "idPaymentMethod"])
-        .execute()
-        .then(r => r.raw);
+      const insertedMovements: { id_cash_movement: string; id_payment_method: string }[] =
+        await queryRunner.manager
+          .createQueryBuilder()
+          .insert()
+          .into(CashMovement)
+          .values(movementValues)
+          .returning(["idCashMovement", "idPaymentMethod"])
+          .execute()
+          .then((r) => r.raw);
 
       for (const movement of insertedMovements) {
         const pMethodId = movement.id_payment_method || (movement as any).idPaymentMethod;
         const cMovementId = movement.id_cash_movement || (movement as any).idCashMovement;
-        
+
         const ids = paymentsByMethod.get(pMethodId) ?? [];
         if (ids.length > 0) {
           await queryRunner.query(
             `UPDATE payment SET id_cash_movement = $1 WHERE id_payment = ANY($2)`,
-            [cMovementId, ids]
+            [cMovementId, ids],
           );
         }
       }
 
       const previousJournal = await queryRunner.manager.findOne(CashJournal, {
         where: { journalOpening: LessThan(activeJournal.journalOpening) },
-        order: { journalOpening: "DESC" }
+        order: { journalOpening: "DESC" },
       });
 
-      const balanceRows: { idPaymentMethod: string; movementSum: string; prevAmount: string }[] = await queryRunner.query(`
+      const balanceRows: { idPaymentMethod: string; movementSum: string; prevAmount: string }[] =
+        await queryRunner.query(
+          `
         SELECT
           pm.id_payment_method AS "idPaymentMethod",
           COALESCE((
@@ -226,7 +236,9 @@ export class RevenueService {
             WHERE pmb.id_journal = $2 AND pmb.id_payment_method = pm.id_payment_method
           ), 0) AS "prevAmount"
         FROM payment_method pm
-      `, [activeJournal.idJournal, previousJournal?.idJournal ?? null]);
+      `,
+          [activeJournal.idJournal, previousJournal?.idJournal ?? null],
+        );
 
       if (balanceRows.length > 0) {
         const upsertValues = [];
@@ -234,7 +246,7 @@ export class RevenueService {
           upsertValues.push({
             idJournal: activeJournal.idJournal,
             idPaymentMethod: row.idPaymentMethod,
-            amount: Number(row.prevAmount) + Number(row.movementSum)
+            amount: Number(row.prevAmount) + Number(row.movementSum),
           });
         }
 
@@ -254,7 +266,7 @@ export class RevenueService {
         .getRawOne();
 
       await queryRunner.manager.update(CashJournal, activeJournal.idJournal, {
-        expectedClosingBalance: Number(totalExpected || 0)
+        expectedClosingBalance: Number(totalExpected || 0),
       });
 
       await queryRunner.commitTransaction();

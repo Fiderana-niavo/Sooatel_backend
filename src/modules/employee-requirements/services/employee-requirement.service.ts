@@ -54,7 +54,7 @@ export class EmployeeRequirementService extends CrudService<
       records.map((r) => this.toResponse(r)),
       total,
       pageNum,
-      limitNum
+      limitNum,
     );
   }
 
@@ -120,7 +120,9 @@ export class EmployeeRequirementService extends CrudService<
     await this.repository.delete(id);
   }
 
-  async bulkCreate(dtos: EmployeeRequirementBulkDto[]): Promise<{ created: number; skipped: number }> {
+  async bulkCreate(
+    dtos: EmployeeRequirementBulkDto[],
+  ): Promise<{ created: number; skipped: number }> {
     // 1. Vérification des doublons dans les données envoyées (payload)
     const requestedPairs = new Set<string>();
     for (const dto of dtos) {
@@ -128,7 +130,9 @@ export class EmployeeRequirementService extends CrudService<
         for (const idShiftType of dto.idShiftTypes) {
           const key = `${dayOfWeek}-${idShiftType}-${dto.idJobTitle}`;
           if (requestedPairs.has(key)) {
-            throw new Error(`Conflit dans la requête : vous avez envoyé plusieurs fois le jour ${DAY_LABELS[dayOfWeek]} pour le même shift.`);
+            throw new Error(
+              `Conflit dans la requête : vous avez envoyé plusieurs fois le jour ${DAY_LABELS[dayOfWeek]} pour le même shift.`,
+            );
           }
           requestedPairs.add(key);
         }
@@ -144,7 +148,9 @@ export class EmployeeRequirementService extends CrudService<
           });
 
           if (existing) {
-            throw new Error(`Un besoin en effectif existe déjà pour ce poste, ce shift et le jour ${DAY_LABELS[dayOfWeek]}.`);
+            throw new Error(
+              `Un besoin en effectif existe déjà pour ce poste, ce shift et le jour ${DAY_LABELS[dayOfWeek]}.`,
+            );
           }
         }
       }

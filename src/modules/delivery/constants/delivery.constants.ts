@@ -3,7 +3,7 @@ export const DELIVERY_STATUS = {
   VALIDATED: 0,
 } as const;
 
-export type DeliveryStatus = typeof DELIVERY_STATUS[keyof typeof DELIVERY_STATUS];
+export type DeliveryStatus = (typeof DELIVERY_STATUS)[keyof typeof DELIVERY_STATUS];
 
 export const DELIVERY_STATUS_LABELS: Record<DeliveryStatus, string> = {
   [DELIVERY_STATUS.OPEN]: "Ouvert",

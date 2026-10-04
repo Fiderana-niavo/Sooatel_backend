@@ -15,9 +15,33 @@ permissionCategoryRouter.use(authMiddleware);
 // Permissions CRUD with cache invalidation on writes
 permissionRouter.get("/", authorize("security.access"), permissionController.findAll);
 permissionRouter.get("/:id", authorize("security.access"), permissionController.getOne);
-permissionRouter.post("/", authorize("security.access"), (req, res, next) => { invalidateAllCache(); next(); }, permissionController.save);
-permissionRouter.put("/:id", authorize("security.access"), (req, res, next) => { invalidateAllCache(); next(); }, permissionController.update);
-permissionRouter.delete("/:id", authorize("security.access"), (req, res, next) => { invalidateAllCache(); next(); }, permissionController.remove);
+permissionRouter.post(
+  "/",
+  authorize("security.access"),
+  (req, res, next) => {
+    invalidateAllCache();
+    next();
+  },
+  permissionController.save,
+);
+permissionRouter.put(
+  "/:id",
+  authorize("security.access"),
+  (req, res, next) => {
+    invalidateAllCache();
+    next();
+  },
+  permissionController.update,
+);
+permissionRouter.delete(
+  "/:id",
+  authorize("security.access"),
+  (req, res, next) => {
+    invalidateAllCache();
+    next();
+  },
+  permissionController.remove,
+);
 
 // Permission categories CRUD
 generateCrudRoutes(permissionCategoryRouter, permissionCategoryController);

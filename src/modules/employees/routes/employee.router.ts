@@ -10,16 +10,28 @@ const employeeRouter = Router();
 employeeRouter.use(authMiddleware);
 
 employeeRouter.get("/salers", employeeController.getSalers);
-employeeRouter.get("/recent-deactivations", authorize("employee.read"), employeeController.recentDeactivations);
+employeeRouter.get(
+  "/recent-deactivations",
+  authorize("employee.read"),
+  employeeController.recentDeactivations,
+);
 
 employeeRouter.get("/", authorize("employee.read"), employeeController.getAllEmployees);
 employeeRouter.get("/:id", authorize("employee.read"), employeeController.getById);
 
 employeeRouter.post("/:id/change-job", authorize("employee.update"), employeeController.changeJob);
-employeeRouter.post("/:id/renew-contract", authorize("employee.update"), employeeController.renewContract);
+employeeRouter.post(
+  "/:id/renew-contract",
+  authorize("employee.update"),
+  employeeController.renewContract,
+);
 employeeRouter.post("/:id/end-job", authorize("employee.update"), employeeController.endJob);
 employeeRouter.post("/:id/team", authorize("employee.update"), employeeController.setTeam);
-employeeRouter.post("/:id/availabilities", authorize("employee.update"), employeeController.setAvailabilities);
+employeeRouter.post(
+  "/:id/availabilities",
+  authorize("employee.update"),
+  employeeController.setAvailabilities,
+);
 
 generateCrudRoutes(employeeRouter, employeeController);
 

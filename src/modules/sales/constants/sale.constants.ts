@@ -4,5 +4,5 @@ export const SALE_CONSTANTS = {
   ADJUSTMENT_SALE: "Ajustement de vente",
   ADJUSTMENT_PAYMENT_IN: "Ajustement de paiement (Entrée)",
   ADJUSTMENT_PAYMENT_OUT: "Ajustement de paiement (Sortie)",
-  REFUND_CLIENT: "Remboursement Client"
+  REFUND_CLIENT: "Remboursement Client",
 };

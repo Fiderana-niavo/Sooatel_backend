@@ -70,5 +70,5 @@ export const ALLOWED_AUDIT_KEYS = [
   "status",
   "quantity",
   "unitPrice",
-  "reason"
+  "reason",
 ];

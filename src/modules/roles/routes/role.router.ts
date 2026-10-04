@@ -14,8 +14,32 @@ roleRouter.get("/", authorize("security.access"), roleController.findAll);
 roleRouter.get("/:id", authorize("security.access"), roleController.getOne);
 
 // On write: invalidate all users' caches since role changes affect everyone holding that role
-roleRouter.post("/", authorize("security.access"), (req, res, next) => { invalidateAllCache(); next(); }, roleController.save);
-roleRouter.put("/:id", authorize("security.access"), (req, res, next) => { invalidateAllCache(); next(); }, roleController.update);
-roleRouter.delete("/:id", authorize("security.access"), (req, res, next) => { invalidateAllCache(); next(); }, roleController.remove);
+roleRouter.post(
+  "/",
+  authorize("security.access"),
+  (req, res, next) => {
+    invalidateAllCache();
+    next();
+  },
+  roleController.save,
+);
+roleRouter.put(
+  "/:id",
+  authorize("security.access"),
+  (req, res, next) => {
+    invalidateAllCache();
+    next();
+  },
+  roleController.update,
+);
+roleRouter.delete(
+  "/:id",
+  authorize("security.access"),
+  (req, res, next) => {
+    invalidateAllCache();
+    next();
+  },
+  roleController.remove,
+);
 
 export default roleRouter;

@@ -2,7 +2,11 @@ import AppDataSource from "../../../database/data-source";
 import { Item } from "../../../database/Entities/Item";
 import { StockMovement } from "../../../database/Entities/StockMovement";
 import { NotFoundError } from "../../../shared/errors/AppError";
-import { STOCK_MOVEMENT_DIRECTION, STOCK_MOVEMENT_STATUS, STOCK_MOVEMENT_TYPE } from "../../items/constants/stock.constants";
+import {
+  STOCK_MOVEMENT_DIRECTION,
+  STOCK_MOVEMENT_STATUS,
+  STOCK_MOVEMENT_TYPE,
+} from "../../items/constants/stock.constants";
 
 export interface InventoryLineDto {
   idItem: string;
@@ -10,7 +14,11 @@ export interface InventoryLineDto {
 }
 
 export class InventoryService {
-  async submitInventory(lines: InventoryLineDto[], idOperator: string): Promise<{ adjusted: number }> {
+  async submitInventory(
+    lines: InventoryLineDto[],
+    idOperator: string,
+    inventoryDate?: string,
+  ): Promise<{ adjusted: number }> {
     const queryRunner = AppDataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -38,7 +46,7 @@ export class InventoryService {
           quantity: absGap,
           direction: isPositive ? STOCK_MOVEMENT_DIRECTION.IN : STOCK_MOVEMENT_DIRECTION.OUT,
           reason: `Ajustement inventaire physique — Théorique : ${theoretical}, Physique : ${physical}`,
-          movementDate: new Date(),
+          movementDate: inventoryDate ? new Date(inventoryDate) : new Date(),
           movementType: STOCK_MOVEMENT_TYPE.INVENTAIRE,
           idOperator,
           status: STOCK_MOVEMENT_STATUS.VALIDATED,

@@ -7,12 +7,18 @@ import { SuppliedItemDto } from "../type/supplier.type";
 
 import { ConflictError } from "../../../shared/errors/AppError";
 
-export class SuppliedItemService extends CrudService<SuppliedItem, SuppliedItemDto, SuppliedItemDto> {
+export class SuppliedItemService extends CrudService<
+  SuppliedItem,
+  SuppliedItemDto,
+  SuppliedItemDto
+> {
   constructor(repository: Repository<SuppliedItem> = AppDataSource.getRepository(SuppliedItem)) {
     super(repository);
   }
 
-  async findAll(options: { page?: number; limit?: number; idSupplierProduct?: string; idItem?: string } = {}): Promise<Paginated<SuppliedItem>> {
+  async findAll(
+    options: { page?: number; limit?: number; idSupplierProduct?: string; idItem?: string } = {},
+  ): Promise<Paginated<SuppliedItem>> {
     const pageNum = options.page ?? 1;
     const limitNum = options.limit ?? 10;
 
@@ -23,7 +29,9 @@ export class SuppliedItemService extends CrudService<SuppliedItem, SuppliedItemD
       .take(limitNum);
 
     if (options.idSupplierProduct) {
-      qb.andWhere("entity.idSupplierProduct = :idSupplierProduct", { idSupplierProduct: options.idSupplierProduct });
+      qb.andWhere("entity.idSupplierProduct = :idSupplierProduct", {
+        idSupplierProduct: options.idSupplierProduct,
+      });
     }
 
     if (options.idItem) {
@@ -40,7 +48,7 @@ export class SuppliedItemService extends CrudService<SuppliedItem, SuppliedItemD
       .select([
         "suppliedItem.idSuppliedItem",
         "suppliedItem.idItem",
-        "suppliedItem.idSupplierProduct"
+        "suppliedItem.idSupplierProduct",
       ])
       .innerJoin("suppliedItem.supplierProduct", "supplierProduct")
       .addSelect(["supplierProduct.idSupplierProduct", "supplierProduct.actualPrice"])
@@ -59,17 +67,17 @@ export class SuppliedItemService extends CrudService<SuppliedItem, SuppliedItemD
 
   async create(dto: SuppliedItemDto): Promise<SuppliedItem> {
     const existing = await this.repository.findOne({
-      where: { idSupplierProduct: dto.idSupplierProduct } as FindOptionsWhere<SuppliedItem>
+      where: { idSupplierProduct: dto.idSupplierProduct } as FindOptionsWhere<SuppliedItem>,
     });
-    
+
     if (existing) {
       throw new ConflictError("Ce produit fournisseur est déjà lié à un article interne.");
     }
-    
+
     const entity = new SuppliedItem();
     entity.idItem = dto.idItem;
     entity.idSupplierProduct = dto.idSupplierProduct;
-    
+
     return await this.repository.save(entity);
   }
 }

@@ -18,7 +18,6 @@ export class SupplierPaymentAllocation extends BaseEntity {
   @Column({ type: "uuid", name: "id_delivery", nullable: true })
   idDelivery: string | null;
 
-
   @Column({ type: "numeric", precision: 15, scale: 2, name: "amount" })
   amount: number;
 
@@ -29,5 +28,4 @@ export class SupplierPaymentAllocation extends BaseEntity {
   @ManyToOne(() => ProductDelivery)
   @JoinColumn({ name: "id_delivery" })
   delivery: ProductDelivery;
-
 }

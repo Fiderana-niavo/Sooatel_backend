@@ -13,10 +13,12 @@ export class ItemUnitService extends CrudService<ItemUnit, CreateItemUnitDto, Up
     super(repository);
   }
 
-  async findAll(options: { page?: number; limit?: number; idItem?: string } = {}): Promise<Paginated<ItemUnit>> {
+  async findAll(
+    options: { page?: number; limit?: number; idItem?: string } = {},
+  ): Promise<Paginated<ItemUnit>> {
     const pageNum = options.page || 1;
     const limitNum = options.limit || 100;
-    
+
     const whereCondition = options.idItem ? { idItem: options.idItem } : {};
 
     const [data, total] = await this.repository.findAndCount({
@@ -25,7 +27,7 @@ export class ItemUnitService extends CrudService<ItemUnit, CreateItemUnitDto, Up
       skip: (pageNum - 1) * limitNum,
       take: limitNum,
     });
-    
+
     return new Paginated<ItemUnit>(data, total, pageNum, limitNum);
   }
 
@@ -37,12 +39,17 @@ export class ItemUnitService extends CrudService<ItemUnit, CreateItemUnitDto, Up
   }
 
   async create(data: CreateItemUnitDto): Promise<ItemUnit> {
-    const item = await AppDataSource.getRepository(Item).findOne({ where: { idItem: data.idItem } as any });
+    const item = await AppDataSource.getRepository(Item).findOne({
+      where: { idItem: data.idItem } as any,
+    });
     if (!item) {
       throw new AppError("Article non trouvé", 404);
     }
     if (item.idUnit === data.alternativeUnitId) {
-      throw new AppError("L'unité alternative ne peut pas être l'unité par défaut de l'article", 400);
+      throw new AppError(
+        "L'unité alternative ne peut pas être l'unité par défaut de l'article",
+        400,
+      );
     }
 
     const existing = await this.repository.findOne({

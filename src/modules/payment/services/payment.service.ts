@@ -6,7 +6,11 @@ import { NotFoundError, BadRequestError } from "../../../shared/errors/AppError"
 import { CreatePaymentDto } from "../types/payment.type";
 
 export class PaymentService {
-  async payInvoice(idInvoice: string, userId: string, paymentDto: CreatePaymentDto): Promise<Invoice> {
+  async payInvoice(
+    idInvoice: string,
+    userId: string,
+    paymentDto: CreatePaymentDto,
+  ): Promise<Invoice> {
     if (paymentDto.amount < 0) {
       throw new BadRequestError("Le montant du paiement ne peut pas être négatif.");
     }
@@ -20,7 +24,8 @@ export class PaymentService {
         throw new BadRequestError("La date de paiement ne peut pas être dans le futur.");
       }
 
-      const invoice = await queryRunner.manager.createQueryBuilder(Invoice, "invoice")
+      const invoice = await queryRunner.manager
+        .createQueryBuilder(Invoice, "invoice")
         .setLock("pessimistic_write")
         .where("invoice.id_invoice = :idInvoice", { idInvoice })
         .getOne();
@@ -41,10 +46,13 @@ export class PaymentService {
       const { totalPaid } = await queryRunner.manager
         .createQueryBuilder(Payment, "p")
         .select("COALESCE(SUM(p.amount), 0)", "totalPaid")
-        .where(`p.id_invoice = :idInvoice AND (p.payment_code IS NULL OR p.payment_code NOT LIKE :refundCode)`, {
-          idInvoice,
-          refundCode: `${SALE_CONSTANTS.MANUAL_REFUND_CODE}%`
-        })
+        .where(
+          `p.id_invoice = :idInvoice AND (p.payment_code IS NULL OR p.payment_code NOT LIKE :refundCode)`,
+          {
+            idInvoice,
+            refundCode: `${SALE_CONSTANTS.MANUAL_REFUND_CODE}%`,
+          },
+        )
         .getRawOne();
 
       invoice.balanceDue = Math.max(0, Number(invoice.totalAmount) - Number(totalPaid));
@@ -59,7 +67,6 @@ export class PaymentService {
       }
 
       const updated = await queryRunner.manager.save(Invoice, invoice);
-
 
       await queryRunner.commitTransaction();
       return updated;

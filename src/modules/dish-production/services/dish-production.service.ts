@@ -6,14 +6,16 @@ import { RecipeDetail } from "../../../database/Entities/RecipeDetail";
 import { StockMovement } from "../../../database/Entities/StockMovement";
 import { BadRequestError, NotFoundError } from "../../../shared/errors/AppError";
 import { Paginated } from "../../../shared/types/Paginated";
-import { STOCK_MOVEMENT_STATUS, STOCK_MOVEMENT_TYPE, STOCK_MOVEMENT_DIRECTION } from "../../items/constants/stock.constants";
+import {
+  STOCK_MOVEMENT_STATUS,
+  STOCK_MOVEMENT_TYPE,
+  STOCK_MOVEMENT_DIRECTION,
+} from "../../items/constants/stock.constants";
 import type { DishProductionDto, DishProductionSearchOptions } from "../type/dish-production.type";
 
 export class DishProductionService {
   private repository = AppDataSource.getRepository(DishProduction);
   private itemRepository = AppDataSource.getRepository(Item);
-
-
 
   async findAll(options: DishProductionSearchOptions = {}): Promise<Paginated<unknown>> {
     const page = options.page ?? 1;
@@ -79,7 +81,8 @@ export class DishProductionService {
   async update(id: string, dto: DishProductionDto): Promise<void> {
     const prod = await this.repository.findOne({ where: { idDishProduction: id } });
     if (!prod) throw new NotFoundError("Production introuvable.");
-    if (prod.status === STOCK_MOVEMENT_STATUS.VALIDATED) { // 0
+    if (prod.status === STOCK_MOVEMENT_STATUS.VALIDATED) {
+      // 0
       throw new BadRequestError("Impossible de modifier une production validée.");
     }
 
@@ -106,7 +109,9 @@ export class DishProductionService {
     await queryRunner.startTransaction();
 
     try {
-      const prod = await queryRunner.manager.findOne(DishProduction, { where: { idDishProduction: id } });
+      const prod = await queryRunner.manager.findOne(DishProduction, {
+        where: { idDishProduction: id },
+      });
       if (!prod) throw new NotFoundError("Production introuvable.");
       if (prod.status === STOCK_MOVEMENT_STATUS.VALIDATED) {
         throw new BadRequestError("Production déjà validée.");
@@ -116,12 +121,14 @@ export class DishProductionService {
       if (!dishItem) throw new NotFoundError("Article produit introuvable.");
 
       // Find active recipe
-      const recipe = await queryRunner.manager.findOne(Recipe, { where: { idItem: prod.idItem, isActive: true } });
+      const recipe = await queryRunner.manager.findOne(Recipe, {
+        where: { idItem: prod.idItem, isActive: true },
+      });
       if (!recipe) throw new BadRequestError("Aucune recette active trouvée pour cet article.");
 
-      const recipeDetails = await queryRunner.manager.find(RecipeDetail, { 
+      const recipeDetails = await queryRunner.manager.find(RecipeDetail, {
         where: { idRecipe: recipe.idRecipe },
-        relations: { ingredient: true }
+        relations: { ingredient: true, itemUnit: true },
       });
 
       if (recipeDetails.length === 0) {
@@ -131,8 +138,9 @@ export class DishProductionService {
       // multiplier
       const prodQty = Number(prod.quantity);
       const recipeYield = Number(recipe.yieldQuantity);
-      if (recipeYield <= 0) throw new BadRequestError("Le rendement de la recette est invalide (<= 0).");
-      
+      if (recipeYield <= 0)
+        throw new BadRequestError("Le rendement de la recette est invalide (<= 0).");
+
       const ratio = prodQty / recipeYield;
 
       // Check stock for all ingredients
@@ -140,11 +148,16 @@ export class DishProductionService {
       const stockMovements: StockMovement[] = [];
 
       for (const detail of recipeDetails) {
-        const requiredQty = Number(detail.quantity) * ratio;
+        let requiredQty = Number(detail.quantity) * ratio;
+        if (detail.itemUnit && detail.itemUnit.toStockRatio) {
+          requiredQty = requiredQty / Number(detail.itemUnit.toStockRatio);
+        }
         const currentStock = Number(detail.ingredient.quantity ?? 0);
 
         if (currentStock < requiredQty) {
-          throw new BadRequestError(`Stock insuffisant pour l'ingrédient ${detail.ingredient.label}. Nécessaire : ${requiredQty.toFixed(2)}, Disponible : ${currentStock.toFixed(2)}`);
+          throw new BadRequestError(
+            `Stock insuffisant pour l'ingrédient ${detail.ingredient.label}. Nécessaire : ${requiredQty.toFixed(2)}, Disponible : ${currentStock.toFixed(2)}`,
+          );
         }
 
         // Deduct from item

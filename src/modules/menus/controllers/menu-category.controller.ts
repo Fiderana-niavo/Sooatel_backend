@@ -5,7 +5,11 @@ import { ApiResponse } from "../../../shared/types/ApiResponse";
 import { MenuCategoryDto } from "../type/menu-category.type";
 import { MenuCategoryService } from "../services/menu-category.service";
 
-export class MenuCategoryController extends CrudController<MenuCategory, MenuCategoryDto, MenuCategoryDto> {
+export class MenuCategoryController extends CrudController<
+  MenuCategory,
+  MenuCategoryDto,
+  MenuCategoryDto
+> {
   constructor(service: MenuCategoryService) {
     super(service);
   }

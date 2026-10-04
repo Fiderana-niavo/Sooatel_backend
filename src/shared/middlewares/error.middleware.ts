@@ -16,7 +16,7 @@ export const globalErrorMiddleware = (
   err: unknown,
   _req: Request,
   res: Response,
-  _next: NextFunction
+  _next: NextFunction,
 ): void => {
   // 1. Business errors (AppError, NotFoundError, etc.)
   if (err instanceof AppError) {
@@ -31,7 +31,8 @@ export const globalErrorMiddleware = (
 
   if (typeof code === "string") {
     switch (code) {
-      case "23505": { // Unique violation
+      case "23505": {
+        // Unique violation
         const match = detail?.match(/\((.*?)\)\s*=\s*\(/);
         const rawCol = match?.[1] ?? "";
         const label = PG_FIELD_TRANSLATIONS[rawCol];
@@ -39,7 +40,8 @@ export const globalErrorMiddleware = (
         res.status(400).json(ApiResponse.error(`Un enregistrement avec ${fieldName} existe déjà.`));
         return;
       }
-      case "23503": { // FK violation
+      case "23503": {
+        // FK violation
         const isDelete = detail?.includes("still referenced") || detail?.includes("référencée");
         const tableMatch = detail?.match(/table [«"](.*?)[»"]/);
         const table = tableMatch ? `"${tableMatch[1]}"` : "d'autres enregistrements";
@@ -50,7 +52,9 @@ export const globalErrorMiddleware = (
         return;
       }
       case "22P02":
-        res.status(400).json(ApiResponse.error("L'identifiant fourni est invalide ou introuvable."));
+        res
+          .status(400)
+          .json(ApiResponse.error("L'identifiant fourni est invalide ou introuvable."));
         return;
       case "23502": {
         const col = (dbError as Record<string, unknown>)?.column as string | undefined;

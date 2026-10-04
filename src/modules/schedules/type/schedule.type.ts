@@ -30,7 +30,6 @@ export interface GenerateByTeamDto {
   shiftIds: string[];
 }
 
-
 export interface GeneratedScheduleRow {
   idEmployee: string;
   employeeName: string | null;
@@ -56,7 +55,7 @@ export interface AvailableEmployee {
 
 export interface ScheduleRangeSearchOptions {
   startDate?: string; // YYYY-MM-DD
-  endDate?: string;   // YYYY-MM-DD
+  endDate?: string; // YYYY-MM-DD
 }
 
 export interface AvailableEmployeesOptions {

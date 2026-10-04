@@ -16,7 +16,9 @@ async function run() {
     await AppDataSource.manager.save(cat);
   }
 
-  let stockPerm = await AppDataSource.manager.findOne(Permission, { where: { code: "stock.manage" } });
+  let stockPerm = await AppDataSource.manager.findOne(Permission, {
+    where: { code: "stock.manage" },
+  });
   if (!stockPerm) {
     stockPerm = new Permission();
     stockPerm.name = "Gérer les stocks";
@@ -30,7 +32,7 @@ async function run() {
   let defaultRole = await AppDataSource.manager.findOne(Role, { where: { label: "default" } });
   if (defaultRole) {
     const existing = await AppDataSource.manager.findOne(RolePermission, {
-      where: { idRole: defaultRole.idRole, permission: { idPermission: stockPerm.idPermission } }
+      where: { idRole: defaultRole.idRole, permission: { idPermission: stockPerm.idPermission } },
     });
     if (!existing) {
       const rp = new RolePermission();

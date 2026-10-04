@@ -38,10 +38,13 @@ export class EmployeeController extends CrudController<
         limit: Number(req.query.limit ?? 10),
         search: req.query.search as string | undefined,
         sortBy: req.query.sortBy as NonNullable<EmployeeSearchOptions["sortBy"]> | undefined,
-        sortOrder: req.query.sortOrder as NonNullable<EmployeeSearchOptions["sortOrder"]> | undefined,
+        sortOrder: req.query.sortOrder as
+          NonNullable<EmployeeSearchOptions["sortOrder"]> | undefined,
         idJobTitle: req.query.idJobTitle as string | undefined,
-        hasUserAccount: req.query.hasUserAccount as NonNullable<EmployeeSearchOptions["hasUserAccount"]> | undefined,
-        isInternship: req.query.isInternship as NonNullable<EmployeeSearchOptions["isInternship"]> | undefined,
+        hasUserAccount: req.query.hasUserAccount as
+          NonNullable<EmployeeSearchOptions["hasUserAccount"]> | undefined,
+        isInternship: req.query.isInternship as
+          NonNullable<EmployeeSearchOptions["isInternship"]> | undefined,
         status: req.query.status as NonNullable<EmployeeSearchOptions["status"]> | undefined,
       });
       res.json(ApiResponse.success(result));
@@ -130,8 +133,12 @@ export class EmployeeController extends CrudController<
       const page = req.query["page"] ? parseInt(req.query["page"] as string, 10) : undefined;
       const limit = req.query["limit"] ? parseInt(req.query["limit"] as string, 10) : undefined;
       const days = req.query["days"] ? parseInt(req.query["days"] as string, 10) : undefined;
-      
-      const data = await (this.service as EmployeeService).getRecentDeactivations({ page, limit, days });
+
+      const data = await (this.service as EmployeeService).getRecentDeactivations({
+        page,
+        limit,
+        days,
+      });
       res.json(ApiResponse.success(data));
     } catch (err: unknown) {
       next(err);

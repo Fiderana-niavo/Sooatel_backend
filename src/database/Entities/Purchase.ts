@@ -1,4 +1,12 @@
-import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import {
+  BaseEntity,
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from "typeorm";
 import { Employee } from "./Employee";
 import { Supplier } from "./Supplier";
 import { PurchaseDetail } from "./PurchaseDetail";
@@ -16,8 +24,6 @@ export class Purchase extends BaseEntity {
 
   @Column({ type: "numeric", precision: 15, scale: 2, nullable: true, name: "total_amount" })
   totalAmount: number;
-
-
 
   @Column({ type: "int", name: "status", nullable: true })
   status: number;
@@ -42,4 +48,3 @@ export class Purchase extends BaseEntity {
   @OneToMany(() => PurchaseDetail, (detail: PurchaseDetail) => detail.purchase)
   details: PurchaseDetail[];
 }
-

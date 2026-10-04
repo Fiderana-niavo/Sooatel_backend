@@ -4,7 +4,7 @@ export const PURCHASE_STATUS = {
   DELIVERED: 0,
 } as const;
 
-export type PurchaseStatus = typeof PURCHASE_STATUS[keyof typeof PURCHASE_STATUS];
+export type PurchaseStatus = (typeof PURCHASE_STATUS)[keyof typeof PURCHASE_STATUS];
 
 export const PURCHASE_STATUS_LABELS: Record<PurchaseStatus, string> = {
   [PURCHASE_STATUS.CREATED]: "Créé",

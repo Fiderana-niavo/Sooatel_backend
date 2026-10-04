@@ -6,7 +6,12 @@ import { PaymentMethodBalance } from "../../../../database/Entities/PaymentMetho
 import { CashMovement } from "../../../../database/Entities/CashMovement";
 import { CrudService } from "../../../../shared/crud/services/CrudService";
 import { Paginated } from "../../../../shared/types/Paginated";
-import { CashJournalDto, CashJournalSearchOptions, OpenJournalDto, CloseJournalDto } from "../type/cash-journal.type";
+import {
+  CashJournalDto,
+  CashJournalSearchOptions,
+  OpenJournalDto,
+  CloseJournalDto,
+} from "../type/cash-journal.type";
 
 export class CashJournalService extends CrudService<CashJournal, CashJournalDto, CashJournalDto> {
   constructor(repository: Repository<CashJournal> = AppDataSource.getRepository(CashJournal)) {
@@ -38,7 +43,7 @@ export class CashJournalService extends CrudService<CashJournal, CashJournalDto,
   async findOne(id: string): Promise<CashJournal | null> {
     return this.repository.findOne({
       where: { idJournal: id } as FindOptionsWhere<CashJournal>,
-      relations: { cashier: true, paymentMethodBalances: { paymentMethod: true } }
+      relations: { cashier: true, paymentMethodBalances: { paymentMethod: true } },
     });
   }
 
@@ -49,15 +54,17 @@ export class CashJournalService extends CrudService<CashJournal, CashJournalDto,
 
     try {
       const openJournal = await queryRunner.manager.findOne(CashJournal, {
-        where: { journalClosing: IsNull() }
+        where: { journalClosing: IsNull() },
       });
       if (openJournal) {
-        throw new Error("Un journal de caisse est déjà ouvert. Veuillez le fermer avant d'en ouvrir un nouveau.");
+        throw new Error(
+          "Un journal de caisse est déjà ouvert. Veuillez le fermer avant d'en ouvrir un nouveau.",
+        );
       }
 
       const lastJournal = await queryRunner.manager.findOne(CashJournal, {
         where: { journalClosing: LessThan(new Date()) },
-        order: { journalOpening: "DESC" }
+        order: { journalOpening: "DESC" },
       });
 
       const startingBalance = lastJournal ? Number(lastJournal.expectedClosingBalance) : 0;
@@ -72,14 +79,14 @@ export class CashJournalService extends CrudService<CashJournal, CashJournalDto,
 
       if (lastJournal) {
         const prevBalances = await queryRunner.manager.find(PaymentMethodBalance, {
-          where: { idJournal: lastJournal.idJournal }
+          where: { idJournal: lastJournal.idJournal },
         });
 
         if (prevBalances.length > 0) {
-          const newBalances = prevBalances.map(b => ({
+          const newBalances = prevBalances.map((b) => ({
             idJournal: saved.idJournal,
             idPaymentMethod: b.idPaymentMethod,
-            amount: b.amount
+            amount: b.amount,
           }));
           await queryRunner.manager
             .createQueryBuilder()
@@ -107,7 +114,7 @@ export class CashJournalService extends CrudService<CashJournal, CashJournalDto,
 
     try {
       const journal = await queryRunner.manager.findOne(CashJournal, {
-        where: { idJournal }
+        where: { idJournal },
       });
 
       if (!journal) throw new Error("Journal introuvable.");
@@ -126,14 +133,14 @@ export class CashJournalService extends CrudService<CashJournal, CashJournalDto,
         journalClosing: new Date(),
         expectedClosingBalance: expected,
         actualClosingBalance: actual,
-        cashDiscrepancy: expected - actual
+        cashDiscrepancy: expected - actual,
       } as QueryDeepPartialEntity<CashJournal>);
 
       await queryRunner.commitTransaction();
 
       return (await this.repository.findOne({
         where: { idJournal },
-        relations: { cashier: true, paymentMethodBalances: { paymentMethod: true } }
+        relations: { cashier: true, paymentMethodBalances: { paymentMethod: true } },
       })) as CashJournal;
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -143,7 +150,11 @@ export class CashJournalService extends CrudService<CashJournal, CashJournalDto,
     }
   }
 
-  async getJournalMovements(idJournal: string, page = 1, limit = 20): Promise<Paginated<CashMovement>> {
+  async getJournalMovements(
+    idJournal: string,
+    page = 1,
+    limit = 20,
+  ): Promise<Paginated<CashMovement>> {
     const repo = AppDataSource.getRepository(CashMovement);
     const [records, total] = await repo
       .createQueryBuilder("cm")
@@ -157,7 +168,7 @@ export class CashJournalService extends CrudService<CashJournal, CashJournalDto,
         "paymentMethod.idPaymentMethod",
         "paymentMethod.label",
         "category.idCashMovementCategory",
-        "category.label"
+        "category.label",
       ])
       .leftJoin("cm.paymentMethod", "paymentMethod")
       .leftJoin("cm.cashMovementCategory", "category")
@@ -177,16 +188,18 @@ export class CashJournalService extends CrudService<CashJournal, CashJournalDto,
 
     try {
       const activeJournal = await queryRunner.manager.findOne(CashJournal, {
-        where: { idJournal }
+        where: { idJournal },
       });
       if (!activeJournal) throw new Error("Journal not found");
 
       const previousJournal = await queryRunner.manager.findOne(CashJournal, {
         where: { journalOpening: LessThan(activeJournal.journalOpening) },
-        order: { journalOpening: "DESC" }
+        order: { journalOpening: "DESC" },
       });
 
-      const balanceRows: { idPaymentMethod: string; movementSum: string; prevAmount: string }[] = await queryRunner.query(`
+      const balanceRows: { idPaymentMethod: string; movementSum: string; prevAmount: string }[] =
+        await queryRunner.query(
+          `
         SELECT
           pm.id_payment_method AS "idPaymentMethod",
           COALESCE((
@@ -200,7 +213,9 @@ export class CashJournalService extends CrudService<CashJournal, CashJournalDto,
             WHERE pmb.id_journal = $2 AND pmb.id_payment_method = pm.id_payment_method
           ), 0) AS "prevAmount"
         FROM payment_method pm
-      `, [activeJournal.idJournal, previousJournal?.idJournal ?? null]);
+      `,
+          [activeJournal.idJournal, previousJournal?.idJournal ?? null],
+        );
 
       if (balanceRows.length > 0) {
         const upsertValues = [];
@@ -208,7 +223,7 @@ export class CashJournalService extends CrudService<CashJournal, CashJournalDto,
           upsertValues.push({
             idJournal: activeJournal.idJournal,
             idPaymentMethod: row.idPaymentMethod,
-            amount: Number(row.prevAmount) + Number(row.movementSum)
+            amount: Number(row.prevAmount) + Number(row.movementSum),
           });
         }
 
@@ -228,7 +243,7 @@ export class CashJournalService extends CrudService<CashJournal, CashJournalDto,
         .getRawOne();
 
       await queryRunner.manager.update(CashJournal, activeJournal.idJournal, {
-        expectedClosingBalance: Number(totalExpected || 0)
+        expectedClosingBalance: Number(totalExpected || 0),
       });
 
       await queryRunner.commitTransaction();

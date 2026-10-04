@@ -1,4 +1,12 @@
-import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, CreateDateColumn } from "typeorm";
+import {
+  BaseEntity,
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+} from "typeorm";
 import { User } from "./User";
 
 @Entity("audit_logs")

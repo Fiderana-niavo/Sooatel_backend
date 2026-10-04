@@ -11,7 +11,7 @@ router.post(
   "/:idInvoice",
   authMiddleware,
   authorize("sale.manage"),
-  controller.addPayment.bind(controller)
+  controller.addPayment.bind(controller),
 );
 
 export default router;

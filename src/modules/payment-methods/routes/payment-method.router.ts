@@ -5,6 +5,9 @@ import { generateCrudRoutes } from "../../../shared/crud/routes/crudRoutes";
 const paymentMethodRouter = Router();
 const paymentMethodController = new PaymentMethodController();
 
-generateCrudRoutes(paymentMethodRouter, paymentMethodController, { valueField: "idPaymentMethod", labelField: "label" });
+generateCrudRoutes(paymentMethodRouter, paymentMethodController, {
+  valueField: "idPaymentMethod",
+  labelField: "label",
+});
 
 export default paymentMethodRouter;

@@ -25,7 +25,7 @@ export class SchoolService extends CrudService<
 
     const parsed = schema.safeParse(dto);
     if (!parsed.success) {
-      const erreurs = parsed.error.issues.map(issue => issue.message);
+      const erreurs = parsed.error.issues.map((issue) => issue.message);
       throw new AppError(erreurs.join(" | "), 400);
     }
 
@@ -54,7 +54,7 @@ export class SchoolService extends CrudService<
 
     const parsed = schema.safeParse(dto);
     if (!parsed.success) {
-      const erreurs = parsed.error.issues.map(issue => issue.message);
+      const erreurs = parsed.error.issues.map((issue) => issue.message);
       throw new AppError(erreurs.join(" | "), 400);
     }
 

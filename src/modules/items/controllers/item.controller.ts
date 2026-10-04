@@ -16,7 +16,8 @@ export class ItemController extends CrudController<Item, ItemDto, ItemDto> {
         page: Number(req.query.page ?? 1),
         limit: Number(req.query.limit ?? 10),
         search: req.query.search as string | undefined,
-        isProduced: req.query.isProduced !== undefined ? req.query.isProduced === 'true' : undefined,
+        isProduced:
+          req.query.isProduced !== undefined ? req.query.isProduced === "true" : undefined,
         idProductType: req.query.idProductType as string | undefined,
         unlinkedSupplierId: req.query.unlinkedSupplierId as string | undefined,
       });

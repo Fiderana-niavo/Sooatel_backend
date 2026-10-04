@@ -88,7 +88,11 @@ export class AuthController {
     try {
       const dto = req.body as ChangePasswordDto;
       if (!dto.key || !dto.newPassword || !dto.username) {
-        next(new BadRequestError("La clé, le nom d'utilisateur et le nouveau mot de passe sont requis."));
+        next(
+          new BadRequestError(
+            "La clé, le nom d'utilisateur et le nouveau mot de passe sont requis.",
+          ),
+        );
         return;
       }
       await authService.changePassword(dto);
@@ -98,11 +102,19 @@ export class AuthController {
     }
   };
 
-  changeAuthenticatedPassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  changeAuthenticatedPassword = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       const dto = req.body as ChangeAuthenticatedPasswordDto;
       if (!dto.idUser || !dto.currentPassword || !dto.newPassword) {
-        next(new BadRequestError("L'identifiant utilisateur, le mot de passe actuel et le nouveau mot de passe sont requis."));
+        next(
+          new BadRequestError(
+            "L'identifiant utilisateur, le mot de passe actuel et le nouveau mot de passe sont requis.",
+          ),
+        );
         return;
       }
       await authService.changeAuthenticatedPassword(dto);

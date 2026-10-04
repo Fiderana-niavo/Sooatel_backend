@@ -18,7 +18,9 @@ async function seed() {
     await AppDataSource.manager.save(cat);
   }
 
-  const oldPerm = await AppDataSource.manager.findOne(Permission, { where: { code: "sales.create" } });
+  const oldPerm = await AppDataSource.manager.findOne(Permission, {
+    where: { code: "sales.create" },
+  });
   if (oldPerm) {
     oldPerm.code = "sales.pos";
     oldPerm.name = "Caisse & Ventes (Voir, Créer, Modifier)";
@@ -37,7 +39,9 @@ async function seed() {
     console.log("Permission sales.pos created.");
   }
 
-  let managePerm = await AppDataSource.manager.findOne(Permission, { where: { code: "sale.manage" } });
+  let managePerm = await AppDataSource.manager.findOne(Permission, {
+    where: { code: "sale.manage" },
+  });
   if (!managePerm) {
     managePerm = new Permission();
     managePerm.name = "Gérer les ventes (Rouvrir, Annuler, Supprimer)";
@@ -58,7 +62,7 @@ async function seed() {
 
   for (const perm of [posPerm, managePerm]) {
     const existing = await AppDataSource.manager.findOne(RolePermission, {
-      where: { idRole: defaultRole.idRole, permission: { idPermission: perm.idPermission } }
+      where: { idRole: defaultRole.idRole, permission: { idPermission: perm.idPermission } },
     });
     if (!existing) {
       const rp = new RolePermission();
@@ -70,11 +74,11 @@ async function seed() {
 
   const users = await AppDataSource.manager.find(User, {
     where: [{ username: "fiderana" }, { username: "malalani04" }],
-    relations: { userRoles: { role: true } }
+    relations: { userRoles: { role: true } },
   });
 
   for (const user of users) {
-    const hasDefaultRole = user.userRoles.some(ur => ur.role.label === "default");
+    const hasDefaultRole = user.userRoles.some((ur) => ur.role.label === "default");
     if (!hasDefaultRole) {
       const ur = new UserRole();
       ur.idUser = user.idUser;

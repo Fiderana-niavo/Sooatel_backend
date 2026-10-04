@@ -1,4 +1,12 @@
-import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import {
+  BaseEntity,
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from "typeorm";
 import { Employee } from "./Employee";
 import { ShiftType } from "./ShiftType";
 import { EmployeeJob } from "./EmployeeJob";

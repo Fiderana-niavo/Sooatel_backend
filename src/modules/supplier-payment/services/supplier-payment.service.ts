@@ -176,7 +176,10 @@ export class SupplierPaymentService {
     await manager.save(CashMovement, cashMovement);
   }
 
-  private async syncJournalExpectedBalance(manager: any, activeJournal: CashJournal): Promise<void> {
+  private async syncJournalExpectedBalance(
+    manager: any,
+    activeJournal: CashJournal,
+  ): Promise<void> {
     const { totalExpected } = await manager
       .createQueryBuilder(PaymentMethodBalance, "pmb")
       .select("SUM(pmb.amount)", "totalExpected")
@@ -231,7 +234,8 @@ export class SupplierPaymentService {
     const payments = allocations.map((a) => {
       const lines = a.supplierPayment?.paymentLines || [];
       const methods = lines.map((l: any) => l.paymentMethod?.label).filter(Boolean);
-      const methodLabel = methods.length > 1 ? "Mixte (" + methods.join(", ") + ")" : (methods[0] || "Inconnu");
+      const methodLabel =
+        methods.length > 1 ? "Mixte (" + methods.join(", ") + ")" : methods[0] || "Inconnu";
 
       return {
         idPayment: a.supplierPayment?.idSupplierPayment ?? "",
@@ -303,7 +307,13 @@ export class SupplierPaymentService {
     return deliveryPaid;
   }
   async getSupplierNetBalance(idSupplier: string): Promise<number> {
-    if (!idSupplier || idSupplier.trim() === "" || idSupplier === "undefined" || idSupplier === "null") return 0;
+    if (
+      !idSupplier ||
+      idSupplier.trim() === "" ||
+      idSupplier === "undefined" ||
+      idSupplier === "null"
+    )
+      return 0;
     const row = await SupplierBalance.findOne({ where: { idSupplier } });
     if (!row) return 0;
     return Math.max(0, Number(row.credit) - Number(row.debit));
@@ -316,7 +326,13 @@ export class SupplierPaymentService {
   async getSupplierBalanceRow(
     idSupplier: string,
   ): Promise<{ credit: number; debit: number; balance: number }> {
-    if (!idSupplier || idSupplier.trim() === "" || idSupplier === "undefined" || idSupplier === "null") return { credit: 0, debit: 0, balance: 0 };
+    if (
+      !idSupplier ||
+      idSupplier.trim() === "" ||
+      idSupplier === "undefined" ||
+      idSupplier === "null"
+    )
+      return { credit: 0, debit: 0, balance: 0 };
     const row = await SupplierBalance.findOne({ where: { idSupplier } });
     if (!row) return { credit: 0, debit: 0, balance: 0 };
     const credit = Number(row.credit);
@@ -458,7 +474,13 @@ export class SupplierPaymentService {
             amount: line.amount,
           });
           await queryRunner.manager.save(SupplierPaymentLine, paymentLine);
-          await this.debitPaymentMethod(queryRunner.manager, activeJournal, line, payment, idEmployee);
+          await this.debitPaymentMethod(
+            queryRunner.manager,
+            activeJournal,
+            line,
+            payment,
+            idEmployee,
+          );
         }
 
         await this.syncJournalExpectedBalance(queryRunner.manager, activeJournal);
@@ -569,7 +591,8 @@ export class SupplierPaymentService {
     const payments = allocations.map((a) => {
       const lines = a.supplierPayment?.paymentLines || [];
       const methods = lines.map((l: any) => l.paymentMethod?.label).filter(Boolean);
-      const methodLabel = methods.length > 1 ? "Mixte (" + methods.join(", ") + ")" : (methods[0] || "Inconnu");
+      const methodLabel =
+        methods.length > 1 ? "Mixte (" + methods.join(", ") + ")" : methods[0] || "Inconnu";
 
       return {
         idPayment: a.supplierPayment?.idSupplierPayment ?? "",

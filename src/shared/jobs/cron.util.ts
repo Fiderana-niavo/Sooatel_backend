@@ -1,12 +1,7 @@
 export function scheduleDailyAtMidnight(taskName: string, task: () => void | Promise<void>): void {
   function scheduleNextMidnightRun() {
     const now = new Date();
-    const nextMidnight = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate() + 1,
-      0, 0, 0, 0
-    );
+    const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
 
     const timeUntilMidnight = nextMidnight.getTime() - now.getTime();
 

@@ -16,7 +16,14 @@ export class ProductDelivery extends BaseEntity {
   @Column({ type: "numeric", precision: 15, scale: 2, nullable: true, name: "total_amount" })
   totalAmount: number;
 
-  @Column({ type: "numeric", precision: 15, scale: 2, nullable: true, default: 0, name: "balance_due" })
+  @Column({
+    type: "numeric",
+    precision: 15,
+    scale: 2,
+    nullable: true,
+    default: 0,
+    name: "balance_due",
+  })
   balanceDue: number;
 
   @Column({ type: "integer", nullable: true, name: "status" })
@@ -31,4 +38,3 @@ export class ProductDelivery extends BaseEntity {
   @OneToMany(() => PurchaseDelivery, (pd: PurchaseDelivery) => pd.productDelivery)
   purchaseDeliveries: PurchaseDelivery[];
 }
-

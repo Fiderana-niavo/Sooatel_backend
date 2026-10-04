@@ -5,7 +5,11 @@ import { ApiResponse } from "../../../shared/types/ApiResponse";
 import { SupplierProductDto } from "../type/supplier.type";
 import { SupplierProductService } from "../services/supplier-product.service";
 
-export class SupplierProductController extends CrudController<SupplierProduct, SupplierProductDto, SupplierProductDto> {
+export class SupplierProductController extends CrudController<
+  SupplierProduct,
+  SupplierProductDto,
+  SupplierProductDto
+> {
   constructor(service: SupplierProductService) {
     super(service);
   }
@@ -34,7 +38,7 @@ export class SupplierProductController extends CrudController<SupplierProduct, S
         res.status(400).json(ApiResponse.error("Missing id or price"));
         return;
       }
-      
+
       await (this.service as SupplierProductService).changePrice(id, Number(price), changeDate);
       res.json(ApiResponse.success({ message: "Price changed successfully" }));
     } catch (err: unknown) {
@@ -50,7 +54,7 @@ export class SupplierProductController extends CrudController<SupplierProduct, S
         res.status(400).json(ApiResponse.error("Missing id or price"));
         return;
       }
-      
+
       await (this.service as SupplierProductService).fixPriceError(id, Number(price));
       res.json(ApiResponse.success({ message: "Price error fixed successfully" }));
     } catch (err: unknown) {
@@ -65,7 +69,7 @@ export class SupplierProductController extends CrudController<SupplierProduct, S
         res.status(400).json(ApiResponse.error("Missing id"));
         return;
       }
-      
+
       const history = await (this.service as SupplierProductService).getPriceHistory(id);
       res.json(ApiResponse.success(history));
     } catch (err: unknown) {
@@ -74,4 +78,6 @@ export class SupplierProductController extends CrudController<SupplierProduct, S
   };
 }
 
-export const supplierProductController = new SupplierProductController(new SupplierProductService());
+export const supplierProductController = new SupplierProductController(
+  new SupplierProductService(),
+);

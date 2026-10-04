@@ -5,7 +5,11 @@ import { ApiResponse } from "../../../shared/types/ApiResponse";
 import { SuppliedItemDto } from "../type/supplier.type";
 import { SuppliedItemService } from "../services/supplied-item.service";
 
-export class SuppliedItemController extends CrudController<SuppliedItem, SuppliedItemDto, SuppliedItemDto> {
+export class SuppliedItemController extends CrudController<
+  SuppliedItem,
+  SuppliedItemDto,
+  SuppliedItemDto
+> {
   constructor(service: SuppliedItemService) {
     super(service);
   }

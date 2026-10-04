@@ -15,7 +15,10 @@ export function getHrSettings(): HrSettings {
     const data = fs.readFileSync(settingsPath, "utf8");
     return JSON.parse(data) as HrSettings;
   } catch (error) {
-    console.error("Erreur de lecture du fichier hr-settings.json, utilisation des valeurs par défaut.", error);
+    console.error(
+      "Erreur de lecture du fichier hr-settings.json, utilisation des valeurs par défaut.",
+      error,
+    );
     return {
       LEGAL_HOURS_PER_MONTH: 173.33,
       AVERAGE_WORKING_DAYS_PER_MONTH: 21.67,
@@ -28,7 +31,7 @@ export function getHrSettings(): HrSettings {
 export function updateHrSettings(newSettings: Partial<HrSettings>): HrSettings {
   const currentSettings = getHrSettings();
   const updatedSettings = { ...currentSettings, ...newSettings };
-  
+
   fs.writeFileSync(settingsPath, JSON.stringify(updatedSettings, null, 2), "utf8");
   return updatedSettings;
 }

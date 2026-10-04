@@ -34,7 +34,11 @@ export class TeamController extends CrudController<Team, TeamDto, TeamDto> {
     }
   };
 
-  getAvailableEmployees = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getAvailableEmployees = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       const employees = await (this.service as TeamService).getAvailableEmployees();
       res.json(ApiResponse.success(employees));
@@ -67,8 +71,6 @@ export class TeamController extends CrudController<Team, TeamDto, TeamDto> {
       next(err);
     }
   };
-
 }
-
 
 export const teamController = new TeamController(new TeamService());

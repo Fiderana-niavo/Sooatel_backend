@@ -2,9 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { jwtVerify } from "jose";
 import { UnauthorizedError } from "../errors/AppError";
 
-const SECRET = new TextEncoder().encode(
-  process.env["JWT_SECRET"] ?? "sooatel_secret_key",
-);
+const SECRET = new TextEncoder().encode(process.env["JWT_SECRET"] ?? "sooatel_secret_key");
 
 import AppDataSource from "../../database/data-source";
 import { User } from "../../database/Entities/User";
@@ -51,7 +49,11 @@ export const authMiddleware = async (
         relations: { employee: true },
       });
 
-      if (!user || user.activeStatus === -1 || (user.employee && user.employee.activeStatus === -1)) {
+      if (
+        !user ||
+        user.activeStatus === -1 ||
+        (user.employee && user.employee.activeStatus === -1)
+      ) {
         return next(new UnauthorizedError("Ce compte a été désactivé."));
       }
     }

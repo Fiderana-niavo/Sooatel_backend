@@ -5,7 +5,11 @@ import { ApiResponse } from "../../../shared/types/ApiResponse";
 import { ProductPriceDto } from "../type/product-price.type";
 import { ProductPriceService } from "../services/product-price.service";
 
-export class ProductPriceController extends CrudController<ProductPrice, ProductPriceDto, ProductPriceDto> {
+export class ProductPriceController extends CrudController<
+  ProductPrice,
+  ProductPriceDto,
+  ProductPriceDto
+> {
   constructor(service: ProductPriceService) {
     super(service);
   }

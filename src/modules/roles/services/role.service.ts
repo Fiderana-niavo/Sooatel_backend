@@ -35,7 +35,7 @@ export class RoleService extends CrudService<Role, RoleCreateOrUpdateDto, RoleCr
     }
 
     const [records, total] = await qb.getManyAndCount();
-    
+
     const recordsWithPerms = [];
     for (const role of records) {
       const permissions = await this.buildPermissions(role.idRole);
@@ -124,7 +124,9 @@ export class RoleService extends CrudService<Role, RoleCreateOrUpdateDto, RoleCr
     await AppDataSource.transaction(async (manager) => {
       const usersCount = await manager.count(UserRole, { where: { idRole: id } });
       if (usersCount > 0) {
-        throw new Error(`Impossible de supprimer ce rôle car il est encore assigné à ${usersCount} utilisateur(s).`);
+        throw new Error(
+          `Impossible de supprimer ce rôle car il est encore assigné à ${usersCount} utilisateur(s).`,
+        );
       }
 
       await manager.delete(RolePermission, { idRole: id });

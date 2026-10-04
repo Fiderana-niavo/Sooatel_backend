@@ -1,4 +1,14 @@
-import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from "typeorm";
+import {
+  BaseEntity,
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from "typeorm";
 import { Employee } from "./Employee";
 import { Room } from "./Room";
 import { SaleItem } from "./SaleItem";
@@ -24,7 +34,6 @@ export class Sale extends BaseEntity {
 
   @Column({ type: "timestamptz", nullable: true, name: "delivery_date" })
   deliveryDate: Date | null;
-
 
   @Column({ type: "integer", nullable: true, name: "table_number" })
   tableNumber: number | null;

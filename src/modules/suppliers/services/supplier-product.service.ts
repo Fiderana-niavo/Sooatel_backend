@@ -8,10 +8,16 @@ import { CrudService } from "../../../shared/crud/services/CrudService";
 import { Paginated } from "../../../shared/types/Paginated";
 import { SupplierProductDto, SupplierProductSearchOptions } from "../type/supplier.type";
 
-export class SupplierProductService extends CrudService<SupplierProduct, SupplierProductDto, SupplierProductDto> {
+export class SupplierProductService extends CrudService<
+  SupplierProduct,
+  SupplierProductDto,
+  SupplierProductDto
+> {
   private priceRepository: Repository<SupplierProductPrice>;
 
-  constructor(repository: Repository<SupplierProduct> = AppDataSource.getRepository(SupplierProduct)) {
+  constructor(
+    repository: Repository<SupplierProduct> = AppDataSource.getRepository(SupplierProduct),
+  ) {
     super(repository);
     this.priceRepository = AppDataSource.getRepository(SupplierProductPrice);
   }
@@ -37,15 +43,14 @@ export class SupplierProductService extends CrudService<SupplierProduct, Supplie
     }
 
     if (options.unlinkedOnly) {
-      qb.leftJoin(SuppliedItem, "si", "si.idSupplierProduct = entity.idSupplierProduct")
-        .andWhere("si.idSuppliedItem IS NULL");
+      qb.leftJoin(SuppliedItem, "si", "si.idSupplierProduct = entity.idSupplierProduct").andWhere(
+        "si.idSuppliedItem IS NULL",
+      );
     }
 
     const [records, total] = await qb.getManyAndCount();
     return new Paginated<SupplierProduct>(records, total, pageNum, limitNum);
   }
-
-
 
   async create(dto: SupplierProductDto): Promise<SupplierProduct> {
     return await AppDataSource.transaction(async (manager) => {
@@ -81,7 +86,11 @@ export class SupplierProductService extends CrudService<SupplierProduct, Supplie
     } as QueryDeepPartialEntity<SupplierProduct>);
   }
 
-  async changePrice(idSupplierProduct: string, newPrice: number, changeDateStr?: string): Promise<void> {
+  async changePrice(
+    idSupplierProduct: string,
+    newPrice: number,
+    changeDateStr?: string,
+  ): Promise<void> {
     await AppDataSource.transaction(async (manager) => {
       const repo = manager.getRepository(SupplierProduct);
       const priceRepo = manager.getRepository(SupplierProductPrice);
@@ -95,7 +104,9 @@ export class SupplierProductService extends CrudService<SupplierProduct, Supplie
       const isFuture = changeDateOnly > today;
 
       if (!isFuture) {
-        await repo.update(idSupplierProduct, { actualPrice: newPrice } as QueryDeepPartialEntity<SupplierProduct>);
+        await repo.update(idSupplierProduct, {
+          actualPrice: newPrice,
+        } as QueryDeepPartialEntity<SupplierProduct>);
       }
 
       const priceEntity = priceRepo.create({
@@ -118,7 +129,9 @@ export class SupplierProductService extends CrudService<SupplierProduct, Supplie
       });
 
       if (latestPrice) {
-        await priceRepo.update(latestPrice.idSupplierProductPrice, { price: newPrice } as QueryDeepPartialEntity<SupplierProductPrice>);
+        await priceRepo.update(latestPrice.idSupplierProductPrice, {
+          price: newPrice,
+        } as QueryDeepPartialEntity<SupplierProductPrice>);
       } else {
         const priceEntity = priceRepo.create({
           price: newPrice,
@@ -127,7 +140,9 @@ export class SupplierProductService extends CrudService<SupplierProduct, Supplie
         });
         await priceRepo.save(priceEntity);
       }
-      await repo.update(idSupplierProduct, { actualPrice: newPrice } as QueryDeepPartialEntity<SupplierProduct>);
+      await repo.update(idSupplierProduct, {
+        actualPrice: newPrice,
+      } as QueryDeepPartialEntity<SupplierProduct>);
     });
   }
 

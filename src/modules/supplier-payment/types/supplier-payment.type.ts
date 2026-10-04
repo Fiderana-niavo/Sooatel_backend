@@ -1,4 +1,3 @@
-
 export interface PaymentSummaryItem {
   idPayment: string;
   ref: string;
@@ -7,10 +6,9 @@ export interface PaymentSummaryItem {
   method: string;
   methodBalance?: number;
   isDeposit?: boolean;
-
 }
 
-﻿export interface AllocationDto {
+export interface AllocationDto {
   allocationType: "DELIVERY" | "SUPPLIER_CREDIT";
   idDelivery?: string;
   amount: number;

@@ -2,7 +2,10 @@ import { NextFunction, Request, Response } from "express";
 import { EmployeeRequirement } from "../../../database/Entities/EmployeeRequirement";
 import { CrudController } from "../../../shared/crud/controllers/CrudController";
 import { ApiResponse } from "../../../shared/types/ApiResponse";
-import { EmployeeRequirementDto, EmployeeRequirementBulkDto } from "../type/employee-requirement.type";
+import {
+  EmployeeRequirementDto,
+  EmployeeRequirementBulkDto,
+} from "../type/employee-requirement.type";
 import { EmployeeRequirementService } from "../services/employee-requirement.service";
 
 export class EmployeeRequirementController extends CrudController<
@@ -21,9 +24,8 @@ export class EmployeeRequirementController extends CrudController<
         limit: req.query["limit"] ? Number(req.query["limit"]) : undefined,
         idJobTitle: req.query["idJobTitle"] as string | undefined,
         idShiftType: req.query["idShiftType"] as string | undefined,
-        dayOfWeek: req.query["dayOfWeek"] !== undefined
-          ? Number(req.query["dayOfWeek"])
-          : undefined,
+        dayOfWeek:
+          req.query["dayOfWeek"] !== undefined ? Number(req.query["dayOfWeek"]) : undefined,
       });
       res.json(ApiResponse.success(result));
     } catch (err: unknown) {
@@ -84,7 +86,14 @@ export class EmployeeRequirementController extends CrudController<
         return;
       }
       const result = await (this.service as EmployeeRequirementService).bulkCreate(dtos);
-      res.status(201).json(ApiResponse.success(result, `${result.created} besoin(s) créé(s), ${result.skipped} ignoré(s)`));
+      res
+        .status(201)
+        .json(
+          ApiResponse.success(
+            result,
+            `${result.created} besoin(s) créé(s), ${result.skipped} ignoré(s)`,
+          ),
+        );
     } catch (err: unknown) {
       if (next) next(err);
     }

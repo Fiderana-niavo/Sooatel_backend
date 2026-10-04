@@ -12,7 +12,7 @@ import { groupByExpr, formatLabel, baseWhere } from "../utils/dashboard.util";
 
 export async function fetchSummary(
   valueExpr: string,
-  filters: DateFilters
+  filters: DateFilters,
 ): Promise<SummaryResult> {
   const start = new Date(filters.startDate);
   const end = new Date(filters.endDate);
@@ -31,7 +31,7 @@ export async function fetchSummary(
     GROUP BY label
     ORDER BY label ASC
     `,
-    [filters.startDate, filters.endDate]
+    [filters.startDate, filters.endDate],
   );
 
   const total = rows.reduce((acc, r) => acc + Number(r.value), 0);
@@ -45,7 +45,7 @@ export async function fetchSummary(
 
 export async function fetchTopProducts(
   valueExpr: string,
-  filters: DateFilters
+  filters: DateFilters,
 ): Promise<TopProductsResult> {
   const rows: {
     idMenu: string;
@@ -86,7 +86,7 @@ export async function fetchTopProducts(
     ORDER BY pp.value DESC
     LIMIT 5
     `,
-    [filters.startDate, filters.endDate]
+    [filters.startDate, filters.endDate],
   );
 
   const top5: TopProduct[] = rows.map((r) => ({
@@ -102,16 +102,15 @@ export async function fetchTopProducts(
 export async function fetchProductDetail(
   idMenu: string,
   valueExpr: string,
-  filters: DateFilters
+  filters: DateFilters,
 ): Promise<ProductDetailResult> {
   const start = new Date(filters.startDate);
   const end = new Date(filters.endDate);
   const granularity = getGranularity(start, end);
   const groupExpr = groupByExpr("s.sale_date", granularity);
 
-  const chartRows: { label: string; value: string }[] =
-    await AppDataSource.query(
-      `
+  const chartRows: { label: string; value: string }[] = await AppDataSource.query(
+    `
       SELECT
         ${groupExpr}              AS label,
         COALESCE(${valueExpr}, 0) AS value
@@ -123,8 +122,8 @@ export async function fetchProductDetail(
       GROUP BY label
       ORDER BY label ASC
       `,
-      [filters.startDate, filters.endDate, idMenu]
-    );
+    [filters.startDate, filters.endDate, idMenu],
+  );
 
   const [productRow]: {
     idMenu: string;
@@ -144,7 +143,7 @@ export async function fetchProductDetail(
       AND mi.id_menu = $3
     GROUP BY mi.id_menu, i.label
     `,
-    [filters.startDate, filters.endDate, idMenu]
+    [filters.startDate, filters.endDate, idMenu],
   );
 
   const [globalRow]: { globalTotal: string }[] = await AppDataSource.query(
@@ -155,13 +154,12 @@ export async function fetchProductDetail(
     INNER JOIN menu_items mi ON mi.id_menu = si.id_menu
     WHERE ${baseWhere}
     `,
-    [filters.startDate, filters.endDate]
+    [filters.startDate, filters.endDate],
   );
 
   const value = productRow ? Number(productRow.value) : 0;
   const globalTotal = globalRow ? Number(globalRow.globalTotal) : 0;
-  const percentage =
-    globalTotal > 0 ? Math.round((value / globalTotal) * 10000) / 100 : 0;
+  const percentage = globalTotal > 0 ? Math.round((value / globalTotal) * 10000) / 100 : 0;
 
   const chartData: ChartPoint[] = chartRows.map((r) => ({
     label: formatLabel(r.label, granularity),

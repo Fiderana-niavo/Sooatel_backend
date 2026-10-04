@@ -22,7 +22,7 @@ export class Invoice extends BaseEntity {
     unique: true,
     name: "invoice_number_system",
     insert: false,
-    update: false
+    update: false,
   })
   invoiceNumberSystem: string;
 

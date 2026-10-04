@@ -6,7 +6,6 @@ import { BadRequestError } from "../../../shared/errors/AppError";
 const service = new SupplierPaymentService();
 
 export class SupplierPaymentController {
-
   // POST /supplier-payments  — créer un paiement avec allocations
   createPayment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -15,7 +14,9 @@ export class SupplierPaymentController {
       const { idSupplier, ...dto } = req.body;
       const result = await service.createPayment(idSupplier, idEmployee, dto);
       res.status(201).json(ApiResponse.success(result));
-    } catch (err) { next(err); }
+    } catch (err) {
+      next(err);
+    }
   };
 
   // GET /supplier-payments/delivery/:id/summary
@@ -23,15 +24,23 @@ export class SupplierPaymentController {
     try {
       const result = await service.getDeliveryPaymentSummary(req.params.id as string);
       res.json(ApiResponse.success(result));
-    } catch (err) { next(err); }
+    } catch (err) {
+      next(err);
+    }
   };
 
   // GET /supplier-payments/supplier/:id/destinations
-  getAvailableDestinations = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getAvailableDestinations = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       const result = await service.getAvailableDestinations(req.params.id as string);
       res.json(ApiResponse.success(result));
-    } catch (err) { next(err); }
+    } catch (err) {
+      next(err);
+    }
   };
 
   // GET /supplier-payments/supplier/:id/balance
@@ -39,7 +48,9 @@ export class SupplierPaymentController {
     try {
       const row = await service.getSupplierBalanceRow(req.params.id as string);
       res.json(ApiResponse.success(row));
-    } catch (err) { next(err); }
+    } catch (err) {
+      next(err);
+    }
   };
 
   // POST /supplier-payments/supplier/:id/apply-credit
@@ -47,7 +58,9 @@ export class SupplierPaymentController {
     try {
       await service.applySupplierCredit(req.params.id as string, req.body);
       res.json(ApiResponse.success(null));
-    } catch (err) { next(err); }
+    } catch (err) {
+      next(err);
+    }
   };
 
   getPaymentById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -77,7 +90,9 @@ export class SupplierPaymentController {
     try {
       const result = await service.getPurchasePaymentSummary(req.params.id as string);
       res.json(ApiResponse.success(result));
-    } catch (err) { next(err); }
+    } catch (err) {
+      next(err);
+    }
   };
 }
 

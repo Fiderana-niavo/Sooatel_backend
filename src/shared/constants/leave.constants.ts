@@ -15,12 +15,13 @@ export const LEAVE_TRANSACTION_TYPE = {
   SALARY_DEDUCTION: "DEDUCTION_SALAIRE",
 } as const;
 
-export type LeaveTransactionType = (typeof LEAVE_TRANSACTION_TYPE)[keyof typeof LEAVE_TRANSACTION_TYPE];
+export type LeaveTransactionType =
+  (typeof LEAVE_TRANSACTION_TYPE)[keyof typeof LEAVE_TRANSACTION_TYPE];
 
 // How a leave type interacts with the annual leave balance
 export const DEDUCTION_MODE = {
-  ALWAYS: "ALWAYS",     // Always deducted from the annual balance (negative balance allowed)
-  NEVER: "NEVER",       // Never deducted, uses its own independent balance
+  ALWAYS: "ALWAYS", // Always deducted from the annual balance (negative balance allowed)
+  NEVER: "NEVER", // Never deducted, uses its own independent balance
   OPTIONAL: "OPTIONAL", // User decides at request time (no cap allowed)
 } as const;
 
@@ -28,9 +29,8 @@ export type DeductionMode = (typeof DEDUCTION_MODE)[keyof typeof DEDUCTION_MODE]
 
 // Period over which the cap is evaluated
 export const CAP_PERIOD = {
-  ANNUAL: "ANNUAL",       // Cap resets each calendar year
-  LIFETIME: "LIFETIME",   // One-time cap over the entire contract
+  ANNUAL: "ANNUAL", // Cap resets each calendar year
+  LIFETIME: "LIFETIME", // One-time cap over the entire contract
 } as const;
 
 export type CapPeriod = (typeof CAP_PERIOD)[keyof typeof CAP_PERIOD];
-

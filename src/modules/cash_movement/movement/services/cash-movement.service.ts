@@ -9,7 +9,11 @@ import { CashJournalService } from "../../cash_journal/services/cash-journal.ser
 import { cashMovementDto, cashMovementSearchOptions } from "../type/cash-movement.type";
 import { CASH_MOVEMENT_CONSTANTS } from "../constants/cash-movement.constants";
 
-export class CashMovementService extends CrudService<CashMovement, cashMovementDto, cashMovementDto> {
+export class CashMovementService extends CrudService<
+  CashMovement,
+  cashMovementDto,
+  cashMovementDto
+> {
   constructor(repository: Repository<CashMovement> = AppDataSource.getRepository(CashMovement)) {
     super(repository);
   }
@@ -34,7 +38,9 @@ export class CashMovementService extends CrudService<CashMovement, cashMovementD
       .take(limitNum);
 
     if (search) {
-      qb.andWhere("entity.invoiceReference ILIKE :s OR entity.reason ILIKE :s", { s: `%${search}%` });
+      qb.andWhere("entity.invoiceReference ILIKE :s OR entity.reason ILIKE :s", {
+        s: `%${search}%`,
+      });
     }
 
     const [records, total] = await qb.getManyAndCount();
@@ -44,18 +50,25 @@ export class CashMovementService extends CrudService<CashMovement, cashMovementD
   async findOne(id: string): Promise<CashMovement | null> {
     return this.repository.findOne({
       where: { idCashMovement: id } as FindOptionsWhere<CashMovement>,
-      relations: { cashMovementCategory: true, processedBy: true, journal: true, paymentMethod: true }
+      relations: {
+        cashMovementCategory: true,
+        processedBy: true,
+        journal: true,
+        paymentMethod: true,
+      },
     });
   }
 
   async create(dto: cashMovementDto): Promise<CashMovement> {
     if (dto.direction < 0) {
       const pmb = await this.repository.manager.findOne(PaymentMethodBalance, {
-        where: { idJournal: dto.idJournal, idPaymentMethod: dto.idPaymentMethod }
+        where: { idJournal: dto.idJournal, idPaymentMethod: dto.idPaymentMethod },
       });
       const currentBalance = pmb ? Number(pmb.amount) : 0;
       if (currentBalance < dto.amount) {
-        throw new Error(`Fonds insuffisants pour ce mode de paiement. Solde disponible : ${currentBalance} Ar.`);
+        throw new Error(
+          `Fonds insuffisants pour ce mode de paiement. Solde disponible : ${currentBalance} Ar.`,
+        );
       }
     }
 
@@ -83,22 +96,29 @@ export class CashMovementService extends CrudService<CashMovement, cashMovementD
     if (!existing) throw new Error("Mouvement de caisse introuvable.");
 
     const lowerReason = existing.reason?.toLowerCase() || "";
-    if (CASH_MOVEMENT_CONSTANTS.PROTECTED_REASONS.some(r => lowerReason.includes(r))) {
-      throw new Error("Ce type de mouvement (Journalisation, Remboursement, Ajustement) ne peut pas être modifié.");
+    if (CASH_MOVEMENT_CONSTANTS.PROTECTED_REASONS.some((r) => lowerReason.includes(r))) {
+      throw new Error(
+        "Ce type de mouvement (Journalisation, Remboursement, Ajustement) ne peut pas être modifié.",
+      );
     }
 
     if (dto.direction < 0) {
       // Check if the balance is sufficient for the updated amount
       const pmb = await this.repository.manager.findOne(PaymentMethodBalance, {
-        where: { idJournal: dto.idJournal, idPaymentMethod: dto.idPaymentMethod }
+        where: { idJournal: dto.idJournal, idPaymentMethod: dto.idPaymentMethod },
       });
       const currentBalance = pmb ? Number(pmb.amount) : 0;
-      
+
       // If payment method hasn't changed, we can add back the old amount before checking
-      const oldAmount = (existing.idPaymentMethod === dto.idPaymentMethod && existing.direction < 0) ? Number(existing.amount) : 0;
-      
+      const oldAmount =
+        existing.idPaymentMethod === dto.idPaymentMethod && existing.direction < 0
+          ? Number(existing.amount)
+          : 0;
+
       if (currentBalance + oldAmount < dto.amount) {
-        throw new Error(`Fonds insuffisants. Vous ne pouvez pas sortir plus que le solde disponible (${currentBalance + oldAmount} Ar).`);
+        throw new Error(
+          `Fonds insuffisants. Vous ne pouvez pas sortir plus que le solde disponible (${currentBalance + oldAmount} Ar).`,
+        );
       }
     }
 
@@ -115,7 +135,7 @@ export class CashMovementService extends CrudService<CashMovement, cashMovementD
       idCashMovementCategory: dto.idCashMovementCategory,
       idPaymentMethod: dto.idPaymentMethod,
     } as QueryDeepPartialEntity<CashMovement>);
-    
+
     const journalService = new CashJournalService();
     await journalService.recalculateBalances(dto.idJournal);
   }
@@ -125,12 +145,14 @@ export class CashMovementService extends CrudService<CashMovement, cashMovementD
     if (!existing) throw new Error("Mouvement de caisse introuvable.");
 
     const lowerReason = existing.reason?.toLowerCase() || "";
-    if (CASH_MOVEMENT_CONSTANTS.PROTECTED_REASONS.some(r => lowerReason.includes(r))) {
-      throw new Error("Ce type de mouvement (Journalisation, Remboursement, Ajustement) ne peut pas être supprimé.");
+    if (CASH_MOVEMENT_CONSTANTS.PROTECTED_REASONS.some((r) => lowerReason.includes(r))) {
+      throw new Error(
+        "Ce type de mouvement (Journalisation, Remboursement, Ajustement) ne peut pas être supprimé.",
+      );
     }
 
     await this.repository.update(id, {
-      status: -3
+      status: -3,
     } as QueryDeepPartialEntity<CashMovement>);
 
     const journalService = new CashJournalService();

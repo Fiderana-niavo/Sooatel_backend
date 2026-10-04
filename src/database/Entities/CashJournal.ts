@@ -1,4 +1,12 @@
-import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import {
+  BaseEntity,
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from "typeorm";
 import { Employee } from "./Employee";
 import { PaymentMethodBalance } from "./PaymentMethodBalance";
 
@@ -7,7 +15,7 @@ export class CashJournal extends BaseEntity {
   @PrimaryGeneratedColumn("uuid", { name: "id_journal" })
   idJournal: string;
 
-  @Column({ type: "varchar", length: 20, unique: true, name: "ref" , insert: false, update: false })
+  @Column({ type: "varchar", length: 20, unique: true, name: "ref", insert: false, update: false })
   ref: string;
 
   @Column({ type: "timestamptz", name: "journal_opening" })
@@ -38,6 +46,6 @@ export class CashJournal extends BaseEntity {
   @JoinColumn({ name: "id_cashier" })
   cashier: Employee;
 
-  @OneToMany(() => PaymentMethodBalance, balance => balance.journal)
+  @OneToMany(() => PaymentMethodBalance, (balance) => balance.journal)
   paymentMethodBalances: PaymentMethodBalance[];
 }

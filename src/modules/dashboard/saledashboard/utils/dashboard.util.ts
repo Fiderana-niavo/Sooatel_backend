@@ -4,10 +4,8 @@ export const CA_EXPR = "SUM(si.total_amount)";
 export const BENEFIT_EXPR = "SUM(si.total_amount - (si.unit_cost * si.quantity))";
 
 export const groupByExpr = (col: string, granularity: Granularity): string => {
-  if (granularity === "day")
-    return `TO_CHAR(${col}, 'YYYY-MM-DD')`;
-  if (granularity === "week")
-    return `TO_CHAR(DATE_TRUNC('week', ${col}::date), 'YYYY-MM-DD')`;
+  if (granularity === "day") return `TO_CHAR(${col}, 'YYYY-MM-DD')`;
+  if (granularity === "week") return `TO_CHAR(DATE_TRUNC('week', ${col}::date), 'YYYY-MM-DD')`;
   return `TO_CHAR(DATE_TRUNC('month', ${col}::date), 'YYYY-MM')`;
 };
 

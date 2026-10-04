@@ -71,14 +71,15 @@ export class TeamService extends CrudService<Team, TeamDto, TeamDto> {
   // ─── Team Members Management ──────────────────────────────────────────────
 
   async getMembers(idTeam: string) {
-    const qb = AppDataSource.getRepository(EmployeeTeam).createQueryBuilder("et")
+    const qb = AppDataSource.getRepository(EmployeeTeam)
+      .createQueryBuilder("et")
       .innerJoinAndSelect("et.employee", "emp")
       .leftJoinAndSelect("emp.employeeJobs", "ej")
       .leftJoinAndSelect("ej.jobTitle", "jt")
       .where("et.id_team = :idTeam", { idTeam });
-      
+
     const employeeTeams = await qb.getMany();
-    
+
     // Map to a cleaner structure
     return employeeTeams.map((et: any) => {
       const activeJob = et.employee.employeeJobs?.[0]; // Assuming ordered or just take first
@@ -95,7 +96,8 @@ export class TeamService extends CrudService<Team, TeamDto, TeamDto> {
   async getAvailableEmployees() {
     // Get all active employees who are NOT in ANY team
     // activeStatus = 0 or null
-    const qb = AppDataSource.getRepository(Employee).createQueryBuilder("emp")
+    const qb = AppDataSource.getRepository(Employee)
+      .createQueryBuilder("emp")
       .leftJoin("emp.employeeTeams", "et")
       .leftJoinAndSelect("emp.employeeJobs", "ej")
       .leftJoinAndSelect("ej.jobTitle", "jt")
@@ -118,15 +120,15 @@ export class TeamService extends CrudService<Team, TeamDto, TeamDto> {
 
   async addMembers(idTeam: string, employeeIds: string[]) {
     const repo = AppDataSource.getRepository("employee_team");
-    
+
     // Check which ones are already in the team to prevent duplicates
     const existing = await repo.find({ where: { idTeam } });
     const existingIds = existing.map((e: any) => e.idEmployee);
-    
+
     const newMembers = employeeIds
-      .filter(id => !existingIds.includes(id))
-      .map(id => repo.create({ idTeam, idEmployee: id }));
-      
+      .filter((id) => !existingIds.includes(id))
+      .map((id) => repo.create({ idTeam, idEmployee: id }));
+
     if (newMembers.length > 0) {
       await repo.save(newMembers);
     }
@@ -137,4 +139,3 @@ export class TeamService extends CrudService<Team, TeamDto, TeamDto> {
     await repo.delete({ idTeam, idEmployee });
   }
 }
-

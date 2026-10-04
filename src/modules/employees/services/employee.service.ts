@@ -50,7 +50,8 @@ export class EmployeeService extends CrudService<
 
     const repo = AppDataSource.getRepository(Employee);
 
-    const qb = repo.createQueryBuilder("employee")
+    const qb = repo
+      .createQueryBuilder("employee")
       .leftJoinAndSelect("employee.employeeJobs", "ej", "ej.end_date IS NULL")
       .leftJoinAndSelect("ej.jobTitle", "jt")
       .leftJoinAndSelect("employee.internships", "intern")
@@ -90,7 +91,7 @@ export class EmployeeService extends CrudService<
 
     const [employees, total] = await qb.getManyAndCount();
 
-    const records: EmployeeListItem[] = employees.map(emp => ({
+    const records: EmployeeListItem[] = employees.map((emp) => ({
       idEmployee: emp.idEmployee,
       employeeCode: emp.employeeCode,
       name: emp.name,
@@ -167,7 +168,9 @@ export class EmployeeService extends CrudService<
     let userAccount: any = null;
     const user = await AppDataSource.getRepository(User).findOneBy({ idEmployee: id });
     if (user) {
-      const userRoles = await AppDataSource.getRepository(UserRole).find({ where: { idUser: user.idUser } });
+      const userRoles = await AppDataSource.getRepository(UserRole).find({
+        where: { idUser: user.idUser },
+      });
       const roles = [];
       for (const ur of userRoles) {
         const roleObj = await AppDataSource.getRepository(Role).findOneBy({ idRole: ur.idRole });
@@ -179,15 +182,17 @@ export class EmployeeService extends CrudService<
           });
         }
       }
-      const userPerms = await AppDataSource.getRepository(UserPermission).find({ where: { idUser: user.idUser } });
+      const userPerms = await AppDataSource.getRepository(UserPermission).find({
+        where: { idUser: user.idUser },
+      });
       userAccount = {
         idUser: user.idUser,
         username: user.username,
         roles: roles,
-        permissionsOverrides: userPerms.map(up => ({
+        permissionsOverrides: userPerms.map((up) => ({
           idPermission: up.idPermission,
-          overrideType: up.isAllowed ? "grant" : "deny"
-        }))
+          overrideType: up.isAllowed ? "grant" : "deny",
+        })),
       };
     }
 
@@ -219,15 +224,29 @@ export class EmployeeService extends CrudService<
     const schema = z.object({
       name: z.string().min(1, "Le nom est requis."),
       lastname: z.string().min(1, "Le prénom est requis."),
-      birthdate: z.string().optional().nullable().refine((val: string | null | undefined) => {
-        if (!val) return true;
-        const birthdate = new Date(val);
-        const ageDifMs = Date.now() - birthdate.getTime();
-        const ageDate = new Date(ageDifMs);
-        return Math.abs(ageDate.getUTCFullYear() - 1970) >= 18;
-      }, "L'employé doit avoir au moins 18 ans."),
-      emailContact: z.string().email("Format d'email invalide.").or(z.literal("")).optional().nullable(),
-      phoneNumber: z.string().min(5, "Le numéro de téléphone est trop court.").or(z.literal("")).optional().nullable(),
+      birthdate: z
+        .string()
+        .optional()
+        .nullable()
+        .refine((val: string | null | undefined) => {
+          if (!val) return true;
+          const birthdate = new Date(val);
+          const ageDifMs = Date.now() - birthdate.getTime();
+          const ageDate = new Date(ageDifMs);
+          return Math.abs(ageDate.getUTCFullYear() - 1970) >= 18;
+        }, "L'employé doit avoir au moins 18 ans."),
+      emailContact: z
+        .string()
+        .email("Format d'email invalide.")
+        .or(z.literal(""))
+        .optional()
+        .nullable(),
+      phoneNumber: z
+        .string()
+        .min(5, "Le numéro de téléphone est trop court.")
+        .or(z.literal(""))
+        .optional()
+        .nullable(),
     });
 
     const parsed = schema.safeParse({
@@ -235,7 +254,7 @@ export class EmployeeService extends CrudService<
       lastname: dto.lastname,
       birthdate: dto.birthdate,
       emailContact: dto.emailContact,
-      phoneNumber: dto.phoneNumber
+      phoneNumber: dto.phoneNumber,
     });
 
     if (!parsed.success) {
@@ -243,15 +262,22 @@ export class EmployeeService extends CrudService<
     }
 
     if (dto.phoneNumber) {
-      const existingPhone = await AppDataSource.getRepository(Employee).findOneBy({ phoneNumber: dto.phoneNumber });
-      if (existingPhone) erreurs.push("Le numéro de téléphone attribué à l'utilisateur est déjà pris.");
+      const existingPhone = await AppDataSource.getRepository(Employee).findOneBy({
+        phoneNumber: dto.phoneNumber,
+      });
+      if (existingPhone)
+        erreurs.push("Le numéro de téléphone attribué à l'utilisateur est déjà pris.");
     }
     if (dto.emailContact) {
-      const existingEmail = await AppDataSource.getRepository(Employee).findOneBy({ emailContact: dto.emailContact });
+      const existingEmail = await AppDataSource.getRepository(Employee).findOneBy({
+        emailContact: dto.emailContact,
+      });
       if (existingEmail) erreurs.push("Cette adresse e-mail est déjà prise.");
     }
     if (dto.userAccount?.username) {
-      const existingUser = await AppDataSource.getRepository(User).findOneBy({ username: dto.userAccount.username });
+      const existingUser = await AppDataSource.getRepository(User).findOneBy({
+        username: dto.userAccount.username,
+      });
       if (existingUser) erreurs.push("Ce nom d'utilisateur est déjà pris.");
     }
 
@@ -349,15 +375,29 @@ export class EmployeeService extends CrudService<
     const schema = z.object({
       name: z.string().min(1, "Le nom est requis."),
       lastname: z.string().min(1, "Le prénom est requis."),
-      birthdate: z.string().optional().nullable().refine((val) => {
-        if (!val) return true;
-        const birthdate = new Date(val);
-        const ageDifMs = Date.now() - birthdate.getTime();
-        const ageDate = new Date(ageDifMs);
-        return Math.abs(ageDate.getUTCFullYear() - 1970) >= 18;
-      }, "L'employé doit avoir au moins 18 ans."),
-      emailContact: z.string().email("Format d'email invalide.").or(z.literal("")).optional().nullable(),
-      phoneNumber: z.string().min(5, "Le numéro de téléphone est trop court.").or(z.literal("")).optional().nullable(),
+      birthdate: z
+        .string()
+        .optional()
+        .nullable()
+        .refine((val) => {
+          if (!val) return true;
+          const birthdate = new Date(val);
+          const ageDifMs = Date.now() - birthdate.getTime();
+          const ageDate = new Date(ageDifMs);
+          return Math.abs(ageDate.getUTCFullYear() - 1970) >= 18;
+        }, "L'employé doit avoir au moins 18 ans."),
+      emailContact: z
+        .string()
+        .email("Format d'email invalide.")
+        .or(z.literal(""))
+        .optional()
+        .nullable(),
+      phoneNumber: z
+        .string()
+        .min(5, "Le numéro de téléphone est trop court.")
+        .or(z.literal(""))
+        .optional()
+        .nullable(),
     });
 
     const parsed = schema.safeParse({
@@ -365,23 +405,33 @@ export class EmployeeService extends CrudService<
       lastname: dto.lastname,
       birthdate: dto.birthdate,
       emailContact: dto.emailContact,
-      phoneNumber: dto.phoneNumber
+      phoneNumber: dto.phoneNumber,
     });
 
     if (!parsed.success) {
-      parsed.error.issues.forEach(issue => erreurs.push(issue.message));
+      parsed.error.issues.forEach((issue) => erreurs.push(issue.message));
     }
 
     if (dto.phoneNumber) {
-      const existingPhone = await AppDataSource.getRepository(Employee).findOneBy({ phoneNumber: dto.phoneNumber, idEmployee: Not(id) });
-      if (existingPhone) erreurs.push("Le numéro de téléphone attribué à l'utilisateur est déjà pris.");
+      const existingPhone = await AppDataSource.getRepository(Employee).findOneBy({
+        phoneNumber: dto.phoneNumber,
+        idEmployee: Not(id),
+      });
+      if (existingPhone)
+        erreurs.push("Le numéro de téléphone attribué à l'utilisateur est déjà pris.");
     }
     if (dto.emailContact) {
-      const existingEmail = await AppDataSource.getRepository(Employee).findOneBy({ emailContact: dto.emailContact, idEmployee: Not(id) });
+      const existingEmail = await AppDataSource.getRepository(Employee).findOneBy({
+        emailContact: dto.emailContact,
+        idEmployee: Not(id),
+      });
       if (existingEmail) erreurs.push("Cette adresse e-mail est déjà prise.");
     }
     if (dto.userAccount?.username) {
-      const existingUser = await AppDataSource.getRepository(User).findOneBy({ username: dto.userAccount.username, idEmployee: Not(id) });
+      const existingUser = await AppDataSource.getRepository(User).findOneBy({
+        username: dto.userAccount.username,
+        idEmployee: Not(id),
+      });
       if (existingUser) erreurs.push("Ce nom d'utilisateur est déjà pris.");
     }
 
@@ -404,7 +454,7 @@ export class EmployeeService extends CrudService<
       // 2. Synchronize job
       const existingJob = await manager.findOne(EmployeeJob, {
         where: { idEmployee: id, endDate: IsNull() },
-        order: { assignmentDate: "DESC" }
+        order: { assignmentDate: "DESC" },
       });
       if (dto.job) {
         if (existingJob) {
@@ -539,10 +589,7 @@ export class EmployeeService extends CrudService<
       await manager.delete(EmployeeTeam, { idEmployee });
 
       if (idTeam) {
-        await manager.save(
-          EmployeeTeam,
-          manager.create(EmployeeTeam, { idEmployee, idTeam }),
-        );
+        await manager.save(EmployeeTeam, manager.create(EmployeeTeam, { idEmployee, idTeam }));
       }
     });
   }
@@ -554,7 +601,9 @@ export class EmployeeService extends CrudService<
         order: { assignmentDate: "DESC" },
       });
       if (!activeJob) {
-        throw new AppError("Cet employé n'a aucun emploi actif pour enregistrer des disponibilités.");
+        throw new AppError(
+          "Cet employé n'a aucun emploi actif pour enregistrer des disponibilités.",
+        );
       }
 
       await manager.delete(EmployeeAvailability, { idEmpJob: activeJob.idEmpJob });
@@ -562,7 +611,9 @@ export class EmployeeService extends CrudService<
       const seenDays = new Set<number>();
       for (const dto of dtos) {
         if (seenDays.has(dto.dayOfWeek)) {
-          throw new AppError("Conflit détecté : Il n'est pas possible de définir plusieurs disponibilités pour un même jour.");
+          throw new AppError(
+            "Conflit détecté : Il n'est pas possible de définir plusieurs disponibilités pour un même jour.",
+          );
         }
         seenDays.add(dto.dayOfWeek);
 
@@ -578,8 +629,6 @@ export class EmployeeService extends CrudService<
     });
   }
 
-
-
   async changeJob(id: string, dto: ChangeJobDto): Promise<void> {
     await AppDataSource.transaction(async (manager) => {
       // 1. Find the latest job of the employee
@@ -594,14 +643,18 @@ export class EmployeeService extends CrudService<
         const oldAssignment = new Date(activeJob.assignmentDate);
 
         if (newAssignment < oldAssignment) {
-          throw new AppError("La date de début du nouveau poste doit être ultérieure à la date de début du poste précédent.");
+          throw new AppError(
+            "La date de début du nouveau poste doit être ultérieure à la date de début du poste précédent.",
+          );
         }
 
         let closingDate: Date;
         if (dto.lastJobEndDate) {
           closingDate = new Date(dto.lastJobEndDate);
           if (closingDate < oldAssignment) {
-            throw new AppError("La date de fin de l'ancien poste ne peut pas être antérieure à sa date de début.");
+            throw new AppError(
+              "La date de fin de l'ancien poste ne peut pas être antérieure à sa date de début.",
+            );
           }
         } else {
           closingDate = new Date(newAssignment);
@@ -669,11 +722,15 @@ export class EmployeeService extends CrudService<
       const today = new Date();
 
       if (closingDate < oldAssignment) {
-        throw new AppError("La date de fin de contrat ne peut pas être antérieure à sa date de début.");
+        throw new AppError(
+          "La date de fin de contrat ne peut pas être antérieure à sa date de début.",
+        );
       }
 
       if (closingDate > today) {
-        throw new AppError("La date de fin de contrat ne peut pas être ultérieure à la date d'aujourd'hui.");
+        throw new AppError(
+          "La date de fin de contrat ne peut pas être ultérieure à la date d'aujourd'hui.",
+        );
       }
 
       await manager.update(EmployeeJob, activeJob.idEmpJob, { endDate: closingDate });
@@ -702,27 +759,30 @@ export class EmployeeService extends CrudService<
 
     const employees = await qb.getMany();
     // Use a Set to ensure unique employees (if they have multiple roles with same permission)
-    const uniqueEmployees = new Map<string, typeof employees[0]>();
+    const uniqueEmployees = new Map<string, (typeof employees)[0]>();
     for (const emp of employees) {
       if (!uniqueEmployees.has(emp.idEmployee)) {
         uniqueEmployees.set(emp.idEmployee, emp);
       }
     }
 
-    return Array.from(uniqueEmployees.values()).map(emp => ({
+    return Array.from(uniqueEmployees.values()).map((emp) => ({
       value: emp.idEmployee,
-      label: `${emp.name} ${emp.lastname || ""}`.trim()
+      label: `${emp.name} ${emp.lastname || ""}`.trim(),
     }));
   }
 
-  async getRecentDeactivations(options: { days?: number, page?: number, limit?: number } = {}): Promise<Paginated<{ idEmployee: string; fullName: string; endDate: string }>> {
-    const qb = this.repository.createQueryBuilder("employee")
+  async getRecentDeactivations(
+    options: { days?: number; page?: number; limit?: number } = {},
+  ): Promise<Paginated<{ idEmployee: string; fullName: string; endDate: string }>> {
+    const qb = this.repository
+      .createQueryBuilder("employee")
       .innerJoin("employee.employeeJobs", "ej")
       .select([
         'employee.id_employee AS "idEmployee"',
         'employee.name AS "name"',
         'employee.lastname AS "lastname"',
-        'ej.end_date AS "endDate"'
+        'ej.end_date AS "endDate"',
       ])
       .where("employee.active_status = -1");
 
@@ -746,7 +806,7 @@ export class EmployeeService extends CrudService<
         results.push({
           idEmployee: r.idEmployee,
           fullName: `${r.name || ""} ${r.lastname || ""}`.trim(),
-          endDate: r.endDate ? new Date(r.endDate).toISOString().substring(0, 10) : ""
+          endDate: r.endDate ? new Date(r.endDate).toISOString().substring(0, 10) : "",
         });
       }
     }
@@ -754,7 +814,7 @@ export class EmployeeService extends CrudService<
     const total = results.length;
     const pageNum = options.page ?? 1;
     const limitNum = options.limit ?? (results.length || 10);
-    
+
     // In-memory pagination since we did in-memory deduplication
     const startIndex = (pageNum - 1) * limitNum;
     const paginatedResults = results.slice(startIndex, startIndex + limitNum);
@@ -763,11 +823,10 @@ export class EmployeeService extends CrudService<
       paginatedResults,
       total,
       pageNum,
-      limitNum
+      limitNum,
     );
   }
 }
-
 
 async function hashPassword(password: string): Promise<string> {
   return await bcrypt.hash(password, 12);

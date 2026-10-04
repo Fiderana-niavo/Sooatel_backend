@@ -33,7 +33,6 @@ export interface GeneratedToken {
   expiresAt: Date;
 }
 
-
 export interface PasswordResetRequestDto {
   username: string;
 }

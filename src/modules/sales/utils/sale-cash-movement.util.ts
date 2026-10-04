@@ -6,7 +6,11 @@ import { User } from "../../../database/Entities/User";
 import { PaymentMethodBalance } from "../../../database/Entities/PaymentMethodBalance";
 import { BadRequestError } from "../../../shared/errors/AppError";
 
-export async function getOrCreateCategory(queryRunner: QueryRunner, label: string, allowedDirection: number): Promise<CashMovementCategory> {
+export async function getOrCreateCategory(
+  queryRunner: QueryRunner,
+  label: string,
+  allowedDirection: number,
+): Promise<CashMovementCategory> {
   let cat = await queryRunner.manager.findOne(CashMovementCategory, { where: { label } });
   if (!cat) {
     cat = new CashMovementCategory();
@@ -24,7 +28,7 @@ export async function getOpenJournal(queryRunner: QueryRunner): Promise<CashJour
 export async function resolveEmployeeId(queryRunner: QueryRunner, userId: string): Promise<string> {
   const user = await queryRunner.manager.findOne(User, {
     where: { idUser: userId },
-    select: { idEmployee: true }
+    select: { idEmployee: true },
   });
   if (!user) throw new Error("Utilisateur introuvable pour la création du mouvement de caisse.");
   return user.idEmployee;
@@ -38,7 +42,7 @@ export async function createCashOutflow(
   idEmployee: string,
   categoryId: string,
   journalId: string,
-  paymentMethodId: string
+  paymentMethodId: string,
 ): Promise<CashMovement> {
   let pmb = await queryRunner.manager.findOne(PaymentMethodBalance, {
     where: { idJournal: journalId, idPaymentMethod: paymentMethodId },
@@ -54,7 +58,7 @@ export async function createCashOutflow(
 
   if (Number(pmb.amount) < amount) {
     throw new BadRequestError(
-      `Solde en caisse insuffisant pour effectuer ce remboursement/ajustement. Disponible : ${Number(pmb.amount).toFixed(2)}, Requis : ${amount.toFixed(2)}.`
+      `Solde en caisse insuffisant pour effectuer ce remboursement/ajustement. Disponible : ${Number(pmb.amount).toFixed(2)}, Requis : ${amount.toFixed(2)}.`,
     );
   }
 
@@ -83,7 +87,7 @@ export async function createCashInflow(
   idEmployee: string,
   categoryId: string,
   journalId: string,
-  paymentMethodId: string
+  paymentMethodId: string,
 ): Promise<CashMovement> {
   let pmb = await queryRunner.manager.findOne(PaymentMethodBalance, {
     where: { idJournal: journalId, idPaymentMethod: paymentMethodId },

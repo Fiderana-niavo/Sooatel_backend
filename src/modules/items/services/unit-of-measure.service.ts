@@ -6,7 +6,11 @@ import { CrudService } from "../../../shared/crud/services/CrudService";
 import { Paginated } from "../../../shared/types/Paginated";
 import { UnitOfMeasureDto, UnitOfMeasureSearchOptions } from "../type/unit-of-measure.type";
 
-export class UnitOfMeasureService extends CrudService<UnitOfMeasure, UnitOfMeasureDto, UnitOfMeasureDto> {
+export class UnitOfMeasureService extends CrudService<
+  UnitOfMeasure,
+  UnitOfMeasureDto,
+  UnitOfMeasureDto
+> {
   constructor(repository: Repository<UnitOfMeasure> = AppDataSource.getRepository(UnitOfMeasure)) {
     super(repository);
   }

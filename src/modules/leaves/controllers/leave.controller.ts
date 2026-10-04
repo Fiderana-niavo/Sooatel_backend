@@ -18,7 +18,8 @@ export class LeaveController {
     try {
       const result = await this.service.createLeave(req.body);
       // May return OverflowCheckResponse (202) or LeaveResponse (201)
-      const status = result && typeof result === "object" && "needsOverflowResolution" in result ? 202 : 201;
+      const status =
+        result && typeof result === "object" && "needsOverflowResolution" in result ? 202 : 201;
       res.status(status).json(ApiResponse.success(result));
     } catch (error) {
       next(error);

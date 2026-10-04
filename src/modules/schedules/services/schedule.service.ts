@@ -173,15 +173,20 @@ export class ScheduleService {
 
     // Check if there are schedules before this date for the given shift
     const lastSchedule = await AppDataSource.getRepository(Schedule).findOne({
-      where: { 
+      where: {
         idShiftType: dto.shiftIds[0],
-        scheduleDate: LessThan(new Date(dto.startDate + "T00:00:00Z")) as unknown as Date
+        scheduleDate: LessThan(new Date(dto.startDate + "T00:00:00Z")) as unknown as Date,
       },
       order: { scheduleDate: "DESC" },
-      relations: { employee: { employeeTeams: true } }
+      relations: { employee: { employeeTeams: true } },
     });
 
-    if (lastSchedule && lastSchedule.employee && lastSchedule.employee.employeeTeams && lastSchedule.employee.employeeTeams.length > 0) {
+    if (
+      lastSchedule &&
+      lastSchedule.employee &&
+      lastSchedule.employee.employeeTeams &&
+      lastSchedule.employee.employeeTeams.length > 0
+    ) {
       const lastTeamId = lastSchedule.employee.employeeTeams[0]?.idTeam;
       if (lastTeamId) {
         const idx = dto.teamIds.indexOf(lastTeamId);
@@ -204,8 +209,6 @@ export class ScheduleService {
       });
 
       const members = await this.fetchTeamMembers(idTeam);
-
-
 
       // Compute which days fall into this rotation slot
       const slotStartMs = slot * rotationDurationMs;
@@ -237,7 +240,6 @@ export class ScheduleService {
     }
 
     return rows;
-
   }
 
   // ─── Get available employees ──────────────────────────────────────────────
@@ -281,10 +283,7 @@ export class ScheduleService {
 
   // ─── Private helpers ──────────────────────────────────────────────────────
 
-  private async buildOnLeaveMap(
-    start: Date,
-    end: Date,
-  ): Promise<Map<string, Set<string>>> {
+  private async buildOnLeaveMap(start: Date, end: Date): Promise<Map<string, Set<string>>> {
     const approvedLeaves = await AppDataSource.getRepository(Leave).find({
       where: { status: 0 }, // 0 = APPROVED
     });
@@ -311,8 +310,15 @@ export class ScheduleService {
     return map;
   }
 
-  private async fetchTeamMembers(idTeam: string): Promise<
-    Array<{ idEmployee: string; employeeName: string | null; idJobTitle: string | null; jobTitle: string | null }>
+  private async fetchTeamMembers(
+    idTeam: string,
+  ): Promise<
+    Array<{
+      idEmployee: string;
+      employeeName: string | null;
+      idJobTitle: string | null;
+      jobTitle: string | null;
+    }>
   > {
     const memberLinks = await AppDataSource.getRepository(EmployeeTeam).find({
       where: { idTeam },

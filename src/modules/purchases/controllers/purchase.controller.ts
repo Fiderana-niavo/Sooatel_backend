@@ -3,7 +3,7 @@ import { PurchaseService } from "../services/purchase.service";
 import { ApiResponse } from "../../../shared/types/ApiResponse";
 
 export class PurchaseController {
-  constructor(private service: PurchaseService) { }
+  constructor(private service: PurchaseService) {}
 
   create = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -56,7 +56,9 @@ export class PurchaseController {
         return;
       }
       const forceAction = req.body.forceAction;
-      const result = await this.service.cancelPurchase(req.params.id as string, idOperator, { forceAction });
+      const result = await this.service.cancelPurchase(req.params.id as string, idOperator, {
+        forceAction,
+      });
       res.status(200).json(ApiResponse.success(result));
     } catch (err: unknown) {
       next(err);

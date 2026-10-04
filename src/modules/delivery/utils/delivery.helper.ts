@@ -5,7 +5,7 @@ import { DeliveryLineDto } from "../type/delivery.type";
 export const deliveryHelper = {
   calculateTotalDelivery(
     lines: DeliveryLineDto[],
-    detailBySuppliedItem: Map<string, PurchaseDetail>
+    detailBySuppliedItem: Map<string, PurchaseDetail>,
   ): number {
     let totalDelivery = 0;
     for (const line of lines) {
@@ -19,7 +19,7 @@ export const deliveryHelper = {
   buildDetailsToInsert(
     idDelivery: string,
     lines: DeliveryLineDto[],
-    detailBySuppliedItem: Map<string, PurchaseDetail>
+    detailBySuppliedItem: Map<string, PurchaseDetail>,
   ) {
     return lines.map((line) => {
       const ordered = detailBySuppliedItem.get(line.idSuppliedItem);
@@ -36,7 +36,7 @@ export const deliveryHelper = {
 
   determineNewPurchaseStatuses(
     purchases: Purchase[],
-    deliveredMap: Map<string, number>
+    deliveredMap: Map<string, number>,
   ): { fullyDeliveredIds: string[]; partialIds: string[]; createdIds: string[] } {
     const fullyDeliveredIds: string[] = [];
     const partialIds: string[] = [];
@@ -77,11 +77,13 @@ export const deliveryHelper = {
     return detailBySuppliedItem;
   },
 
-  buildDeliveredMap(deliveredRows: { id_purchase: string; id_supplied_item: string; delivered_qty: string }[]): Map<string, number> {
+  buildDeliveredMap(
+    deliveredRows: { id_purchase: string; id_supplied_item: string; delivered_qty: string }[],
+  ): Map<string, number> {
     const deliveredMap = new Map<string, number>();
     for (const row of deliveredRows) {
       deliveredMap.set(`${row.id_purchase}|${row.id_supplied_item}`, parseFloat(row.delivered_qty));
     }
     return deliveredMap;
-  }
+  },
 };

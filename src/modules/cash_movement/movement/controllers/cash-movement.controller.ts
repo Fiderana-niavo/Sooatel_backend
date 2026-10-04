@@ -5,7 +5,11 @@ import { ApiResponse } from "../../../../shared/types/ApiResponse";
 import { cashMovementDto } from "../type/cash-movement.type";
 import { CashMovementService } from "../services/cash-movement.service";
 
-export class CashMovementController extends CrudController<CashMovement, cashMovementDto, cashMovementDto> {
+export class CashMovementController extends CrudController<
+  CashMovement,
+  cashMovementDto,
+  cashMovementDto
+> {
   constructor(service: CashMovementService) {
     super(service);
   }

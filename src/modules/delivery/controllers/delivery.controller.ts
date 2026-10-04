@@ -25,7 +25,10 @@ export class DeliveryController {
   getPendingBySupplier = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const excludeDeliveryId = req.query.excludeDeliveryId as string | undefined;
-      const result = await deliveryService.getPendingBySupplier(req.params.idSupplier as string, excludeDeliveryId);
+      const result = await deliveryService.getPendingBySupplier(
+        req.params.idSupplier as string,
+        excludeDeliveryId,
+      );
       res.json(ApiResponse.success(result));
     } catch (err: unknown) {
       next(err);

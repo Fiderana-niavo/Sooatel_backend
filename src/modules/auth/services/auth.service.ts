@@ -141,13 +141,10 @@ export class AuthService {
 
   private async saveRefreshToken(idUser: string, rawToken: string): Promise<void> {
     const tokenRepo = AppDataSource.getRepository(UserToken);
-    
+
     // Invalidate all previous unused refresh tokens for this user
-    await tokenRepo.update(
-      { idUser, tokenType: "REFRESH", used: false },
-      { used: true }
-    );
-    
+    await tokenRepo.update({ idUser, tokenType: "REFRESH", used: false }, { used: true });
+
     const hashedToken = await bcrypt.hash(rawToken, 10);
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + REFRESH_EXPIRY_DAYS);
@@ -344,11 +341,14 @@ export class AuthService {
   private async resolvePermissions(idUser: string): Promise<PermissionItem[]> {
     const perms = await AppDataSource.getRepository(Permission)
       .createQueryBuilder("p")
-      .select(["p.id_permission AS \"idPermission\"", "p.code AS code", "p.name AS name"])
-      .where(`p.id_permission IN (
+      .select(['p.id_permission AS "idPermission"', "p.code AS code", "p.name AS name"])
+      .where(
+        `p.id_permission IN (
         SELECT up.id_permission FROM user_permission up WHERE up.id_user = :idUser AND up.is_allowed = true
-      )`)
-      .orWhere(`
+      )`,
+      )
+      .orWhere(
+        `
         p.id_permission IN (
           SELECT rp.id_permission FROM role_permission rp
           JOIN user_role ur ON ur.id_role = rp.id_role
@@ -357,7 +357,8 @@ export class AuthService {
         AND p.id_permission NOT IN (
           SELECT up.id_permission FROM user_permission up WHERE up.id_user = :idUser AND up.is_allowed = false
         )
-      `)
+      `,
+      )
       .setParameter("idUser", idUser)
       .getRawMany<PermissionItem>();
 

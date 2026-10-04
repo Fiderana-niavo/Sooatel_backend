@@ -28,18 +28,23 @@ export class ItemService extends CrudService<Item, ItemDto, ItemDto> {
       qb.andWhere("entity.isProduced = :isProduced", { isProduced: options.isProduced });
     }
     if (options.idProductType) {
-      qb.andWhere("entity.idProductType = :idProductType", { idProductType: options.idProductType });
+      qb.andWhere("entity.idProductType = :idProductType", {
+        idProductType: options.idProductType,
+      });
     }
 
     if (options.unlinkedSupplierId) {
-      const subQuery = qb.subQuery()
+      const subQuery = qb
+        .subQuery()
         .select("si.id_item")
         .from("supplied_items", "si")
         .innerJoin("supplier_products", "sp", "sp.id_supplier_product = si.id_supplier_product")
         .where("sp.id_supplier = :unlinkedSupplierId")
         .getQuery();
 
-      qb.andWhere(`entity.idItem NOT IN ${subQuery}`, { unlinkedSupplierId: options.unlinkedSupplierId });
+      qb.andWhere(`entity.idItem NOT IN ${subQuery}`, {
+        unlinkedSupplierId: options.unlinkedSupplierId,
+      });
     }
 
     const [records, total] = await qb.getManyAndCount();

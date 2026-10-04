@@ -15,7 +15,11 @@ router.put("/:id", authorize("supplier.manage"), supplierProductController.updat
 router.delete("/:id", authorize("supplier.manage"), supplierProductController.remove);
 
 // --- PRODUCT PRICING ---
-router.get("/:id/price-history", authorize("supplier.manage"), supplierProductController.getPriceHistory);
+router.get(
+  "/:id/price-history",
+  authorize("supplier.manage"),
+  supplierProductController.getPriceHistory,
+);
 router.post("/:id/price", authorize("supplier.manage"), supplierProductController.changePrice);
 router.put("/:id/price/fix", authorize("supplier.manage"), supplierProductController.fixPriceError);
 

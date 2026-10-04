@@ -24,8 +24,8 @@ export interface EmployeeRequirementSearchOptions {
 }
 
 export interface EmployeeRequirementBulkDto {
-  dayOfWeeks: number[];     // e.g. [1, 2, 3, 4, 5] = Monday to Friday
-  idShiftTypes: string[];   // one or more shift IDs
+  dayOfWeeks: number[]; // e.g. [1, 2, 3, 4, 5] = Monday to Friday
+  idShiftTypes: string[]; // one or more shift IDs
   idJobTitle: string;
   requiredCount: number;
 }

@@ -3,7 +3,13 @@ import { Recipe } from "../../../database/Entities/Recipe";
 import { RecipeDetail } from "../../../database/Entities/RecipeDetail";
 import { Item } from "../../../database/Entities/Item";
 import { NotFoundError, BadRequestError } from "../../../shared/errors/AppError";
-import type { CreateRecipeDto, UpdateRecipeDto, FlatIngredient, RecipeTreeNode, RecipeAnalysis } from "../types/recipe.type";
+import type {
+  CreateRecipeDto,
+  UpdateRecipeDto,
+  FlatIngredient,
+  RecipeTreeNode,
+  RecipeAnalysis,
+} from "../types/recipe.type";
 
 export class RecipeService {
   private get recipeRepo() {
@@ -26,19 +32,21 @@ export class RecipeService {
       grouped.get(r.idItem)!.push(r);
     }
 
-    const list = Array.from(grouped.entries()).map(([idItem, versions]) => {
-      const active = versions.find((v) => v.isActive) ?? versions[0];
-      if (!active) return null;
-      return {
-        idRecipe: active.idRecipe,
-        idItem: active.idItem,
-        version: active.version,
-        isActive: active.isActive,
-        yieldQuantity: active.yieldQuantity,
-        item: active.item,
-        versionsCount: versions.length,
-      };
-    }).filter((r) => r !== null);
+    const list = Array.from(grouped.entries())
+      .map(([idItem, versions]) => {
+        const active = versions.find((v) => v.isActive) ?? versions[0];
+        if (!active) return null;
+        return {
+          idRecipe: active.idRecipe,
+          idItem: active.idItem,
+          version: active.version,
+          isActive: active.isActive,
+          yieldQuantity: active.yieldQuantity,
+          item: active.item,
+          versionsCount: versions.length,
+        };
+      })
+      .filter((r) => r !== null);
 
     return list;
   }
@@ -80,17 +88,23 @@ export class RecipeService {
   }
 
   async create(dto: CreateRecipeDto): Promise<Recipe> {
-    const item = await AppDataSource.getRepository(Item).findOne({ where: { idItem: dto.idItem } as any });
+    const item = await AppDataSource.getRepository(Item).findOne({
+      where: { idItem: dto.idItem } as any,
+    });
     if (!item) throw new NotFoundError("Item introuvable.");
-    if (!item.isProduced) throw new BadRequestError("Seuls les articles produits peuvent avoir une recette.");
-    if (!dto.details || dto.details.length === 0) throw new BadRequestError("La recette doit avoir au moins un ingrédient.");
+    if (!item.isProduced)
+      throw new BadRequestError("Seuls les articles produits peuvent avoir une recette.");
+    if (!dto.details || dto.details.length === 0)
+      throw new BadRequestError("La recette doit avoir au moins un ingrédient.");
     const ingredientIds = dto.details.map((d) => d.idIngredient);
     if (new Set(ingredientIds).size !== ingredientIds.length) {
       throw new BadRequestError("Vous ne pouvez pas ajouter deux fois le même ingrédient.");
     }
     const hasInvalidQuantity = dto.details.some((d) => !d.quantity || Number(d.quantity) <= 0);
     if (hasInvalidQuantity) {
-      throw new BadRequestError("La quantité d'un ingrédient doit être supérieure à 0 (elle ne peut pas être négative ou nulle).");
+      throw new BadRequestError(
+        "La quantité d'un ingrédient doit être supérieure à 0 (elle ne peut pas être négative ou nulle).",
+      );
     }
 
     const queryRunner = AppDataSource.createQueryRunner();
@@ -103,14 +117,19 @@ export class RecipeService {
 
       // Deactivate previous recipe for this item
       if (lastVersion > 0) {
-        await queryRunner.manager.update(Recipe, { idItem: dto.idItem, isActive: true }, { isActive: false });
+        await queryRunner.manager.update(
+          Recipe,
+          { idItem: dto.idItem, isActive: true },
+          { isActive: false },
+        );
       }
 
       const recipe = queryRunner.manager.create(Recipe, {
         idItem: dto.idItem,
         version: newVersion,
         isActive: true,
-        yieldQuantity: dto.yieldQuantity && Number(dto.yieldQuantity) > 0 ? Number(dto.yieldQuantity) : 1,
+        yieldQuantity:
+          dto.yieldQuantity && Number(dto.yieldQuantity) > 0 ? Number(dto.yieldQuantity) : 1,
       });
       const savedRecipe = await queryRunner.manager.save(Recipe, recipe);
 
@@ -121,7 +140,7 @@ export class RecipeService {
           quantity: d.quantity,
           idItemUnit: d.idItemUnit ?? undefined,
           version: newVersion,
-        })
+        }),
       );
       await queryRunner.manager.save(RecipeDetail, details);
 
@@ -144,14 +163,17 @@ export class RecipeService {
   async update(idRecipe: string, dto: UpdateRecipeDto): Promise<void> {
     const recipe = await this.recipeRepo.findOne({ where: { idRecipe } as any });
     if (!recipe) throw new NotFoundError("Recette introuvable.");
-    if (!dto.details || dto.details.length === 0) throw new BadRequestError("La recette doit avoir au moins un ingrédient.");
+    if (!dto.details || dto.details.length === 0)
+      throw new BadRequestError("La recette doit avoir au moins un ingrédient.");
     const ingredientIds = dto.details.map((d) => d.idIngredient);
     if (new Set(ingredientIds).size !== ingredientIds.length) {
       throw new BadRequestError("Vous ne pouvez pas ajouter deux fois le même ingrédient.");
     }
     const hasInvalidQuantity = dto.details.some((d) => !d.quantity || Number(d.quantity) <= 0);
     if (hasInvalidQuantity) {
-      throw new BadRequestError("La quantité d'un ingrédient doit être supérieure à 0 (elle ne peut pas être négative ou nulle).");
+      throw new BadRequestError(
+        "La quantité d'un ingrédient doit être supérieure à 0 (elle ne peut pas être négative ou nulle).",
+      );
     }
 
     const queryRunner = AppDataSource.createQueryRunner();
@@ -164,7 +186,11 @@ export class RecipeService {
 
       // Update yield quantity if provided
       if (dto.yieldQuantity !== undefined && Number(dto.yieldQuantity) > 0) {
-        await queryRunner.manager.update(Recipe, { idRecipe }, { yieldQuantity: Number(dto.yieldQuantity) });
+        await queryRunner.manager.update(
+          Recipe,
+          { idRecipe },
+          { yieldQuantity: Number(dto.yieldQuantity) },
+        );
       }
 
       const details = dto.details.map((d) =>
@@ -174,7 +200,7 @@ export class RecipeService {
           quantity: d.quantity,
           idItemUnit: d.idItemUnit ?? undefined,
           version: recipe.version,
-        })
+        }),
       );
       await queryRunner.manager.save(RecipeDetail, details);
 
@@ -193,7 +219,11 @@ export class RecipeService {
     }
   }
 
-  async setActive(idRecipe: string, force: boolean = false, checkOnly: boolean = false): Promise<{
+  async setActive(
+    idRecipe: string,
+    force: boolean = false,
+    checkOnly: boolean = false,
+  ): Promise<{
     createdNewVersion?: boolean;
     newVersion?: number;
     activatedExistingVersion?: number;
@@ -211,7 +241,8 @@ export class RecipeService {
     const storedCost = recipe.recipeCost ? Number(recipe.recipeCost) : null;
 
     // Rounding to 2 decimal places for comparison
-    const isSameCost = storedCost !== null && Math.round(currentCost * 100) === Math.round(storedCost * 100);
+    const isSameCost =
+      storedCost !== null && Math.round(currentCost * 100) === Math.round(storedCost * 100);
 
     const queryRunner = AppDataSource.createQueryRunner();
     await queryRunner.connect();
@@ -257,7 +288,11 @@ export class RecipeService {
 
       if (sibling) {
         // An existing version already matches — activate it directly
-        await queryRunner.manager.update(Recipe, { idRecipe: sibling.idRecipe }, { isActive: true });
+        await queryRunner.manager.update(
+          Recipe,
+          { idRecipe: sibling.idRecipe },
+          { isActive: true },
+        );
         await queryRunner.commitTransaction();
         await this.recalculateAllActiveCosts();
         return { createdNewVersion: false, activatedExistingVersion: sibling.version };
@@ -285,7 +320,7 @@ export class RecipeService {
           quantity: d.quantity,
           idItemUnit: d.idItemUnit ?? undefined,
           version: newVersion,
-        })
+        }),
       );
       await queryRunner.manager.save(RecipeDetail, newDetails);
 
@@ -334,7 +369,9 @@ export class RecipeService {
       children: tree,
     };
 
-    const flatIngredients = Array.from(accumulator.values()).sort((a, b) => a.label.localeCompare(b.label));
+    const flatIngredients = Array.from(accumulator.values()).sort((a, b) =>
+      a.label.localeCompare(b.label),
+    );
 
     return {
       tree: rootNode,
@@ -371,7 +408,7 @@ export class RecipeService {
   private async findMatchingVersion(
     idItem: string,
     excludeIdRecipe: string,
-    targetCost: number
+    targetCost: number,
   ): Promise<Recipe | null> {
     // Load all other versions for this item
     const siblings = await this.recipeRepo.find({
@@ -381,14 +418,20 @@ export class RecipeService {
 
     // Load source composition for comparison
     const sourceDetails = await this.detailRepo.find({ where: { idRecipe: excludeIdRecipe } });
-    const sourceMap = new Map(sourceDetails.map((d) => [d.idIngredient, { qty: Number(d.quantity), unit: d.idItemUnit ?? null }]));
+    const sourceMap = new Map(
+      sourceDetails.map((d) => [
+        d.idIngredient,
+        { qty: Number(d.quantity), unit: d.idItemUnit ?? null },
+      ]),
+    );
 
     for (const sibling of siblings) {
       if (sibling.idRecipe === excludeIdRecipe) continue;
 
       // Check cost (rounded to 2 decimals)
       const siblingCost = sibling.recipeCost ? Number(sibling.recipeCost) : null;
-      if (siblingCost === null || Math.round(siblingCost * 100) !== Math.round(targetCost * 100)) continue;
+      if (siblingCost === null || Math.round(siblingCost * 100) !== Math.round(targetCost * 100))
+        continue;
 
       // Check composition
       const siblingDetails = await this.detailRepo.find({ where: { idRecipe: sibling.idRecipe } });
@@ -409,7 +452,7 @@ export class RecipeService {
     idRecipe: string,
     multiplier: number,
     accumulator: Map<string, FlatIngredient>,
-    visited: Set<string>
+    visited: Set<string>,
   ): Promise<RecipeTreeNode[]> {
     if (visited.has(idRecipe)) return [];
     visited.add(idRecipe);
@@ -453,7 +496,12 @@ export class RecipeService {
         if (subRecipe) {
           node.subRecipeId = subRecipe.idRecipe;
           node.subRecipeVersion = subRecipe.version;
-          node.children = await this.resolveRecursive(subRecipe.idRecipe, qty, accumulator, visited);
+          node.children = await this.resolveRecursive(
+            subRecipe.idRecipe,
+            qty,
+            accumulator,
+            visited,
+          );
           // If it's a sub-recipe, its cost is the sum of its children's costs
           node.cost = node.children.reduce((sum, child) => sum + child.cost, 0);
         }

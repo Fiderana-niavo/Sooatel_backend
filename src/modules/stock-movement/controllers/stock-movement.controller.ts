@@ -1,7 +1,12 @@
 import { NextFunction, Request, Response } from "express";
 import { ApiResponse } from "../../../shared/types/ApiResponse";
 import { stockMovementService } from "../services/stock-movement.service";
-import type { StockMovementDto, StockMovementSearchOptions, LossDto, InventoryLineDto } from "../type/stock-movement.type";
+import type {
+  StockMovementDto,
+  StockMovementSearchOptions,
+  LossDto,
+  InventoryLineDto,
+} from "../type/stock-movement.type";
 
 export class StockMovementController {
   findAll = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -27,7 +32,9 @@ export class StockMovementController {
       const dto = req.body as StockMovementDto;
       const idOperator = (req as Request & { idEmployee?: string }).idEmployee;
       if (!idOperator) {
-        res.status(400).json(ApiResponse.error("Votre compte n'est pas lié à un employé. Action impossible."));
+        res
+          .status(400)
+          .json(ApiResponse.error("Votre compte n'est pas lié à un employé. Action impossible."));
         return;
       }
       const result = await stockMovementService.create(dto, idOperator);
@@ -60,7 +67,9 @@ export class StockMovementController {
     try {
       const idOperator = (req as Request & { idEmployee?: string }).idEmployee;
       if (!idOperator) {
-        res.status(400).json(ApiResponse.error("Votre compte n'est pas lié à un employé. Action impossible."));
+        res
+          .status(400)
+          .json(ApiResponse.error("Votre compte n'est pas lié à un employé. Action impossible."));
         return;
       }
       await stockMovementService.validate(req.params.id as string, idOperator);
@@ -75,16 +84,19 @@ export class StockMovementController {
       const dto = req.body as LossDto;
       const idOperator = (req as Request & { idEmployee?: string }).idEmployee;
       if (!idOperator) {
-        res.status(400).json(ApiResponse.error("Votre compte n'est pas lié à un employé. Action impossible."));
+        res
+          .status(400)
+          .json(ApiResponse.error("Votre compte n'est pas lié à un employé. Action impossible."));
         return;
       }
       await stockMovementService.recordLoss(dto, idOperator);
-      res.status(201).json(ApiResponse.success({ message: "Perte enregistrée. Stock mis à jour." }));
+      res
+        .status(201)
+        .json(ApiResponse.success({ message: "Perte enregistrée. Stock mis à jour." }));
     } catch (err) {
       next(err);
     }
   };
-
 }
 
 export const stockMovementController = new StockMovementController();

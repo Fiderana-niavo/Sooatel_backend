@@ -5,7 +5,11 @@ import { ApiResponse } from "../../../shared/types/ApiResponse";
 import { UnitOfMeasureDto } from "../type/unit-of-measure.type";
 import { UnitOfMeasureService } from "../services/unit-of-measure.service";
 
-export class UnitOfMeasureController extends CrudController<UnitOfMeasure, UnitOfMeasureDto, UnitOfMeasureDto> {
+export class UnitOfMeasureController extends CrudController<
+  UnitOfMeasure,
+  UnitOfMeasureDto,
+  UnitOfMeasureDto
+> {
   constructor(service: UnitOfMeasureService) {
     super(service);
   }

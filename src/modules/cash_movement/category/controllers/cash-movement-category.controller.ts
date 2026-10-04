@@ -5,7 +5,11 @@ import { ApiResponse } from "../../../../shared/types/ApiResponse";
 import { CashMovementCategoryDto } from "../type/cash-movement-category.type";
 import { CashMovementCategoryService } from "../services/cash-movement-category.service";
 
-export class CashMovementCategoryController extends CrudController<CashMovementCategory, CashMovementCategoryDto, CashMovementCategoryDto> {
+export class CashMovementCategoryController extends CrudController<
+  CashMovementCategory,
+  CashMovementCategoryDto,
+  CashMovementCategoryDto
+> {
   constructor(service: CashMovementCategoryService) {
     super(service);
   }
@@ -25,4 +29,6 @@ export class CashMovementCategoryController extends CrudController<CashMovementC
   };
 }
 
-export const cashMovementCategoryController = new CashMovementCategoryController(new CashMovementCategoryService());
+export const cashMovementCategoryController = new CashMovementCategoryController(
+  new CashMovementCategoryService(),
+);

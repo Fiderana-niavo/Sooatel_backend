@@ -68,22 +68,23 @@ export class PurchaseService {
         await queryRunner.manager.save(Purchase, purchase);
 
         // 1. Determine lines to deliver
-        const linesToDeliver = (dto.deliveryLines && dto.deliveryLines.length > 0)
-          ? dto.deliveryLines.map((l) => ({
-              idSuppliedItem: l.idSuppliedItem,
-              quantity: Number(l.quantity || 0),
-              unitPrice: Number(l.unitPrice || 0),
-            }))
-          : (dto.details || []).map((d) => ({
-              idSuppliedItem: d.idSuppliedItem,
-              quantity: Number(d.quantity || 0),
-              unitPrice: Number(d.unitPrice || 0),
-            }));
+        const linesToDeliver =
+          dto.deliveryLines && dto.deliveryLines.length > 0
+            ? dto.deliveryLines.map((l) => ({
+                idSuppliedItem: l.idSuppliedItem,
+                quantity: Number(l.quantity || 0),
+                unitPrice: Number(l.unitPrice || 0),
+              }))
+            : (dto.details || []).map((d) => ({
+                idSuppliedItem: d.idSuppliedItem,
+                quantity: Number(d.quantity || 0),
+                unitPrice: Number(d.unitPrice || 0),
+              }));
 
         const validDeliveryLines = linesToDeliver.filter((l) => l.quantity > 0);
         if (validDeliveryLines.length === 0) {
           throw new BadRequestError(
-            "Impossible d'effectuer une livraison directe sans aucun produit reçu. Veuillez saisir au moins une quantité reçue ou décocher 'Livraison déjà effectuée ?'."
+            "Impossible d'effectuer une livraison directe sans aucun produit reçu. Veuillez saisir au moins une quantité reçue ou décocher 'Livraison déjà effectuée ?'.",
           );
         }
 
@@ -129,16 +130,20 @@ export class PurchaseService {
         }
 
         // 5. Update Purchase Status (DELIVERED or PARTIALLY_DELIVERED)
-        const isFullyDelivered = (dto.details || []).every(d => {
-          const delLine = linesToDeliver.find(l => l.idSuppliedItem === d.idSuppliedItem);
+        const isFullyDelivered = (dto.details || []).every((d) => {
+          const delLine = linesToDeliver.find((l) => l.idSuppliedItem === d.idSuppliedItem);
           return delLine && delLine.quantity >= d.quantity;
         });
-        purchase.status = isFullyDelivered ? PURCHASE_STATUS.DELIVERED : PURCHASE_STATUS.PARTIALLY_DELIVERED;
+        purchase.status = isFullyDelivered
+          ? PURCHASE_STATUS.DELIVERED
+          : PURCHASE_STATUS.PARTIALLY_DELIVERED;
         await queryRunner.manager.save(Purchase, purchase);
 
         // 6. Handle Payment allocated directly to the delivery
         if (dto.advanceAmount && dto.advanceAmount > 0 && dto.idPaymentMethod) {
-          const supplier = await queryRunner.manager.findOne(Supplier, { where: { idSupplier: purchase.idSupplier } });
+          const supplier = await queryRunner.manager.findOne(Supplier, {
+            where: { idSupplier: purchase.idSupplier },
+          });
 
           const payment = queryRunner.manager.create(SupplierPayment, {
             idSupplier: purchase.idSupplier,
@@ -185,7 +190,7 @@ export class PurchaseService {
           }
           if (Number(pmb.amount) < dto.advanceAmount) {
             throw new BadRequestError(
-              `Solde insuffisant dans la caisse pour ce mode de paiement. Disponible : ${Number(pmb.amount).toFixed(2)}, Requis : ${dto.advanceAmount.toFixed(2)}.`
+              `Solde insuffisant dans la caisse pour ce mode de paiement. Disponible : ${Number(pmb.amount).toFixed(2)}, Requis : ${dto.advanceAmount.toFixed(2)}.`,
             );
           }
 
@@ -198,7 +203,7 @@ export class PurchaseService {
             operatorId,
             cat.idCashMovementCategory,
             activeJournal.idJournal,
-            dto.idPaymentMethod
+            dto.idPaymentMethod,
           );
 
           pmb.amount = Number(pmb.amount) - dto.advanceAmount;
@@ -220,7 +225,9 @@ export class PurchaseService {
         // Normal purchase without immediate delivery (Advance payment if any)
         if (dto.advanceAmount && dto.advanceAmount > 0 && dto.idPaymentMethod) {
           if (dto.advanceAmount > totalAmount) {
-            throw new BadRequestError("Le montant payé ne peut pas dépasser le montant total de la commande.");
+            throw new BadRequestError(
+              "Le montant payé ne peut pas dépasser le montant total de la commande.",
+            );
           }
 
           const payment = queryRunner.manager.create(SupplierPayment, {
@@ -296,9 +303,11 @@ export class PurchaseService {
           isFullyDelivered = false;
         }
       }
-      
+
       if (hasAnyDelivery) {
-        purchase.status = isFullyDelivered ? PURCHASE_STATUS.DELIVERED : PURCHASE_STATUS.PARTIALLY_DELIVERED;
+        purchase.status = isFullyDelivered
+          ? PURCHASE_STATUS.DELIVERED
+          : PURCHASE_STATUS.PARTIALLY_DELIVERED;
       } else {
         purchase.status = PURCHASE_STATUS.CREATED;
       }

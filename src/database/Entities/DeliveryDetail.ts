@@ -26,7 +26,10 @@ export class DeliveryDetail extends BaseEntity {
   @JoinColumn({ name: "id_supplied_item" })
   suppliedItem: SuppliedItem;
 
-  @ManyToOne(() => ProductDelivery, (productDelivery: ProductDelivery) => productDelivery.deliveryDetails)
+  @ManyToOne(
+    () => ProductDelivery,
+    (productDelivery: ProductDelivery) => productDelivery.deliveryDetails,
+  )
   @JoinColumn({ name: "id_delivery" })
   productDelivery: ProductDelivery;
 }

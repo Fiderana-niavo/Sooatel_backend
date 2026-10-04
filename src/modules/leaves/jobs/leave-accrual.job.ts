@@ -15,16 +15,20 @@ export async function processLeaveAccruals(): Promise<void> {
 
     await AppDataSource.transaction(async (manager) => {
       // Find the LeaveType for "Congé annuel"
-      const annualLeaveType = await manager.createQueryBuilder(LeaveType, "lt")
+      const annualLeaveType = await manager
+        .createQueryBuilder(LeaveType, "lt")
         .where("lt.label ILIKE :label", { label: "%Congé annuel%" })
         .getOne();
 
       if (!annualLeaveType) {
-        console.error("[Cron - LeaveAccrualJob] Type de congé 'Congé annuel' introuvable dans la base de données.");
+        console.error(
+          "[Cron - LeaveAccrualJob] Type de congé 'Congé annuel' introuvable dans la base de données.",
+        );
         return;
       }
 
-      const qb = manager.createQueryBuilder(EmployeeJob, "ej")
+      const qb = manager
+        .createQueryBuilder(EmployeeJob, "ej")
         .innerJoinAndSelect("ej.employee", "emp")
         .where("EXTRACT(DAY FROM ej.assignment_date) = EXTRACT(DAY FROM CURRENT_DATE)")
         .andWhere("(ej.end_date IS NULL OR ej.end_date > CURRENT_DATE)")
@@ -33,11 +37,15 @@ export async function processLeaveAccruals(): Promise<void> {
       const jobsToAccrue = await qb.getMany();
 
       if (jobsToAccrue.length === 0) {
-        console.log("[Cron - LeaveAccrualJob] Aucun employé ne fête son anniversaire de contrat aujourd'hui.");
+        console.log(
+          "[Cron - LeaveAccrualJob] Aucun employé ne fête son anniversaire de contrat aujourd'hui.",
+        );
         return;
       }
 
-      console.log(`[Cron - LeaveAccrualJob] ${jobsToAccrue.length} employé(s) éligible(s) à l'accumulation (${accruedDays} jours).`);
+      console.log(
+        `[Cron - LeaveAccrualJob] ${jobsToAccrue.length} employé(s) éligible(s) à l'accumulation (${accruedDays} jours).`,
+      );
 
       for (const job of jobsToAccrue) {
         const idEmployee = job.idEmployee;
@@ -45,7 +53,7 @@ export async function processLeaveAccruals(): Promise<void> {
 
         // Find existing balance
         let balance = await manager.findOne(EmployeeLeaveBalance, {
-          where: { idEmployee, idLeaveType }
+          where: { idEmployee, idLeaveType },
         });
 
         if (!balance) {
@@ -54,7 +62,7 @@ export async function processLeaveAccruals(): Promise<void> {
             idLeaveType,
             allocatedDays: accruedDays,
             usedDays: 0,
-            advanceDays: 0
+            advanceDays: 0,
           });
         } else {
           // TypeORM returns decimal columns as strings from pg, so parse float
@@ -71,12 +79,14 @@ export async function processLeaveAccruals(): Promise<void> {
           createdAt: new Date(),
           idLeaveType,
           idEmployee,
-          idLeave: null
+          idLeave: null,
         });
 
         await manager.save(LeaveTransaction, transaction);
 
-        console.log(`[Cron - LeaveAccrualJob] ${accruedDays} jours cumulés pour: ${job.employee.name} ${job.employee.lastname}`);
+        console.log(
+          `[Cron - LeaveAccrualJob] ${accruedDays} jours cumulés pour: ${job.employee.name} ${job.employee.lastname}`,
+        );
       }
 
       console.log("[Cron - LeaveAccrualJob] Accumulation des congés terminée avec succès.");

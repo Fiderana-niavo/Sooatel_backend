@@ -28,6 +28,4 @@ export class SupplierService extends CrudService<Supplier, SupplierDto, Supplier
     const [records, total] = await qb.getManyAndCount();
     return new Paginated<Supplier>(records, total, pageNum, limitNum);
   }
-
-
 }

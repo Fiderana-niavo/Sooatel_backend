@@ -24,12 +24,20 @@ const PERMISSIONS = [
   { code: "permission.create", name: "Créer une permission", category: "Sécurité" },
   { code: "permission.update", name: "Modifier une permission", category: "Sécurité" },
   { code: "permission.delete", name: "Supprimer une permission", category: "Sécurité" },
-  { code: "security.access", name: "Gestion de la sécurité (Accès, Rôles, Clés)", category: "Sécurité" },
+  {
+    code: "security.access",
+    name: "Gestion de la sécurité (Accès, Rôles, Clés)",
+    category: "Sécurité",
+  },
   { code: "hotel.access", name: "Accès au module Hôtel", category: "Navigation" },
   { code: "restaurant.access", name: "Accès au module Restaurant", category: "Navigation" },
   { code: "restaurant.pos", name: "Caisse & PDV", category: "Restaurant" },
-  { code: "sales.pos",      name: "Caisse & Ventes (Voir, Créer, Modifier)", category: "Restaurant" },
-  { code: "sale.manage",    name: "Gérer les ventes (Rouvrir, Annuler, Supprimer)", category: "Restaurant" },
+  { code: "sales.pos", name: "Caisse & Ventes (Voir, Créer, Modifier)", category: "Restaurant" },
+  {
+    code: "sale.manage",
+    name: "Gérer les ventes (Rouvrir, Annuler, Supprimer)",
+    category: "Restaurant",
+  },
   { code: "restaurant.purchases", name: "Achats & Dépenses", category: "Restaurant" },
   { code: "stock.access", name: "Accès Inventaire", category: "Logistique" },
   { code: "stock.read", name: "Voir les stocks", category: "Logistique" },
@@ -48,12 +56,17 @@ async function seed() {
 
     // 1. Create or get categories
     const categoryMap = new Map<string, string>();
-    const categories = Array.from(new Set(PERMISSIONS.map(p => p.category)));
-    
+    const categories = Array.from(new Set(PERMISSIONS.map((p) => p.category)));
+
     for (const catName of categories) {
-      let cat = await AppDataSource.getRepository(PermissionCategory).findOne({ where: { name: catName } });
+      let cat = await AppDataSource.getRepository(PermissionCategory).findOne({
+        where: { name: catName },
+      });
       if (!cat) {
-        cat = AppDataSource.getRepository(PermissionCategory).create({ name: catName, code: catName.toLowerCase().replace(/ /g, "_") });
+        cat = AppDataSource.getRepository(PermissionCategory).create({
+          name: catName,
+          code: catName.toLowerCase().replace(/ /g, "_"),
+        });
         await AppDataSource.getRepository(PermissionCategory).save(cat);
       }
       categoryMap.set(catName, cat.idCategory);
@@ -68,7 +81,7 @@ async function seed() {
           code: p.code,
           name: p.name,
           idCategory: categoryMap.get(p.category),
-          description: p.name
+          description: p.name,
         });
         await AppDataSource.getRepository(Permission).save(perm);
         console.log(`Permission créée : ${p.code}`);
@@ -79,7 +92,10 @@ async function seed() {
     // 3. Create Admin role
     let adminRole = await AppDataSource.getRepository(Role).findOne({ where: { label: "Admin" } });
     if (!adminRole) {
-      adminRole = AppDataSource.getRepository(Role).create({ label: "Admin", description: "Administrateur système" });
+      adminRole = AppDataSource.getRepository(Role).create({
+        label: "Admin",
+        description: "Administrateur système",
+      });
       await AppDataSource.getRepository(Role).save(adminRole);
       console.log("Rôle Admin créé.");
     }
@@ -87,12 +103,12 @@ async function seed() {
     // 4. Assign all permissions to Admin role
     for (const perm of permissionEntities) {
       const exists = await AppDataSource.getRepository(RolePermission).findOne({
-        where: { idRole: adminRole.idRole, idPermission: perm.idPermission }
+        where: { idRole: adminRole.idRole, idPermission: perm.idPermission },
       });
       if (!exists) {
         const rp = AppDataSource.getRepository(RolePermission).create({
           idRole: adminRole.idRole,
-          idPermission: perm.idPermission
+          idPermission: perm.idPermission,
         });
         await AppDataSource.getRepository(RolePermission).save(rp);
       }
@@ -108,20 +124,24 @@ async function seed() {
       .getMany();
 
     if (users.length === 0) {
-      console.error("Impossible de trouver un utilisateur contenant 'malala' dans son nom, prénom ou username.");
+      console.error(
+        "Impossible de trouver un utilisateur contenant 'malala' dans son nom, prénom ou username.",
+      );
     } else {
       const targetUser = users[0] as User;
-      console.log(`Utilisateur trouvé : ${targetUser.employee?.name} ${targetUser.employee?.lastname} (${targetUser.username})`);
-      
+      console.log(
+        `Utilisateur trouvé : ${targetUser.employee?.name} ${targetUser.employee?.lastname} (${targetUser.username})`,
+      );
+
       // 6. Assign role to user
       const userRoleExists = await AppDataSource.getRepository(UserRole).findOne({
-        where: { idUser: targetUser.idUser, idRole: adminRole.idRole }
+        where: { idUser: targetUser.idUser, idRole: adminRole.idRole },
       });
 
       if (!userRoleExists) {
         const ur = AppDataSource.getRepository(UserRole).create({
           idUser: targetUser.idUser,
-          idRole: adminRole.idRole
+          idRole: adminRole.idRole,
         });
         await AppDataSource.getRepository(UserRole).save(ur);
         console.log("Rôle Admin assigné à Malala avec succès !");
@@ -129,7 +149,6 @@ async function seed() {
         console.log("L'utilisateur a déjà le rôle Admin.");
       }
     }
-
   } catch (err) {
     console.error("Erreur lors du seed:", err);
   } finally {

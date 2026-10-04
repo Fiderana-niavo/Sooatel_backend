@@ -24,13 +24,15 @@ export class RevenueController {
         limit,
         date,
         idMenu,
-        idSupplier
+        idSupplier,
       });
 
       res.json(ApiResponse.success(result));
     } catch (error: any) {
       console.error(error);
-      res.status(500).json(ApiResponse.error(error.message || "Erreur lors de la récupération de la recette"));
+      res
+        .status(500)
+        .json(ApiResponse.error(error.message || "Erreur lors de la récupération de la recette"));
     }
   }
 
@@ -43,7 +45,7 @@ export class RevenueController {
         const userRepo = AppDataSource.getRepository(User);
         const user = await userRepo.findOne({
           where: { idUser: req.userId },
-          select: { idEmployee: true }
+          select: { idEmployee: true },
         });
 
         if (!user?.idEmployee) {
@@ -58,7 +60,9 @@ export class RevenueController {
       res.json(ApiResponse.success(result));
     } catch (error: any) {
       console.error(error);
-      res.status(500).json(ApiResponse.error(error.message || "Erreur lors de la journalisation des ventes"));
+      res
+        .status(500)
+        .json(ApiResponse.error(error.message || "Erreur lors de la journalisation des ventes"));
     }
   }
 }

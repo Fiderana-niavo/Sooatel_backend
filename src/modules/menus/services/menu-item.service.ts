@@ -11,14 +11,12 @@ export class MenuItemService extends CrudService<MenuItem, MenuItemDto, MenuItem
     super(repository);
   }
 
-  async getMenuSelectOptions(): Promise<{ value: string | number; label: string; salePrice: number }[]> {
+  async getMenuSelectOptions(): Promise<
+    { value: string | number; label: string; salePrice: number }[]
+  > {
     const qb = this.repository.createQueryBuilder("entity");
     qb.leftJoin("entity.item", "item");
-    qb.select([
-      "entity.idMenu AS value",
-      "item.label AS label",
-      "entity.salePrice AS \"salePrice\""
-    ]);
+    qb.select(["entity.idMenu AS value", "item.label AS label", 'entity.salePrice AS "salePrice"']);
     return await qb.getRawMany();
   }
 

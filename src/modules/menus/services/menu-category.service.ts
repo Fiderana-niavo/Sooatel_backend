@@ -6,7 +6,11 @@ import { CrudService } from "../../../shared/crud/services/CrudService";
 import { Paginated } from "../../../shared/types/Paginated";
 import { MenuCategoryDto, MenuCategorySearchOptions } from "../type/menu-category.type";
 
-export class MenuCategoryService extends CrudService<MenuCategory, MenuCategoryDto, MenuCategoryDto> {
+export class MenuCategoryService extends CrudService<
+  MenuCategory,
+  MenuCategoryDto,
+  MenuCategoryDto
+> {
   constructor(repository: Repository<MenuCategory> = AppDataSource.getRepository(MenuCategory)) {
     super(repository);
   }

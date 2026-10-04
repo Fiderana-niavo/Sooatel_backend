@@ -10,7 +10,10 @@ import { CashJournal } from "../../../database/Entities/CashJournal";
 import { PaymentMethodBalance } from "../../../database/Entities/PaymentMethodBalance";
 import { DeliveryDetail } from "../../../database/Entities/DeliveryDetail";
 import { PurchaseDelivery } from "../../../database/Entities/PurchaseDelivery";
-import { PURCHASE_STATUS, getPurchaseStatusName } from "../../purchases/constants/purchase.constants";
+import {
+  PURCHASE_STATUS,
+  getPurchaseStatusName,
+} from "../../purchases/constants/purchase.constants";
 import { DELIVERY_STATUS, getDeliveryStatusName } from "../constants/delivery.constants";
 import { CreateDeliveryDto } from "../type/delivery.type";
 import { BadRequestError, NotFoundError } from "../../../shared/errors/AppError";
@@ -18,7 +21,11 @@ import { deliveryHelper } from "../utils/delivery.helper";
 import { Paginated } from "../../../shared/types/Paginated";
 import { StockMovement } from "../../../database/Entities/StockMovement";
 import { Item } from "../../../database/Entities/Item";
-import { STOCK_MOVEMENT_TYPE, STOCK_MOVEMENT_STATUS, STOCK_MOVEMENT_DIRECTION } from "../../items/constants/stock.constants";
+import {
+  STOCK_MOVEMENT_TYPE,
+  STOCK_MOVEMENT_STATUS,
+  STOCK_MOVEMENT_DIRECTION,
+} from "../../items/constants/stock.constants";
 import { calculateNewCMP } from "../../items/utils/item.utils";
 import { recipeService } from "../../recipes/services/recipe.service";
 
@@ -57,17 +64,19 @@ export class DeliveryService {
       .leftJoin("si.item", "item")
       .where("p.idSupplier = :idSupplier", { idSupplier })
       .andWhere("p.lifecycleStatus != -3")
-      .andWhere(new Brackets((qb) => {
-        qb.where("p.status IN (:...statuses)", {
-          statuses: [PURCHASE_STATUS.CREATED, PURCHASE_STATUS.PARTIALLY_DELIVERED],
-        });
-        if (excludeDeliveryId) {
-          qb.orWhere(
-            "p.idPurchase IN (SELECT pd.id_purchase FROM purchase_delivery pd WHERE pd.id_delivery = :excludeDeliveryId)",
-            { excludeDeliveryId }
-          );
-        }
-      }))
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where("p.status IN (:...statuses)", {
+            statuses: [PURCHASE_STATUS.CREATED, PURCHASE_STATUS.PARTIALLY_DELIVERED],
+          });
+          if (excludeDeliveryId) {
+            qb.orWhere(
+              "p.idPurchase IN (SELECT pd.id_purchase FROM purchase_delivery pd WHERE pd.id_delivery = :excludeDeliveryId)",
+              { excludeDeliveryId },
+            );
+          }
+        }),
+      )
       .orderBy("p.purchaseDate", "DESC");
 
     const purchases = await purchasesQuery.getMany();
@@ -84,14 +93,14 @@ export class DeliveryService {
       queryParams.push(excludeDeliveryId);
     }
 
-    const deliveredQtyRows = await AppDataSource.query(
+    const deliveredQtyRows = (await AppDataSource.query(
       `SELECT pd.id_purchase, dd.id_supplied_item, COALESCE(SUM(dd.quantity), 0) AS delivered_qty
        FROM purchase_delivery pd
        JOIN delivery_details dd ON dd.id_delivery = pd.id_delivery
        WHERE pd.id_purchase = ANY($1) ${excludeCondition}
        GROUP BY pd.id_purchase, dd.id_supplied_item`,
-      queryParams
-    ) as { id_purchase: string; id_supplied_item: string; delivered_qty: string }[];
+      queryParams,
+    )) as { id_purchase: string; id_supplied_item: string; delivered_qty: string }[];
 
     const deliveredMap = deliveryHelper.buildDeliveredMap(deliveredQtyRows);
 
@@ -133,10 +142,18 @@ export class DeliveryService {
 
       const savedDelivery = await this.saveProductDelivery(queryRunner, totalDelivery);
 
-      await this.insertDeliveryDetails(queryRunner, savedDelivery.idDelivery, dto.lines, detailBySuppliedItem);
+      await this.insertDeliveryDetails(
+        queryRunner,
+        savedDelivery.idDelivery,
+        dto.lines,
+        detailBySuppliedItem,
+      );
       await this.insertPurchaseDeliveries(queryRunner, savedDelivery.idDelivery, dto.idPurchases);
 
-      const deliveredMap = await this.getDeliveredQuantitiesForPurchases(queryRunner, dto.idPurchases);
+      const deliveredMap = await this.getDeliveredQuantitiesForPurchases(
+        queryRunner,
+        dto.idPurchases,
+      );
       await this.updatePurchasesStatuses(queryRunner, purchases, deliveredMap);
 
       await queryRunner.commitTransaction();
@@ -161,7 +178,11 @@ export class DeliveryService {
     }
   }
 
-  private async loadPurchasesForDelivery(queryRunner: any, idPurchases: string[], excludeDeliveryId?: string): Promise<Purchase[]> {
+  private async loadPurchasesForDelivery(
+    queryRunner: any,
+    idPurchases: string[],
+    excludeDeliveryId?: string,
+  ): Promise<Purchase[]> {
     const purchases = await queryRunner.manager
       .createQueryBuilder(Purchase, "p")
       .leftJoinAndSelect("p.details", "detail")
@@ -174,11 +195,17 @@ export class DeliveryService {
 
     for (const purchase of purchases) {
       if (purchase.lifecycleStatus === 5) {
-        throw new BadRequestError(`La commande ${purchase.ref} n'est pas encore validée (elle est en brouillon) et ne peut pas être réceptionnée.`);
+        throw new BadRequestError(
+          `La commande ${purchase.ref} n'est pas encore validée (elle est en brouillon) et ne peut pas être réceptionnée.`,
+        );
       } else if (purchase.lifecycleStatus === -3) {
-        throw new BadRequestError(`La commande ${purchase.ref} a été annulée et ne peut plus être réceptionnée.`);
+        throw new BadRequestError(
+          `La commande ${purchase.ref} a été annulée et ne peut plus être réceptionnée.`,
+        );
       } else if (purchase.lifecycleStatus !== 0) {
-        throw new BadRequestError(`La commande ${purchase.ref} ne peut pas être réceptionnée (statut invalide).`);
+        throw new BadRequestError(
+          `La commande ${purchase.ref} ne peut pas être réceptionnée (statut invalide).`,
+        );
       }
     }
 
@@ -196,14 +223,19 @@ export class DeliveryService {
 
       const openCount = await query.getCount();
       if (openCount > 0) {
-        throw new BadRequestError(`Une livraison en cours existe déjà pour la commande ${purchase.ref}, vous devez d'abord la validez .`);
+        throw new BadRequestError(
+          `Une livraison en cours existe déjà pour la commande ${purchase.ref}, vous devez d'abord la validez .`,
+        );
       }
     }
 
     return purchases;
   }
 
-  private async saveProductDelivery(queryRunner: any, totalDelivery: number): Promise<ProductDelivery> {
+  private async saveProductDelivery(
+    queryRunner: any,
+    totalDelivery: number,
+  ): Promise<ProductDelivery> {
     const delivery = new ProductDelivery();
     delivery.deliveryDate = new Date();
     delivery.totalAmount = totalDelivery;
@@ -211,8 +243,17 @@ export class DeliveryService {
     return await queryRunner.manager.save(ProductDelivery, delivery);
   }
 
-  private async insertDeliveryDetails(queryRunner: any, idDelivery: string, lines: any[], detailBySuppliedItem: Map<string, any>): Promise<void> {
-    const detailsToInsert = deliveryHelper.buildDetailsToInsert(idDelivery, lines, detailBySuppliedItem);
+  private async insertDeliveryDetails(
+    queryRunner: any,
+    idDelivery: string,
+    lines: any[],
+    detailBySuppliedItem: Map<string, any>,
+  ): Promise<void> {
+    const detailsToInsert = deliveryHelper.buildDetailsToInsert(
+      idDelivery,
+      lines,
+      detailBySuppliedItem,
+    );
     if (detailsToInsert.length > 0) {
       await queryRunner.manager
         .createQueryBuilder()
@@ -223,8 +264,15 @@ export class DeliveryService {
     }
   }
 
-  private async insertPurchaseDeliveries(queryRunner: any, idDelivery: string, idPurchases: string[]): Promise<void> {
-    const purchaseDeliveriesToInsert = idPurchases.map((idPurchase) => ({ idPurchase, idDelivery }));
+  private async insertPurchaseDeliveries(
+    queryRunner: any,
+    idDelivery: string,
+    idPurchases: string[],
+  ): Promise<void> {
+    const purchaseDeliveriesToInsert = idPurchases.map((idPurchase) => ({
+      idPurchase,
+      idDelivery,
+    }));
     if (purchaseDeliveriesToInsert.length > 0) {
       await queryRunner.manager
         .createQueryBuilder()
@@ -235,40 +283,56 @@ export class DeliveryService {
     }
   }
 
-  private async getDeliveredQuantitiesForPurchases(queryRunner: any, idPurchases: string[]): Promise<Map<string, number>> {
-    const deliveredRows = await queryRunner.manager.query(
+  private async getDeliveredQuantitiesForPurchases(
+    queryRunner: any,
+    idPurchases: string[],
+  ): Promise<Map<string, number>> {
+    const deliveredRows = (await queryRunner.manager.query(
       `SELECT pd.id_purchase, dd.id_supplied_item, COALESCE(SUM(dd.quantity), 0) AS delivered_qty
        FROM purchase_delivery pd
        JOIN delivery_details dd ON dd.id_delivery = pd.id_delivery
        WHERE pd.id_purchase = ANY($1)
        GROUP BY pd.id_purchase, dd.id_supplied_item`,
-      [idPurchases]
-    ) as { id_purchase: string; id_supplied_item: string; delivered_qty: string }[];
+      [idPurchases],
+    )) as { id_purchase: string; id_supplied_item: string; delivered_qty: string }[];
     return deliveryHelper.buildDeliveredMap(deliveredRows);
   }
 
-  private async updatePurchasesStatuses(queryRunner: any, purchases: Purchase[], deliveredMap: Map<string, number>): Promise<void> {
-    const { fullyDeliveredIds, partialIds, createdIds } = deliveryHelper.determineNewPurchaseStatuses(purchases, deliveredMap);
+  private async updatePurchasesStatuses(
+    queryRunner: any,
+    purchases: Purchase[],
+    deliveredMap: Map<string, number>,
+  ): Promise<void> {
+    const { fullyDeliveredIds, partialIds, createdIds } =
+      deliveryHelper.determineNewPurchaseStatuses(purchases, deliveredMap);
 
     if (fullyDeliveredIds.length > 0) {
-      await queryRunner.manager.update(Purchase, fullyDeliveredIds, { status: PURCHASE_STATUS.DELIVERED });
+      await queryRunner.manager.update(Purchase, fullyDeliveredIds, {
+        status: PURCHASE_STATUS.DELIVERED,
+      });
     }
     if (partialIds.length > 0) {
-      await queryRunner.manager.update(Purchase, partialIds, { status: PURCHASE_STATUS.PARTIALLY_DELIVERED });
+      await queryRunner.manager.update(Purchase, partialIds, {
+        status: PURCHASE_STATUS.PARTIALLY_DELIVERED,
+      });
     }
     if (createdIds && createdIds.length > 0) {
       await queryRunner.manager.update(Purchase, createdIds, { status: PURCHASE_STATUS.CREATED });
     }
   }
 
-  private async getDeliveryForUpdate(queryRunner: any, idDelivery: string): Promise<ProductDelivery> {
+  private async getDeliveryForUpdate(
+    queryRunner: any,
+    idDelivery: string,
+  ): Promise<ProductDelivery> {
     const delivery = await queryRunner.manager.getRepository(ProductDelivery).findOne({
       where: { idDelivery },
-      relations: { purchaseDeliveries: true }
+      relations: { purchaseDeliveries: true },
     });
 
     if (!delivery) throw new NotFoundError("Livraison introuvable.");
-    if (delivery.status === DELIVERY_STATUS.VALIDATED) throw new BadRequestError("Impossible de modifier une livraison validée.");
+    if (delivery.status === DELIVERY_STATUS.VALIDATED)
+      throw new BadRequestError("Impossible de modifier une livraison validée.");
     return delivery;
   }
 
@@ -293,12 +357,12 @@ export class DeliveryService {
 
       // Initialize balance_due, accounting for any advance payments already recorded
       const totalDelivery = Number(delivery.totalAmount ?? 0);
-      const existingAllocsResult = await queryRunner.manager.query(
+      const existingAllocsResult = (await queryRunner.manager.query(
         `SELECT COALESCE(SUM(amount), 0) AS already_paid
          FROM supplier_payment_allocation
          WHERE id_delivery = $1 AND allocation_type = 'DELIVERY'`,
-        [idDelivery]
-      ) as { already_paid: string }[];
+        [idDelivery],
+      )) as { already_paid: string }[];
       const alreadyPaid = Number(existingAllocsResult[0]?.already_paid ?? 0);
       delivery.balanceDue = Math.max(0, totalDelivery - alreadyPaid);
       await queryRunner.manager.save(ProductDelivery, delivery);
@@ -307,7 +371,11 @@ export class DeliveryService {
       if (idSupplier) {
         let balance = await queryRunner.manager.findOne(SupplierBalance, { where: { idSupplier } });
         if (!balance) {
-          balance = queryRunner.manager.create(SupplierBalance, { idSupplier, credit: 0, debit: 0 });
+          balance = queryRunner.manager.create(SupplierBalance, {
+            idSupplier,
+            credit: 0,
+            debit: 0,
+          });
         }
         balance.debit = Number(balance.debit) + totalDelivery;
         await queryRunner.manager.save(SupplierBalance, balance);
@@ -325,25 +393,32 @@ export class DeliveryService {
 
   // --- Helpers for validateDelivery ---
 
-  private async getDeliveryForValidation(queryRunner: any, idDelivery: string): Promise<ProductDelivery> {
+  private async getDeliveryForValidation(
+    queryRunner: any,
+    idDelivery: string,
+  ): Promise<ProductDelivery> {
     const delivery = await queryRunner.manager.getRepository(ProductDelivery).findOne({
       where: { idDelivery },
       relations: {
         deliveryDetails: {
           suppliedItem: {
-            item: true
-          }
+            item: true,
+          },
         },
-        purchaseDeliveries: { purchase: true }
-      }
+        purchaseDeliveries: { purchase: true },
+      },
     });
 
     if (!delivery) throw new NotFoundError("Livraison introuvable.");
-    if (delivery.status === DELIVERY_STATUS.VALIDATED) throw new BadRequestError("Livraison déjà validée.");
+    if (delivery.status === DELIVERY_STATUS.VALIDATED)
+      throw new BadRequestError("Livraison déjà validée.");
     return delivery;
   }
 
-  private async markDeliveryAsValidated(queryRunner: any, delivery: ProductDelivery): Promise<void> {
+  private async markDeliveryAsValidated(
+    queryRunner: any,
+    delivery: ProductDelivery,
+  ): Promise<void> {
     delivery.status = DELIVERY_STATUS.VALIDATED;
     await queryRunner.manager.save(ProductDelivery, delivery);
   }
@@ -378,15 +453,21 @@ export class DeliveryService {
         const mappedItem = itemsToUpdate.get(item.idItem)!;
 
         const currentStock = Number(mappedItem.quantity ?? 0);
-        const currentCMP = mappedItem.weightedAverageCost !== null && mappedItem.weightedAverageCost !== undefined
-          ? Number(mappedItem.weightedAverageCost)
-          : null;
+        const currentCMP =
+          mappedItem.weightedAverageCost !== null && mappedItem.weightedAverageCost !== undefined
+            ? Number(mappedItem.weightedAverageCost)
+            : null;
         const receivedQty = Number(detail.quantity ?? 0);
         const newPrice = Number(detail.unitPrice ?? 0);
 
         // Calculate and update CMP if the incoming price is different
         if (newPrice !== currentCMP) {
-          mappedItem.weightedAverageCost = calculateNewCMP(currentStock, currentCMP, receivedQty, newPrice);
+          mappedItem.weightedAverageCost = calculateNewCMP(
+            currentStock,
+            currentCMP,
+            receivedQty,
+            newPrice,
+          );
         }
 
         mappedItem.quantity = currentStock + receivedQty;
@@ -396,7 +477,11 @@ export class DeliveryService {
     return { stockMovements, itemsArray: Array.from(itemsToUpdate.values()) };
   }
 
-  private async saveStockUpdates(queryRunner: any, stockMovements: StockMovement[], itemsArray: Item[]): Promise<void> {
+  private async saveStockUpdates(
+    queryRunner: any,
+    stockMovements: StockMovement[],
+    itemsArray: Item[],
+  ): Promise<void> {
     if (stockMovements.length > 0) {
       await queryRunner.manager.save(StockMovement, stockMovements);
     }
@@ -405,7 +490,11 @@ export class DeliveryService {
     }
   }
 
-  async deleteDelivery(idDelivery: string, strategy: "SUPPLIER_CREDIT" | "CORRECTION" = "SUPPLIER_CREDIT", idOperator?: string): Promise<void> {
+  async deleteDelivery(
+    idDelivery: string,
+    strategy: "SUPPLIER_CREDIT" | "CORRECTION" = "SUPPLIER_CREDIT",
+    idOperator?: string,
+  ): Promise<void> {
     const queryRunner = AppDataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -413,13 +502,14 @@ export class DeliveryService {
     try {
       const delivery = await queryRunner.manager.getRepository(ProductDelivery).findOne({
         where: { idDelivery },
-        relations: { purchaseDeliveries: { purchase: true } }
+        relations: { purchaseDeliveries: { purchase: true } },
       });
 
       if (!delivery) throw new NotFoundError("Livraison introuvable.");
-      if (delivery.status === DELIVERY_STATUS.VALIDATED) throw new BadRequestError("Impossible de supprimer une livraison validée.");
+      if (delivery.status === DELIVERY_STATUS.VALIDATED)
+        throw new BadRequestError("Impossible de supprimer une livraison validée.");
 
-      const purchaseIds = delivery.purchaseDeliveries?.map(pd => pd.idPurchase) || [];
+      const purchaseIds = delivery.purchaseDeliveries?.map((pd) => pd.idPurchase) || [];
       const idSupplier = delivery.purchaseDeliveries?.[0]?.purchase?.idSupplier;
 
       // 1. Handle payment allocations based on the chosen strategy
@@ -428,7 +518,7 @@ export class DeliveryService {
         await queryRunner.manager.update(
           SupplierPaymentAllocation,
           { idDelivery },
-          { allocationType: "SUPPLIER_CREDIT", idDelivery: null }
+          { allocationType: "SUPPLIER_CREDIT", idDelivery: null },
         );
       } else {
         // CORRECTION: reverse the cash movements and delete the allocations
@@ -495,11 +585,11 @@ export class DeliveryService {
             }
 
             // Recalculate expectedClosingBalance
-            const { totalExpected } = await queryRunner.manager
+            const { totalExpected } = (await queryRunner.manager
               .createQueryBuilder(PaymentMethodBalance, "pmb")
               .select("SUM(pmb.amount)", "totalExpected")
               .where("pmb.id_journal = :idJournal", { idJournal: activeJournal.idJournal })
-              .getRawOne() as { totalExpected: string };
+              .getRawOne()) as { totalExpected: string };
             activeJournal.expectedClosingBalance = Number(totalExpected || 0);
             await queryRunner.manager.save(CashJournal, activeJournal);
           }
@@ -524,26 +614,33 @@ export class DeliveryService {
           .where("p.idPurchase IN (:...ids)", { ids: purchaseIds })
           .getMany();
 
-        const deliveredRows = await queryRunner.manager.query(
+        const deliveredRows = (await queryRunner.manager.query(
           `SELECT pd.id_purchase, dd.id_supplied_item, COALESCE(SUM(dd.quantity), 0) AS delivered_qty
            FROM purchase_delivery pd
            JOIN delivery_details dd ON dd.id_delivery = pd.id_delivery
            WHERE pd.id_purchase = ANY($1)
            GROUP BY pd.id_purchase, dd.id_supplied_item`,
-          [purchaseIds]
-        ) as { id_purchase: string; id_supplied_item: string; delivered_qty: string }[];
+          [purchaseIds],
+        )) as { id_purchase: string; id_supplied_item: string; delivered_qty: string }[];
 
         const deliveredMap = deliveryHelper.buildDeliveredMap(deliveredRows);
-        const { fullyDeliveredIds, partialIds, createdIds } = deliveryHelper.determineNewPurchaseStatuses(purchases, deliveredMap);
+        const { fullyDeliveredIds, partialIds, createdIds } =
+          deliveryHelper.determineNewPurchaseStatuses(purchases, deliveredMap);
 
         if (fullyDeliveredIds.length > 0) {
-          await queryRunner.manager.update(Purchase, fullyDeliveredIds, { status: PURCHASE_STATUS.DELIVERED });
+          await queryRunner.manager.update(Purchase, fullyDeliveredIds, {
+            status: PURCHASE_STATUS.DELIVERED,
+          });
         }
         if (partialIds.length > 0) {
-          await queryRunner.manager.update(Purchase, partialIds, { status: PURCHASE_STATUS.PARTIALLY_DELIVERED });
+          await queryRunner.manager.update(Purchase, partialIds, {
+            status: PURCHASE_STATUS.PARTIALLY_DELIVERED,
+          });
         }
         if (createdIds && createdIds.length > 0) {
-          await queryRunner.manager.update(Purchase, createdIds, { status: PURCHASE_STATUS.CREATED });
+          await queryRunner.manager.update(Purchase, createdIds, {
+            status: PURCHASE_STATUS.CREATED,
+          });
         }
       }
 
@@ -586,7 +683,10 @@ export class DeliveryService {
     }
   }
 
-  async updateDelivery(idDelivery: string, dto: CreateDeliveryDto): Promise<{ idDelivery: string; ref: string }> {
+  async updateDelivery(
+    idDelivery: string,
+    dto: CreateDeliveryDto,
+  ): Promise<{ idDelivery: string; ref: string }> {
     this.validateCreateDeliveryDto(dto);
 
     const queryRunner = AppDataSource.createQueryRunner();
@@ -596,11 +696,15 @@ export class DeliveryService {
     try {
       const delivery = await this.getDeliveryForUpdate(queryRunner, idDelivery);
 
-      const oldPurchaseIds = delivery.purchaseDeliveries?.map(pd => pd.idPurchase) || [];
+      const oldPurchaseIds = delivery.purchaseDeliveries?.map((pd) => pd.idPurchase) || [];
       const newPurchaseIds = dto.idPurchases;
       const allAffectedPurchaseIds = Array.from(new Set([...oldPurchaseIds, ...newPurchaseIds]));
 
-      const purchases = await this.loadPurchasesForDelivery(queryRunner, allAffectedPurchaseIds, idDelivery);
+      const purchases = await this.loadPurchasesForDelivery(
+        queryRunner,
+        allAffectedPurchaseIds,
+        idDelivery,
+      );
       const detailBySuppliedItem = deliveryHelper.indexPurchaseDetails(purchases);
       const totalDelivery = deliveryHelper.calculateTotalDelivery(dto.lines, detailBySuppliedItem);
 
@@ -613,7 +717,10 @@ export class DeliveryService {
       await this.insertPurchaseDeliveries(queryRunner, idDelivery, newPurchaseIds);
 
       if (allAffectedPurchaseIds.length > 0) {
-        const deliveredMap = await this.getDeliveredQuantitiesForPurchases(queryRunner, allAffectedPurchaseIds);
+        const deliveredMap = await this.getDeliveredQuantitiesForPurchases(
+          queryRunner,
+          allAffectedPurchaseIds,
+        );
         await this.updatePurchasesStatuses(queryRunner, purchases, deliveredMap);
       }
 
@@ -627,15 +734,17 @@ export class DeliveryService {
     }
   }
 
-  async findAll(options: {
-    page?: number;
-    limit?: number;
-    status?: number;
-    ref?: string;
-    startDate?: string;
-    endDate?: string;
-    idPurchase?: string;
-  } = {}): Promise<Paginated<any>> {
+  async findAll(
+    options: {
+      page?: number;
+      limit?: number;
+      status?: number;
+      ref?: string;
+      startDate?: string;
+      endDate?: string;
+      idPurchase?: string;
+    } = {},
+  ): Promise<Paginated<any>> {
     const pageNum = options.page ?? 1;
     const limitNum = options.limit ?? 10;
     const repository = AppDataSource.getRepository(ProductDelivery);
@@ -734,23 +843,22 @@ export class DeliveryService {
       totalAmount: delivery.totalAmount,
       balanceDue: balanceDue,
       status: getDeliveryStatusName(delivery.status),
-      purchases: (delivery.purchaseDeliveries ?? []).map(pd => ({
+      purchases: (delivery.purchaseDeliveries ?? []).map((pd) => ({
         idPurchase: pd.purchase?.idPurchase,
         ref: pd.purchase?.ref,
         idSupplier: pd.purchase?.supplier?.idSupplier,
         supplierName: pd.purchase?.supplier?.name,
       })),
-      details: (delivery.deliveryDetails ?? []).map(d => ({
+      details: (delivery.deliveryDetails ?? []).map((d) => ({
         idDetail: d.idDetail,
         idSuppliedItem: d.idSuppliedItem,
         quantity: d.quantity,
         unitPrice: d.unitPrice,
         totalAmount: d.totalAmount,
         itemLabel: d.suppliedItem?.item?.label,
-      }))
+      })),
     };
   }
 }
 
 export const deliveryService = new DeliveryService();
-

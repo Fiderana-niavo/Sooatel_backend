@@ -3,8 +3,17 @@ import { StockMovement } from "../../../database/Entities/StockMovement";
 import { Item } from "../../../database/Entities/Item";
 import { BadRequestError, NotFoundError } from "../../../shared/errors/AppError";
 import { Paginated } from "../../../shared/types/Paginated";
-import { STOCK_MOVEMENT_STATUS, STOCK_MOVEMENT_TYPE, STOCK_MOVEMENT_DIRECTION } from "../../items/constants/stock.constants";
-import type { StockMovementDto, StockMovementSearchOptions, LossDto, InventoryLineDto } from "../type/stock-movement.type";
+import {
+  STOCK_MOVEMENT_STATUS,
+  STOCK_MOVEMENT_TYPE,
+  STOCK_MOVEMENT_DIRECTION,
+} from "../../items/constants/stock.constants";
+import type {
+  StockMovementDto,
+  StockMovementSearchOptions,
+  LossDto,
+  InventoryLineDto,
+} from "../type/stock-movement.type";
 
 export class StockMovementService {
   private repository = AppDataSource.getRepository(StockMovement);
@@ -111,7 +120,9 @@ export class StockMovementService {
     await queryRunner.startTransaction();
 
     try {
-      const movement = await queryRunner.manager.findOne(StockMovement, { where: { idStockMovement: id } });
+      const movement = await queryRunner.manager.findOne(StockMovement, {
+        where: { idStockMovement: id },
+      });
       if (!movement) throw new NotFoundError("Mouvement introuvable.");
       if (movement.status === STOCK_MOVEMENT_STATUS.VALIDATED) {
         throw new BadRequestError("Mouvement déjà validé.");
@@ -126,7 +137,7 @@ export class StockMovementService {
       if (movement.direction === STOCK_MOVEMENT_DIRECTION.OUT) {
         if (currentStock < qty) {
           throw new BadRequestError(
-            `Stock insuffisant. Disponible : ${currentStock}, demandé : ${qty}.`
+            `Stock insuffisant. Disponible : ${currentStock}, demandé : ${qty}.`,
           );
         }
         item.quantity = currentStock - qty;
@@ -164,7 +175,7 @@ export class StockMovementService {
 
       if (currentStock < qty) {
         throw new BadRequestError(
-          `Stock insuffisant pour enregistrer la perte. Disponible : ${currentStock}, perte déclarée : ${qty}.`
+          `Stock insuffisant pour enregistrer la perte. Disponible : ${currentStock}, perte déclarée : ${qty}.`,
         );
       }
 
@@ -193,7 +204,10 @@ export class StockMovementService {
   }
 
   // Submit a physical inventory: compare physical qty vs theoretical, create adjustment movements
-  async submitInventory(lines: InventoryLineDto[], idOperator: string): Promise<{ adjusted: number }> {
+  async submitInventory(
+    lines: InventoryLineDto[],
+    idOperator: string,
+  ): Promise<{ adjusted: number }> {
     const queryRunner = AppDataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -245,5 +259,3 @@ export class StockMovementService {
 }
 
 export const stockMovementService = new StockMovementService();
-
-

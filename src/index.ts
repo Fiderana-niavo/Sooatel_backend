@@ -52,8 +52,6 @@ import leaveRouter from "./modules/leaves/routes/leave.router";
 import settingsRouter from "./modules/settings/routes/settings.router";
 import scheduleRouter from "./modules/schedules/routes/schedule.router";
 
-
-
 configDotenv();
 
 const app = express();
@@ -111,8 +109,6 @@ AppDataSource.initialize()
     app.use("/api/leaves", leaveRouter);
     app.use("/api/settings", settingsRouter);
     app.use("/api/schedules", scheduleRouter);
-
-
 
     app.use(globalErrorMiddleware);
 

@@ -21,11 +21,7 @@ export const authorize =
       const permissions = await getUserPermissions(req.userId);
 
       if (!permissions.includes(permission)) {
-        return next(
-          new ForbiddenError(
-            `Access denied: missing permission "${permission}".`,
-          ),
-        );
+        return next(new ForbiddenError(`Access denied: missing permission "${permission}".`));
       }
 
       next();

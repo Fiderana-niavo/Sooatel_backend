@@ -5,7 +5,12 @@ import { EmployeeLeaveBalance } from "../../../database/Entities/EmployeeLeaveBa
 import { LeaveType } from "../../../database/Entities/LeaveType";
 import { Employee } from "../../../database/Entities/Employee";
 import { EmployeeJob } from "../../../database/Entities/EmployeeJob";
-import { JOB_STATUS, LEAVE_TRANSACTION_TYPE, DEDUCTION_MODE, CAP_PERIOD } from "../../../shared/constants/leave.constants";
+import {
+  JOB_STATUS,
+  LEAVE_TRANSACTION_TYPE,
+  DEDUCTION_MODE,
+  CAP_PERIOD,
+} from "../../../shared/constants/leave.constants";
 import { getHrSettings } from "../../../shared/utils/hr-settings.utils";
 import { AppError } from "../../../shared/errors/AppError";
 import {
@@ -29,9 +34,12 @@ export class LeaveService {
         order: { assignmentDate: "DESC" },
       });
       if (!job) throw new AppError("No active job found for this employee.");
-      if (job.status === JOB_STATUS.CANCELLED) throw new AppError("Cannot create a leave for a cancelled employee.");
+      if (job.status === JOB_STATUS.CANCELLED)
+        throw new AppError("Cannot create a leave for a cancelled employee.");
 
-      const leaveType = await manager.findOne(LeaveType, { where: { idLeaveType: dto.idLeaveType } });
+      const leaveType = await manager.findOne(LeaveType, {
+        where: { idLeaveType: dto.idLeaveType },
+      });
       if (!leaveType) throw new AppError("Leave type not found.");
 
       const start = new Date(dto.startDate);
@@ -40,7 +48,12 @@ export class LeaveService {
 
       // Cap check (not applicable to OPTIONAL mode which has no cap)
       if (leaveType.cap !== null && leaveType.deductionMode !== DEDUCTION_MODE.OPTIONAL) {
-        const capUsed = await this.getCapUsed(manager, dto.idEmployee, dto.idLeaveType, leaveType.capPeriod);
+        const capUsed = await this.getCapUsed(
+          manager,
+          dto.idEmployee,
+          dto.idLeaveType,
+          leaveType.capPeriod,
+        );
         const remaining = leaveType.cap - capUsed;
 
         if (leaveDays > remaining) {
@@ -66,9 +79,12 @@ export class LeaveService {
         order: { assignmentDate: "DESC" },
       });
       if (!job) throw new AppError("No active job found for this employee.");
-      if (job.status === JOB_STATUS.CANCELLED) throw new AppError("Cannot create a leave for a cancelled employee.");
+      if (job.status === JOB_STATUS.CANCELLED)
+        throw new AppError("Cannot create a leave for a cancelled employee.");
 
-      const leaveType = await manager.findOne(LeaveType, { where: { idLeaveType: dto.idLeaveType } });
+      const leaveType = await manager.findOne(LeaveType, {
+        where: { idLeaveType: dto.idLeaveType },
+      });
       if (!leaveType) throw new AppError("Leave type not found.");
 
       const start = new Date(dto.startDate);
@@ -93,15 +109,23 @@ export class LeaveService {
       }
 
       // Leave 2: overflow, chosen type (annual or unpaid)
-      const overflowTypeId = dto.resolution === "ANNUAL" ? dto.idAnnualLeaveType : dto.idUnpaidLeaveType;
+      const overflowTypeId =
+        dto.resolution === "ANNUAL" ? dto.idAnnualLeaveType : dto.idUnpaidLeaveType;
       if (!overflowTypeId) throw new AppError("Overflow leave type ID is required.");
 
-      const overflowType = await manager.findOne(LeaveType, { where: { idLeaveType: overflowTypeId } });
+      const overflowType = await manager.findOne(LeaveType, {
+        where: { idLeaveType: overflowTypeId },
+      });
       if (!overflowType) throw new AppError("Overflow leave type not found.");
 
       const leave2 = await this.persistLeave(
         manager,
-        { ...dto, idLeaveType: overflowTypeId, startDate: overflowStart.toISOString().slice(0, 10), endDate: end.toISOString().slice(0, 10) },
+        {
+          ...dto,
+          idLeaveType: overflowTypeId,
+          startDate: overflowStart.toISOString().slice(0, 10),
+          endDate: end.toISOString().slice(0, 10),
+        },
         dto.overflowDays,
         job.status,
         overflowType,
@@ -121,9 +145,13 @@ export class LeaveService {
 
       for (const tx of transactions) {
         if (tx.transactionType === LEAVE_TRANSACTION_TYPE.USAGE) {
-          await this.updateBalance(manager, tx.idEmployee, tx.idLeaveType, { usedDays: -Number(tx.amount) });
+          await this.updateBalance(manager, tx.idEmployee, tx.idLeaveType, {
+            usedDays: -Number(tx.amount),
+          });
         } else if (tx.transactionType === LEAVE_TRANSACTION_TYPE.ADVANCE) {
-          await this.updateBalance(manager, tx.idEmployee, tx.idLeaveType, { advanceDays: -Number(tx.amount) });
+          await this.updateBalance(manager, tx.idEmployee, tx.idLeaveType, {
+            advanceDays: -Number(tx.amount),
+          });
         }
       }
 
@@ -239,7 +267,14 @@ export class LeaveService {
     return AppDataSource.getRepository(LeaveType).find({ order: { label: "ASC" } });
   }
 
-  async createLeaveType(dto: { label: string; isPaid: boolean; requiresProof: boolean; deductionMode: string; cap?: number | null; capPeriod?: string | null }): Promise<LeaveType> {
+  async createLeaveType(dto: {
+    label: string;
+    isPaid: boolean;
+    requiresProof: boolean;
+    deductionMode: string;
+    cap?: number | null;
+    capPeriod?: string | null;
+  }): Promise<LeaveType> {
     const repo = AppDataSource.getRepository(LeaveType);
     const entity = repo.create({
       label: dto.label,
@@ -247,12 +282,22 @@ export class LeaveService {
       requiresProof: dto.requiresProof,
       deductionMode: dto.deductionMode as LeaveType["deductionMode"],
       cap: dto.deductionMode === DEDUCTION_MODE.OPTIONAL ? null : (dto.cap ?? null),
-      capPeriod: dto.cap ? dto.capPeriod as LeaveType["capPeriod"] : null,
+      capPeriod: dto.cap ? (dto.capPeriod as LeaveType["capPeriod"]) : null,
     });
     return repo.save(entity);
   }
 
-  async updateLeaveType(idLeaveType: string, dto: { label?: string; isPaid?: boolean; requiresProof?: boolean; deductionMode?: string; cap?: number | null; capPeriod?: string | null }): Promise<LeaveType> {
+  async updateLeaveType(
+    idLeaveType: string,
+    dto: {
+      label?: string;
+      isPaid?: boolean;
+      requiresProof?: boolean;
+      deductionMode?: string;
+      cap?: number | null;
+      capPeriod?: string | null;
+    },
+  ): Promise<LeaveType> {
     const repo = AppDataSource.getRepository(LeaveType);
     const entity = await repo.findOne({ where: { idLeaveType } });
     if (!entity) throw new AppError("Leave type not found.");
@@ -270,7 +315,8 @@ export class LeaveService {
     }
     if (entity.deductionMode !== DEDUCTION_MODE.OPTIONAL) {
       if (dto.cap !== undefined) entity.cap = dto.cap ?? null;
-      if (dto.capPeriod !== undefined) entity.capPeriod = dto.cap ? dto.capPeriod as LeaveType["capPeriod"] : null;
+      if (dto.capPeriod !== undefined)
+        entity.capPeriod = dto.cap ? (dto.capPeriod as LeaveType["capPeriod"]) : null;
     }
 
     return repo.save(entity);
@@ -285,7 +331,14 @@ export class LeaveService {
 
   private async persistLeave(
     manager: typeof AppDataSource.manager,
-    dto: { idEmployee: string; idLeaveType: string; startDate: string; endDate: string; leaveUnit?: string; deductFromAnnual?: boolean },
+    dto: {
+      idEmployee: string;
+      idLeaveType: string;
+      startDate: string;
+      endDate: string;
+      leaveUnit?: string;
+      deductFromAnnual?: boolean;
+    },
     leaveDays: number,
     jobStatus: number,
     leaveType: LeaveType,
@@ -308,36 +361,47 @@ export class LeaveService {
 
     if (isPending) {
       // Pending employee: record as advance
-      await manager.save(LeaveTransaction, manager.create(LeaveTransaction, {
-        transactionType: LEAVE_TRANSACTION_TYPE.ADVANCE,
-        amount: leaveDays,
-        createdAt: new Date(),
-        idLeave: leave.idLeave,
-        idLeaveType: dto.idLeaveType,
-        idEmployee: dto.idEmployee,
-      }));
-      await this.updateBalance(manager, dto.idEmployee, dto.idLeaveType, { advanceDays: leaveDays });
+      await manager.save(
+        LeaveTransaction,
+        manager.create(LeaveTransaction, {
+          transactionType: LEAVE_TRANSACTION_TYPE.ADVANCE,
+          amount: leaveDays,
+          createdAt: new Date(),
+          idLeave: leave.idLeave,
+          idLeaveType: dto.idLeaveType,
+          idEmployee: dto.idEmployee,
+        }),
+      );
+      await this.updateBalance(manager, dto.idEmployee, dto.idLeaveType, {
+        advanceDays: leaveDays,
+      });
     } else if (leaveType.deductionMode === DEDUCTION_MODE.ALWAYS || dto.deductFromAnnual === true) {
       // Deduct from annual balance (negative balance allowed)
-      await manager.save(LeaveTransaction, manager.create(LeaveTransaction, {
-        transactionType: LEAVE_TRANSACTION_TYPE.USAGE,
-        amount: leaveDays,
-        createdAt: new Date(),
-        idLeave: leave.idLeave,
-        idLeaveType: dto.idLeaveType,
-        idEmployee: dto.idEmployee,
-      }));
+      await manager.save(
+        LeaveTransaction,
+        manager.create(LeaveTransaction, {
+          transactionType: LEAVE_TRANSACTION_TYPE.USAGE,
+          amount: leaveDays,
+          createdAt: new Date(),
+          idLeave: leave.idLeave,
+          idLeaveType: dto.idLeaveType,
+          idEmployee: dto.idEmployee,
+        }),
+      );
       await this.updateBalance(manager, dto.idEmployee, dto.idLeaveType, { usedDays: leaveDays });
     } else {
       // NEVER or OPTIONAL (not deducted from annual): use own balance
-      await manager.save(LeaveTransaction, manager.create(LeaveTransaction, {
-        transactionType: LEAVE_TRANSACTION_TYPE.USAGE,
-        amount: leaveDays,
-        createdAt: new Date(),
-        idLeave: leave.idLeave,
-        idLeaveType: dto.idLeaveType,
-        idEmployee: dto.idEmployee,
-      }));
+      await manager.save(
+        LeaveTransaction,
+        manager.create(LeaveTransaction, {
+          transactionType: LEAVE_TRANSACTION_TYPE.USAGE,
+          amount: leaveDays,
+          createdAt: new Date(),
+          idLeave: leave.idLeave,
+          idLeaveType: dto.idLeaveType,
+          idEmployee: dto.idEmployee,
+        }),
+      );
       await this.updateBalance(manager, dto.idEmployee, dto.idLeaveType, { usedDays: leaveDays });
     }
 
@@ -364,7 +428,8 @@ export class LeaveService {
 
     const leaves = await qb.getMany();
     return leaves.reduce((sum, l) => {
-      const days = Math.ceil((l.endDate.getTime() - l.startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      const days =
+        Math.ceil((l.endDate.getTime() - l.startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
       return sum + days;
     }, 0);
   }
@@ -440,7 +505,7 @@ export class LeaveService {
 
   async getUpcomingLeaves(): Promise<LeaveResponse[]> {
     const { MoreThanOrEqual, Not, In } = require("typeorm");
-    
+
     // Start of today
     const today = new Date();
     today.setHours(0, 0, 0, 0);

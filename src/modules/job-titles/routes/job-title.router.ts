@@ -6,6 +6,9 @@ import { authMiddleware } from "../../../shared/middlewares/auth.middleware";
 const jobTitleRouter = Router();
 
 jobTitleRouter.use(authMiddleware);
-generateCrudRoutes(jobTitleRouter, jobTitleController, { valueField: "idJobTitle", labelField: "title" });
+generateCrudRoutes(jobTitleRouter, jobTitleController, {
+  valueField: "idJobTitle",
+  labelField: "title",
+});
 
 export default jobTitleRouter;

@@ -5,7 +5,11 @@ import { Recipe } from "../../../database/Entities/Recipe";
 import { RecipeDetail } from "../../../database/Entities/RecipeDetail";
 import { SaleItem } from "../../../database/Entities/SaleItem";
 import { StockMovement } from "../../../database/Entities/StockMovement";
-import { STOCK_MOVEMENT_DIRECTION, STOCK_MOVEMENT_STATUS, STOCK_MOVEMENT_TYPE } from "../../items/constants/stock.constants";
+import {
+  STOCK_MOVEMENT_DIRECTION,
+  STOCK_MOVEMENT_STATUS,
+  STOCK_MOVEMENT_TYPE,
+} from "../../items/constants/stock.constants";
 
 interface IngredientAdjustment {
   item: Item;
@@ -14,7 +18,7 @@ interface IngredientAdjustment {
 
 const buildIngredientAdjustments = async (
   queryRunner: QueryRunner,
-  saleItems: SaleItem[]
+  saleItems: SaleItem[],
 ): Promise<IngredientAdjustment[]> => {
   const adjustments = new Map<string, IngredientAdjustment>();
 
@@ -57,7 +61,7 @@ export const deductStockForSale = async (
   queryRunner: QueryRunner,
   saleItems: SaleItem[],
   invoiceNumber: string | null,
-  idOperator: string
+  idOperator: string,
 ): Promise<void> => {
   const adjustments = await buildIngredientAdjustments(queryRunner, saleItems);
   if (adjustments.length === 0) return;
@@ -95,7 +99,7 @@ export const restoreStockForSale = async (
   queryRunner: QueryRunner,
   saleItems: SaleItem[],
   invoiceNumber: string | null,
-  idOperator: string
+  idOperator: string,
 ): Promise<void> => {
   const adjustments = await buildIngredientAdjustments(queryRunner, saleItems);
   if (adjustments.length === 0) return;

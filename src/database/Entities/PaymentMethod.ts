@@ -12,6 +12,6 @@ export class PaymentMethod extends BaseEntity {
   @Column({ type: "varchar", length: 50, nullable: true, name: "description" })
   description: string;
 
-  @OneToMany(() => PaymentMethodBalance, balance => balance.paymentMethod)
+  @OneToMany(() => PaymentMethodBalance, (balance) => balance.paymentMethod)
   paymentMethodBalances: PaymentMethodBalance[];
 }

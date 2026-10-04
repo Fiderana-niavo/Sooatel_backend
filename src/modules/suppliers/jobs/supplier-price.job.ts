@@ -19,7 +19,7 @@ async function updatePendingPrices(): Promise<void> {
       const latestPrice = await priceRepo.findOne({
         where: {
           idSupplierProduct: product.idSupplierProduct,
-          changeDate: LessThanOrEqual(today)
+          changeDate: LessThanOrEqual(today),
         },
         order: { changeDate: "DESC" },
       });
@@ -31,7 +31,9 @@ async function updatePendingPrices(): Promise<void> {
     }
 
     if (updatedCount > 0) {
-      console.log(`[SupplierPriceJob] Mis à jour des prix pour ${updatedCount} produit(s) fournisseur.`);
+      console.log(
+        `[SupplierPriceJob] Mis à jour des prix pour ${updatedCount} produit(s) fournisseur.`,
+      );
     }
   } catch (err) {
     console.error("[SupplierPriceJob] Erreur lors de la mise à jour des prix fournisseurs :", err);
