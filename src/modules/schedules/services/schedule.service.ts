@@ -15,7 +15,9 @@ import {
   ScheduleRangeSearchOptions,
   AvailableEmployeesOptions,
   CheckExistingResult,
+  LastRotationInfo,
 } from "../type/schedule.type";
+import { Team } from "../../../database/Entities/Team";
 
 export class ScheduleService {
   // ─── Helpers ─────────────────────────────────────────────────────────────
@@ -143,6 +145,89 @@ export class ScheduleService {
     return withRelations.map((s) => this.toResponse(s));
   }
 
+  // ─── Get Last Rotation Info ───────────────────────────────────────────────
+
+  async getLastRotationInfo(startDate: string, idShiftType: string, teamIds: string[]): Promise<LastRotationInfo> {
+    if (!idShiftType || !startDate) {
+      return { lastTeamId: null, lastTeamName: null, nextTeamId: null, nextTeamName: null, previousRotationTeamIds: [] };
+    }
+
+    // Get the most recent schedule to anchor the "last week"
+    const lastSchedule = await AppDataSource.getRepository(Schedule).findOne({
+      where: {
+        idShiftType: idShiftType,
+        scheduleDate: LessThan(new Date(startDate + "T00:00:00Z")) as unknown as Date,
+      },
+      order: { scheduleDate: "DESC" },
+      relations: { employee: { employeeTeams: { team: true } } },
+    });
+
+    let previousRotationTeamIds: string[] = [];
+
+    if (lastSchedule) {
+      const latestDate = new Date(lastSchedule.scheduleDate);
+      const sevenDaysBefore = new Date(latestDate);
+      sevenDaysBefore.setDate(sevenDaysBefore.getDate() - 7);
+
+      const recentSchedules = await AppDataSource.getRepository(Schedule).find({
+        where: {
+          idShiftType: idShiftType,
+          scheduleDate: Between(
+            sevenDaysBefore as unknown as Date,
+            latestDate as unknown as Date
+          ),
+        },
+        order: { scheduleDate: "DESC" },
+        relations: { employee: { employeeTeams: { team: true } } },
+      });
+
+      const uniqueTeamsDesc: string[] = [];
+      for (const schedule of recentSchedules) {
+        if (
+          schedule.employee &&
+          schedule.employee.employeeTeams &&
+          schedule.employee.employeeTeams.length > 0
+        ) {
+          const ets = schedule.employee.employeeTeams;
+          const tId = ets.find(et => teamIds.includes(et.idTeam))?.team?.idTeam ?? ets[0]?.team?.idTeam;
+          if (tId && !uniqueTeamsDesc.includes(tId)) {
+            uniqueTeamsDesc.push(tId);
+          }
+        }
+      }
+      
+      // Reverse to get the chronological forward order
+      previousRotationTeamIds = [...uniqueTeamsDesc].reverse();
+    }
+
+    if (
+      lastSchedule &&
+      lastSchedule.employee &&
+      lastSchedule.employee.employeeTeams &&
+      lastSchedule.employee.employeeTeams.length > 0
+    ) {
+      const ets = lastSchedule.employee.employeeTeams;
+      const lastTeam = ets.find(et => teamIds.includes(et.idTeam))?.team ?? ets[0]?.team;
+      
+      if (lastTeam && teamIds.length > 0) {
+        const idx = teamIds.indexOf(lastTeam.idTeam);
+        if (idx !== -1) {
+          const nextIdx = (idx + 1) % teamIds.length;
+          const nextTeamId = teamIds[nextIdx];
+          const nextTeam = await AppDataSource.getRepository(Team).findOne({ where: { idTeam: nextTeamId } });
+          return {
+            lastTeamId: lastTeam.idTeam,
+            lastTeamName: lastTeam.teamName,
+            nextTeamId: nextTeamId ?? null,
+            nextTeamName: nextTeam?.teamName ?? null,
+            previousRotationTeamIds,
+          };
+        }
+      }
+    }
+    return { lastTeamId: null, lastTeamName: null, nextTeamId: null, nextTeamName: null, previousRotationTeamIds };
+  }
+
   // ─── Generate by team rotation ────────────────────────────────────────────
 
   async generateByTeam(dto: GenerateByTeamDto): Promise<GeneratedScheduleRow[]> {
@@ -172,27 +257,31 @@ export class ScheduleService {
     let startIndex = 0;
 
     // Check if there are schedules before this date for the given shift
-    const lastSchedule = await AppDataSource.getRepository(Schedule).findOne({
-      where: {
-        idShiftType: dto.shiftIds[0],
-        scheduleDate: LessThan(new Date(dto.startDate + "T00:00:00Z")) as unknown as Date,
-      },
-      order: { scheduleDate: "DESC" },
-      relations: { employee: { employeeTeams: true } },
-    });
+    if (dto.continueRotation) {
+      const lastSchedule = await AppDataSource.getRepository(Schedule).findOne({
+        where: {
+          idShiftType: dto.shiftIds[0],
+          scheduleDate: LessThan(new Date(dto.startDate + "T00:00:00Z")) as unknown as Date,
+        },
+        order: { scheduleDate: "DESC" },
+        relations: { employee: { employeeTeams: true } },
+      });
 
-    if (
-      lastSchedule &&
-      lastSchedule.employee &&
-      lastSchedule.employee.employeeTeams &&
-      lastSchedule.employee.employeeTeams.length > 0
-    ) {
-      const lastTeamId = lastSchedule.employee.employeeTeams[0]?.idTeam;
-      if (lastTeamId) {
-        const idx = dto.teamIds.indexOf(lastTeamId);
-        if (idx !== -1) {
-          // The next slot should start with the team AFTER the last one
-          startIndex = (idx + 1) % dto.teamIds.length;
+      if (
+        lastSchedule &&
+        lastSchedule.employee &&
+        lastSchedule.employee.employeeTeams &&
+        lastSchedule.employee.employeeTeams.length > 0
+      ) {
+        const ets = lastSchedule.employee.employeeTeams;
+        const lastTeamId = ets.find(et => dto.teamIds.includes(et.idTeam))?.idTeam ?? ets[0]?.idTeam;
+        
+        if (lastTeamId) {
+          const idx = dto.teamIds.indexOf(lastTeamId);
+          if (idx !== -1) {
+            // The next slot should start with the team AFTER the last one
+            startIndex = (idx + 1) % dto.teamIds.length;
+          }
         }
       }
     }

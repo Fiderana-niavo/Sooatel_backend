@@ -7,6 +7,7 @@ const scheduleRouter = Router();
 scheduleRouter.use(authMiddleware);
 
 // Specific routes first (before generic /)
+scheduleRouter.get("/last-rotation", scheduleController.getLastRotationInfo);
 scheduleRouter.get("/check-existing", scheduleController.checkExisting);
 scheduleRouter.get("/available-employees", scheduleController.getAvailableEmployees);
 scheduleRouter.post("/generate/by-team", scheduleController.generateByTeam);

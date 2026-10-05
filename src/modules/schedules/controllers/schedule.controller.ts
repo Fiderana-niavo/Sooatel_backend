@@ -30,6 +30,22 @@ export const scheduleController = {
     }
   },
 
+  // GET /api/schedules/last-rotation
+  getLastRotationInfo: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { startDate, idShiftType, teamIds } = req.query;
+      const tIds = typeof teamIds === "string" ? teamIds.split(",") : Array.isArray(teamIds) ? teamIds : [];
+      const info = await service.getLastRotationInfo(
+        startDate as string,
+        idShiftType as string,
+        tIds as string[]
+      );
+      res.json(ApiResponse.success(info));
+    } catch (err) {
+      next(err);
+    }
+  },
+
   // POST /api/schedules/generate/by-team
   generateByTeam: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {

@@ -17,6 +17,10 @@ employeeRouter.get(
 );
 
 employeeRouter.get("/", authorize("employee.read"), employeeController.getAllEmployees);
+
+employeeRouter.get("/me/profile", employeeController.getMyProfile);
+employeeRouter.put("/me/profile", employeeController.updateMyProfile);
+
 employeeRouter.get("/:id", authorize("employee.read"), employeeController.getById);
 
 employeeRouter.post("/:id/change-job", authorize("employee.update"), employeeController.changeJob);

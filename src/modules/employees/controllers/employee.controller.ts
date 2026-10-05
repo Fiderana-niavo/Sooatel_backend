@@ -67,6 +67,45 @@ export class EmployeeController extends CrudController<
     }
   };
 
+  getMyProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      if (!req.idEmployee) {
+         res.status(404).json(ApiResponse.error("Profil non trouvé"));
+         return;
+      }
+      const result = await (this.service as EmployeeService).getById(req.idEmployee);
+      if (!result) {
+        res.status(404).json(ApiResponse.error("Employé introuvable"));
+        return;
+      }
+      res.json(ApiResponse.success(result));
+    } catch (err: unknown) {
+      next(err);
+    }
+  };
+
+  updateMyProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      if (!req.idEmployee) {
+         res.status(404).json(ApiResponse.error("Profil non trouvé"));
+         return;
+      }
+      const dto = req.body as Partial<EmployeeCreateOrUpdateDto>;
+      // Only allow updating safe fields
+      const safeDto = {
+        name: dto.name,
+        lastname: dto.lastname,
+        phoneNumber: dto.phoneNumber,
+        emailContact: dto.emailContact,
+      } as any;
+      
+      const result = await (this.service as EmployeeService).update(req.idEmployee, safeDto);
+      res.json(ApiResponse.success(result));
+    } catch (err: unknown) {
+      next(err);
+    }
+  };
+
   changeJob = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const id = req.params["id"] as string;

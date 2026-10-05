@@ -65,6 +65,8 @@ export class TeamService extends CrudService<Team, TeamDto, TeamDto> {
   }
 
   async delete(id: string): Promise<void> {
+    const repo = AppDataSource.getRepository(EmployeeTeam);
+    await repo.delete({ idTeam: id });
     await this.repository.delete(id);
   }
 
@@ -119,7 +121,7 @@ export class TeamService extends CrudService<Team, TeamDto, TeamDto> {
   }
 
   async addMembers(idTeam: string, employeeIds: string[]) {
-    const repo = AppDataSource.getRepository("employee_team");
+    const repo = AppDataSource.getRepository(EmployeeTeam);
 
     // Check which ones are already in the team to prevent duplicates
     const existing = await repo.find({ where: { idTeam } });
@@ -135,7 +137,8 @@ export class TeamService extends CrudService<Team, TeamDto, TeamDto> {
   }
 
   async removeMember(idTeam: string, idEmployee: string) {
-    const repo = AppDataSource.getRepository("employee_team");
+    const repo = AppDataSource.getRepository(EmployeeTeam);
     await repo.delete({ idTeam, idEmployee });
   }
+
 }
