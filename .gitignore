@@ -1,2 +1,4 @@
 .env
 node_modules
+pgvector_files/
+installer_pgvector.bat

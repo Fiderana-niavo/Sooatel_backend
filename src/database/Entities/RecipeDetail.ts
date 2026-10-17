@@ -20,8 +20,6 @@ export class RecipeDetail extends BaseEntity {
   @Column({ type: "uuid", name: "id_recipe" })
   idRecipe: string;
 
-  @Column({ type: "integer", default: 1, name: "version" })
-  version: number;
 
   @Column({ type: "timestamptz", default: () => "CURRENT_TIMESTAMP", name: "created_at" })
   createdAt: Date;

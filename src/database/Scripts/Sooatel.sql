@@ -1,7 +1,23 @@
+-- =========================================================================
+-- DIAGNOSTIC : VERSION & EXTENSIONS
+-- Run these queries first to confirm compatibility before executing the schema.
+-- =========================================================================
+
+SELECT version();
+
+SELECT name, default_version, installed_version
+FROM pg_available_extensions
+WHERE name = 'vector';
+
+-- =========================================================================
+-- DATABASE SETUP
+-- =========================================================================
+
 create database sooatel;
 \c sooatel
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS vector;
 
 -- =========================================================================
 -- CONFIGURATIONS ET PARAMÈTRES 
@@ -584,7 +600,6 @@ CREATE TABLE Recipe_details(
    id_item_unit UUID,
    id_ingredient UUID NOT NULL,
    id_recipe UUID NOT NULL,
-   version INT NOT NULL DEFAULT 1,
    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
    PRIMARY KEY(id_recipe_detail),
    FOREIGN KEY(id_item_unit) REFERENCES Item_unit(id_item_unit),
@@ -801,3 +816,20 @@ CREATE TABLE IF NOT EXISTS payment_method_balance (
     CONSTRAINT fk_payment_method_balance_payment_method FOREIGN KEY (id_payment_method) REFERENCES payment_method(id_payment_method),
     CONSTRAINT UQ_journal_payment UNIQUE (id_journal, id_payment_method)
 );
+
+-- =========================================================================
+-- CHATBOT & BASE DE CONNAISSANCES (RAG)
+-- =========================================================================
+
+CREATE TABLE IF NOT EXISTS chatbot_chunks (
+    id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    content     TEXT NOT NULL,
+    source      TEXT NOT NULL,
+    section     TEXT,
+    chunk_index INTEGER,
+    embedding   vector(768)
+);
+
+CREATE INDEX IF NOT EXISTS idx_chatbot_chunks_embedding
+ON chatbot_chunks USING hnsw (embedding vector_cosine_ops);
+

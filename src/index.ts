@@ -51,6 +51,7 @@ import employeeRequirementRouter from "./modules/employee-requirements/routes/em
 import leaveRouter from "./modules/leaves/routes/leave.router";
 import settingsRouter from "./modules/settings/routes/settings.router";
 import scheduleRouter from "./modules/schedules/routes/schedule.router";
+import chatbotRouter from "./modules/chatbot/routes/chatbot.router";
 
 configDotenv();
 
@@ -109,6 +110,7 @@ AppDataSource.initialize()
     app.use("/api/leaves", leaveRouter);
     app.use("/api/settings", settingsRouter);
     app.use("/api/schedules", scheduleRouter);
+    app.use("/api/chatbot", chatbotRouter);
 
     app.use(globalErrorMiddleware);
 
