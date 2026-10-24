@@ -183,6 +183,16 @@ export class EmployeeController extends CrudController<
       next(err);
     }
   };
+
+  confirmJob = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const id = req.params["id"] as string;
+      await (this.service as EmployeeService).confirmJob(id);
+      res.json(ApiResponse.success(null));
+    } catch (err: unknown) {
+      next(err);
+    }
+  };
 }
 
 export const employeeController = new EmployeeController(new EmployeeService());

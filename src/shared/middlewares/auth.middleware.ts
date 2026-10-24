@@ -1,8 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { jwtVerify } from "jose";
 import { UnauthorizedError } from "../errors/AppError";
-
-const SECRET = new TextEncoder().encode(process.env["JWT_SECRET"] ?? "sooatel_secret_key");
+import { getJwtSecret } from "../config/jwt.config";
 
 import AppDataSource from "../../database/data-source";
 import { User } from "../../database/Entities/User";
@@ -35,7 +34,7 @@ export const authMiddleware = async (
     }
 
     const token = header.slice(7);
-    const { payload } = await jwtVerify(token, SECRET);
+    const { payload } = await jwtVerify(token, getJwtSecret());
 
     req.userId = payload["idUser"] as string;
     req.username = payload["username"] as string;

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { leaveController } from "../controllers/leave.controller";
 import { authMiddleware } from "../../../shared/middlewares/auth.middleware";
+import { authorize } from "../../../shared/middlewares/authorize.middleware";
 
 const leaveRouter = Router();
 
@@ -10,7 +11,7 @@ leaveRouter.get("/upcoming", leaveController.getUpcomingLeaves);
 leaveRouter.post("/", leaveController.createLeave);
 leaveRouter.delete("/:id", leaveController.deleteLeave);
 leaveRouter.post("/allocate-monthly", leaveController.allocateMonthly);
-leaveRouter.post("/confirm/:idEmployee", leaveController.confirmJob);
+leaveRouter.post("/confirm/:idEmployee", authorize("hr.access"), leaveController.confirmJob);
 leaveRouter.post("/salary-deduction", leaveController.salaryDeduction);
 leaveRouter.get("/types", leaveController.getLeaveTypes);
 leaveRouter.post("/types", leaveController.createLeaveType);

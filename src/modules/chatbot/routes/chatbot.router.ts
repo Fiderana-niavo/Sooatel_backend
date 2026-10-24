@@ -9,6 +9,8 @@ chatbotRouter.use(authMiddleware);
 // ─── Chat ─────────────────────────────────────────────────────────────────────
 chatbotRouter.post("/", chatbotController.chat);
 
+chatbotRouter.delete("/session/:sessionId", chatbotController.clearSessionHandler);
+
 chatbotRouter.post("/index", chatbotController.indexAll);
 chatbotRouter.post("/index/:filename", chatbotController.indexOne);
 

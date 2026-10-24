@@ -1,7 +1,7 @@
-import { ChatOpenAI } from "@langchain/openai";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { ChatbotGraphState } from "../graph/graph.state";
 import { similaritySearch } from "../services/vectorStore.service";
+import { getLlm } from "../utils/llm.util";
 import {
   buildRagSystemPrompt,
   buildRagUserPrompt,
@@ -9,32 +9,17 @@ import {
   buildQueryRewritePrompt,
 } from "../utils/prompt.util";
 
-// ─── RAG Agent ──────────────────────────────────────────────────────────────
-// Responsible for:
-//   1. Rewriting the user query for better retrieval
-//   2. Retrieving relevant chunks from the vector store
-//   3. Assembling the augmented prompt
-//   4. Calling the LLM to generate an answer
-
-function getLlm(temperature = 0.3): ChatOpenAI {
-  return new ChatOpenAI({
-    model: "deepseek-chat",
-    apiKey: process.env["DEEPSEEK_KEY"] as string,
-    temperature,
-    configuration: {
-      baseURL: "https://api.deepseek.com",
-    },
-  });
-}
-
 const MIN_SIMILARITY_SCORE = 0.35;
 
 // ─── Step 1: Query Rewriting ─────────────────────────────────────────────────
 // Expands a short/vague query into a richer search query aligned with KB terms.
 
-async function rewriteQuery(query: string): Promise<string> {
+async function rewriteQuery(
+  query: string,
+  history: Array<{ role: "user" | "assistant"; content: string }>,
+): Promise<string> {
   const llm = getLlm(0);
-  const { system, user } = buildQueryRewritePrompt(query);
+  const { system, user } = buildQueryRewritePrompt(query, history);
 
   const response = await llm.invoke([
     new SystemMessage(system),
@@ -58,7 +43,10 @@ async function rewriteQuery(query: string): Promise<string> {
 async function retrieveChunks(
   state: ChatbotGraphState,
 ): Promise<ChatbotGraphState> {
-  const searchQuery = await rewriteQuery(state.userMessage);
+  const searchQuery = await rewriteQuery(
+    state.userMessage,
+    state.conversationHistory,
+  );
   const allChunks = await similaritySearch(searchQuery, 6);
 
   console.log(`\n─── [RAG] Similarity results ────────────────────────────────`);
@@ -78,10 +66,14 @@ async function retrieveChunks(
 async function generateAnswer(
   state: ChatbotGraphState,
 ): Promise<ChatbotGraphState> {
-  const llm = getLlm();
+  const llm = getLlm(0.3);
   const context = buildContextFromChunks(state.retrievedChunks);
   const systemPrompt = buildRagSystemPrompt();
-  const userPrompt = buildRagUserPrompt(state.userMessage, context);
+  const userPrompt = buildRagUserPrompt(
+    state.userMessage,
+    context,
+    state.conversationHistory,
+  );
 
   const messages = [
     new SystemMessage(systemPrompt),

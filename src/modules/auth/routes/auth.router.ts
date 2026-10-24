@@ -1,9 +1,10 @@
 import { Router } from "express";
 import { authController } from "../controllers/auth.controller";
+import { loginLimiter } from "../../../shared/middlewares/rateLimiter.middleware";
 
 const authRouter = Router();
 
-authRouter.post("/login", authController.login);
+authRouter.post("/login", loginLimiter, authController.login);
 
 authRouter.post("/refresh", authController.refreshToken);
 

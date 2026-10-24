@@ -36,6 +36,11 @@ employeeRouter.post(
   authorize("employee.update"),
   employeeController.setAvailabilities,
 );
+employeeRouter.post(
+  "/:id/confirm",
+  authorize("hr.access"),
+  employeeController.confirmJob,
+);
 
 generateCrudRoutes(employeeRouter, employeeController);
 

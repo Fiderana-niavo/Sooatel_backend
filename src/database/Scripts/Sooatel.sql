@@ -18,6 +18,7 @@ create database sooatel;
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS vector;
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 -- =========================================================================
 -- CONFIGURATIONS ET PARAMÈTRES 
@@ -832,4 +833,5 @@ CREATE TABLE IF NOT EXISTS chatbot_chunks (
 
 CREATE INDEX IF NOT EXISTS idx_chatbot_chunks_embedding
 ON chatbot_chunks USING hnsw (embedding vector_cosine_ops);
+
 

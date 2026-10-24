@@ -38,7 +38,9 @@ export interface EmployeeJobInfo {
   assignmentDate: string | null;
   endDate: string | null;
   hasFixedSchedule: boolean | null;
+  status: number;
   jobTitle: string | null;
+  baseSalary: number | null;
 }
 
 export interface EmployeeTeamDto {
@@ -73,6 +75,7 @@ export interface EmployeeDetail {
   emailContact: string | null;
   phoneNumber: string | null;
   notes: string | null;
+  baseSalary: number | null;
   job: EmployeeJobInfo | null;
   internship: InternshipInfo | null;
   team: EmployeeTeamInfo | null;
@@ -88,6 +91,7 @@ export interface EmployeeDto {
   emailContact?: string;
   phoneNumber?: string;
   notes?: string;
+  baseSalary?: number | null;
 }
 
 export interface EmployeeJobDto {
@@ -96,6 +100,7 @@ export interface EmployeeJobDto {
   assignmentDate: string;
   endDate: string | null;
   hasFixedSchedule: boolean;
+  baseSalary?: number | null;
 }
 
 export interface EmployeeInternshipDto {
@@ -124,6 +129,7 @@ export interface EmployeeCreateOrUpdateDto {
   emailContact?: string;
   phoneNumber?: string;
   notes?: string;
+  baseSalary?: number | null;
   job?: EmployeeJobDto | null;
   internship?: EmployeeInternshipDto | null;
   userAccount?: UserAccountDto | null;
@@ -135,6 +141,7 @@ export interface ChangeJobDto {
   assignmentDate: string;
   endDate: string | null;
   hasFixedSchedule: boolean;
+  baseSalary?: number | null;
   lastJobEndDate?: string;
   reactivateAccount?: boolean;
 }

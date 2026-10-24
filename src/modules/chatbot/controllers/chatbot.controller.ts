@@ -3,25 +3,41 @@ import { ApiResponse } from "../../../shared/types/ApiResponse";
 import { getChatbotGraph } from "../graph/chatbot.graph";
 import { indexAllDocuments, indexDocument } from "../services/indexing.service";
 import { ChatRequest } from "../types/chatbot.type";
+import { sanitizeChatInput } from "../utils/chatSanitizer.util";
+import {
+  getHistory,
+  appendTurn,
+  clearSession,
+} from "../services/conversation.memory";
 
 // ─── Chat Handler ─────────────────────────────────────────────────────────────
 
 async function chat(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const body = req.body as ChatRequest;
+    const cleanMessage = sanitizeChatInput(body?.message);
+    const sessionId = body.sessionId ?? req.userId;
     const graph = getChatbotGraph();
 
+    const history = getHistory(sessionId);
+
     const finalState = await graph.invoke({
-      sessionId: body.sessionId ?? "",
-      userMessage: body.message,
+      userId: req.userId,
+      sessionId,
+      userMessage: cleanMessage,
+      conversationHistory: history,
       retrievedChunks: [],
       answer: "",
       agentUsed: "",
     });
 
+    // Persist the new exchange in memory
+    appendTurn(sessionId, { role: "user", content: cleanMessage });
+    appendTurn(sessionId, { role: "assistant", content: finalState.answer });
+
     res.json(
       ApiResponse.success({
-        sessionId: finalState.sessionId,
+        sessionId,
         answer: finalState.answer,
         sources: finalState.retrievedChunks,
         agentUsed: finalState.agentUsed,
@@ -55,6 +71,19 @@ async function indexOne(req: Request, res: Response, next: NextFunction): Promis
   }
 }
 
+// ─── Session Clear Handler ────────────────────────────────────────────────────
+// Called explicitly on: reset button, logout, tab close (via sendBeacon)
+
+function clearSessionHandler(req: Request, res: Response, next: NextFunction): void {
+  try {
+    const sessionId = (req.params["sessionId"] as string) || req.userId;
+    clearSession(sessionId);
+    res.json(ApiResponse.success({ cleared: true }));
+  } catch (err) {
+    next(err);
+  }
+}
+
 // ─── Controller Export ────────────────────────────────────────────────────────
 
-export const chatbotController = { chat, indexAll, indexOne };
+export const chatbotController = { chat, indexAll, indexOne, clearSessionHandler };

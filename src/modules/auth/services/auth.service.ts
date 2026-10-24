@@ -23,8 +23,8 @@ import {
 import { PermissionItem } from "../../permissions/type/permission.type";
 import { MailerService } from "../../../shared/mailer/mailer.service";
 import { Employee } from "../../../database/Entities/Employee";
+import { getJwtSecret } from "../../../shared/config/jwt.config";
 
-const SECRET = new TextEncoder().encode(process.env["JWT_SECRET"] ?? "sooatel_secret_key");
 const ACCESS_EXPIRY = "1h";
 const REFRESH_EXPIRY = "7d";
 const REFRESH_EXPIRY_DAYS = 7;
@@ -87,7 +87,7 @@ export class AuthService {
     // 1. Verify JWT signature and expiry
     let payload: Record<string, unknown>;
     try {
-      const verified = await jwtVerify(token, SECRET);
+      const verified = await jwtVerify(token, getJwtSecret());
       payload = verified.payload as Record<string, unknown>;
     } catch {
       throw new Error("Refresh token expiré ou invalide.");
@@ -335,7 +335,7 @@ export class AuthService {
       .setProtectedHeader({ alg: "HS256" })
       .setIssuedAt()
       .setExpirationTime(expiry)
-      .sign(SECRET);
+      .sign(getJwtSecret());
   }
 
   private async resolvePermissions(idUser: string): Promise<PermissionItem[]> {
