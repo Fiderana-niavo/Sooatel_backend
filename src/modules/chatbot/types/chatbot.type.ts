@@ -5,11 +5,19 @@ export interface ChatRequest {
   message: string;
 }
 
+export type PdfMode = "none" | "append" | "only";
+
+export interface PdfExport {
+  title: string;
+  content: string;
+}
+
 export interface ChatResponse {
   sessionId?: string;
   answer: string;
   sources?: DocumentChunk[];
   agentUsed?: string;
+  pdfExport?: PdfExport;
 }
 
 // ─── RAG / Vector Store Types ───────────────────────────────────────────────

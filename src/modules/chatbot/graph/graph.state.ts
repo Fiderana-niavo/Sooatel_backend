@@ -1,5 +1,5 @@
 import { Annotation } from "@langchain/langgraph";
-import { DocumentChunk } from "../types/chatbot.type";
+import { DocumentChunk, PdfExport, PdfMode } from "../types/chatbot.type";
 import { ConversationTurn } from "../services/conversation.memory";
 import { QueryResult } from "../agents/analytics/analytics.types";
 
@@ -52,6 +52,22 @@ export const ChatbotStateAnnotation = Annotation.Root({
   isRecommendation: Annotation<boolean>({
     reducer: (_prev, next) => next,
     default: () => false,
+  }),
+
+  // PDF export: "append" = answer then export it, "only" = export the previous answer
+  pdfMode: Annotation<PdfMode>({
+    reducer: (_prev, next) => next,
+    default: () => "none",
+  }),
+
+  pdfTitle: Annotation<string>({
+    reducer: (_prev, next) => next,
+    default: () => "",
+  }),
+
+  pdfExport: Annotation<PdfExport | undefined>({
+    reducer: (_prev, next) => next,
+    default: () => undefined,
   }),
 
   error: Annotation<string | undefined>({

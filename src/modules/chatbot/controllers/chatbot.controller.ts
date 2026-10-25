@@ -31,9 +31,11 @@ async function chat(req: Request, res: Response, next: NextFunction): Promise<vo
       agentUsed: "",
     });
 
-    // Persist the new exchange in memory
-    appendTurn(sessionId, { role: "user", content: cleanMessage });
-    appendTurn(sessionId, { role: "assistant", content: finalState.answer });
+    // Export-only turns are not stored, so the next export still targets the real last answer
+    if (finalState.pdfMode !== "only") {
+      appendTurn(sessionId, { role: "user", content: cleanMessage });
+      appendTurn(sessionId, { role: "assistant", content: finalState.answer });
+    }
 
     res.json(
       ApiResponse.success({
@@ -41,6 +43,7 @@ async function chat(req: Request, res: Response, next: NextFunction): Promise<vo
         answer: finalState.answer,
         sources: finalState.retrievedChunks,
         agentUsed: finalState.agentUsed,
+        pdfExport: finalState.pdfExport,
       }),
     );
   } catch (err) {

@@ -4,9 +4,13 @@ import { supervisorNode, fallbackNode, routeAfterSupervisor } from "../agents/su
 import { ragAgentNode } from "../agents/rag.agent";
 import { analyticsAgentNode } from "../agents/analytics/analytics.agent";
 import { recommendationAgentNode } from "../agents/recommendation/recommendation.agent";
+import { pdfIntentNode, routeAfterPdfIntent } from "../agents/pdf/pdf.intent";
+import { pdfExportNode } from "../agents/pdf/pdf.agent";
 
 // ─── Node Names ───────────────────────────────────────────────────────────────
 
+const PDF_INTENT = "pdf_intent";
+const PDF_EXPORT = "pdf_export";
 const SUPERVISOR = "supervisor";
 const RAG_AGENT = "rag_agent";
 const ANALYTICS_AGENT = "analytics_agent";
@@ -19,26 +23,34 @@ function routeAfterAnalytics(state: ChatbotGraphState): string {
   if (state.isRecommendation) {
     return RECOMMENDATION_AGENT;
   }
-  return END;
+  return PDF_EXPORT;
 }
 
 // ─── Graph Builder ────────────────────────────────────────────────────────────
 // Flow:
-//   START → supervisor → [rag_agent | analytics_agent | fallback]
-//   analytics_agent → [recommendation_agent | END]
-//   recommendation_agent → END
-//   rag_agent → END
+//   START → pdf_intent → [supervisor | pdf_export (export previous answer only)]
+//   supervisor → [rag_agent | analytics_agent | fallback]
+//   analytics_agent → [recommendation_agent | pdf_export]
+//   recommendation_agent → pdf_export
+//   rag_agent → pdf_export
+//   pdf_export → END
 //   fallback → END
 
 function buildChatbotGraph() {
   const graph = new StateGraph(ChatbotStateAnnotation)
+    .addNode(PDF_INTENT, pdfIntentNode)
+    .addNode(PDF_EXPORT, pdfExportNode)
     .addNode(SUPERVISOR, supervisorNode)
     .addNode(RAG_AGENT, ragAgentNode)
     .addNode(ANALYTICS_AGENT, analyticsAgentNode)
     .addNode(RECOMMENDATION_AGENT, recommendationAgentNode)
     .addNode(FALLBACK, fallbackNode)
 
-    .addEdge(START, SUPERVISOR)
+    .addEdge(START, PDF_INTENT)
+    .addConditionalEdges(PDF_INTENT, routeAfterPdfIntent, {
+      [SUPERVISOR]: SUPERVISOR,
+      [PDF_EXPORT]: PDF_EXPORT,
+    })
     .addConditionalEdges(SUPERVISOR, routeAfterSupervisor, {
       rag_agent: RAG_AGENT,
       analytics_agent: ANALYTICS_AGENT,
@@ -46,10 +58,11 @@ function buildChatbotGraph() {
     })
     .addConditionalEdges(ANALYTICS_AGENT, routeAfterAnalytics, {
       [RECOMMENDATION_AGENT]: RECOMMENDATION_AGENT,
-      [END]: END,
+      [PDF_EXPORT]: PDF_EXPORT,
     })
-    .addEdge(RECOMMENDATION_AGENT, END)
-    .addEdge(RAG_AGENT, END)
+    .addEdge(RECOMMENDATION_AGENT, PDF_EXPORT)
+    .addEdge(RAG_AGENT, PDF_EXPORT)
+    .addEdge(PDF_EXPORT, END)
     .addEdge(FALLBACK, END);
 
   return graph.compile();
