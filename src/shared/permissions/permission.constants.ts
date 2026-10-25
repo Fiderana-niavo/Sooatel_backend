@@ -51,6 +51,7 @@ export const PERMISSIONS = {
 
   // ─── Configuration ────────────────────────────────────────────────────────────
   SETTINGS_ACCESS: "settings.access",
+  MANAGER_INFO: "manager.info",
 } as const;
 
 export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -88,4 +89,5 @@ export const PERMISSION_LABELS: Record<PermissionKey, string> = {
   "stock.forecast": "[stock.forecast]",
   "stock.manage": "[stock.manage]",
   "settings.access": "[settings.access]",
+  "manager.info": "[manager.info]",
 };

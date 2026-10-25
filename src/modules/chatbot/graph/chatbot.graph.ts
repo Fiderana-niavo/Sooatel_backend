@@ -4,6 +4,7 @@ import { supervisorNode, fallbackNode, routeAfterSupervisor } from "../agents/su
 import { ragAgentNode } from "../agents/rag.agent";
 import { analyticsAgentNode } from "../agents/analytics/analytics.agent";
 import { recommendationAgentNode } from "../agents/recommendation/recommendation.agent";
+import { writeAgentNode } from "../agents/write/write.agent";
 import { pdfIntentNode, routeAfterPdfIntent } from "../agents/pdf/pdf.intent";
 import { pdfExportNode } from "../agents/pdf/pdf.agent";
 
@@ -15,6 +16,7 @@ const SUPERVISOR = "supervisor";
 const RAG_AGENT = "rag_agent";
 const ANALYTICS_AGENT = "analytics_agent";
 const RECOMMENDATION_AGENT = "recommendation_agent";
+const WRITE_AGENT = "write_agent";
 const FALLBACK = "fallback";
 
 // ─── Analytics Transition ─────────────────────────────────────────────────────
@@ -29,10 +31,11 @@ function routeAfterAnalytics(state: ChatbotGraphState): string {
 // ─── Graph Builder ────────────────────────────────────────────────────────────
 // Flow:
 //   START → pdf_intent → [supervisor | pdf_export (export previous answer only)]
-//   supervisor → [rag_agent | analytics_agent | fallback]
+//   supervisor → [rag_agent | analytics_agent | write_agent | fallback]
 //   analytics_agent → [recommendation_agent | pdf_export]
 //   recommendation_agent → pdf_export
 //   rag_agent → pdf_export
+//   write_agent → pdf_export (write-only: targeted insertions for production & company)
 //   pdf_export → END
 //   fallback → END
 
@@ -44,6 +47,7 @@ function buildChatbotGraph() {
     .addNode(RAG_AGENT, ragAgentNode)
     .addNode(ANALYTICS_AGENT, analyticsAgentNode)
     .addNode(RECOMMENDATION_AGENT, recommendationAgentNode)
+    .addNode(WRITE_AGENT, writeAgentNode)
     .addNode(FALLBACK, fallbackNode)
 
     .addEdge(START, PDF_INTENT)
@@ -54,6 +58,7 @@ function buildChatbotGraph() {
     .addConditionalEdges(SUPERVISOR, routeAfterSupervisor, {
       rag_agent: RAG_AGENT,
       analytics_agent: ANALYTICS_AGENT,
+      write_agent: WRITE_AGENT,
       fallback: FALLBACK,
     })
     .addConditionalEdges(ANALYTICS_AGENT, routeAfterAnalytics, {
@@ -62,6 +67,7 @@ function buildChatbotGraph() {
     })
     .addEdge(RECOMMENDATION_AGENT, PDF_EXPORT)
     .addEdge(RAG_AGENT, PDF_EXPORT)
+    .addEdge(WRITE_AGENT, PDF_EXPORT)
     .addEdge(PDF_EXPORT, END)
     .addEdge(FALLBACK, END);
 
@@ -76,4 +82,3 @@ export function getChatbotGraph() {
   }
   return compiledGraph;
 }
-

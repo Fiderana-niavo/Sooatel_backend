@@ -21,70 +21,36 @@ async function rewriteQuery(
   const llm = getLlm(0);
   const { system, user } = buildQueryRewritePrompt(query, history);
 
-  const response = await llm.invoke([
-    new SystemMessage(system),
-    new HumanMessage(user),
-  ]);
+  const response = await llm.invoke([new SystemMessage(system), new HumanMessage(user)]);
 
-  const rewritten =
-    typeof response.content === "string"
-      ? response.content.trim()
-      : query;
-
-  console.log(`\n─── [RAG] Query rewrite ─────────────────────────────────────`);
-  console.log(`  Original : "${query}"`);
-  console.log(`  Rewritten: "${rewritten}"`);
+  const rewritten = typeof response.content === "string" ? response.content.trim() : query;
 
   return rewritten;
 }
 
 // ─── Step 2: Chunk Retrieval ─────────────────────────────────────────────────
 
-async function retrieveChunks(
-  state: ChatbotGraphState,
-): Promise<ChatbotGraphState> {
-  const searchQuery = await rewriteQuery(
-    state.userMessage,
-    state.conversationHistory,
-  );
+async function retrieveChunks(state: ChatbotGraphState): Promise<ChatbotGraphState> {
+  const searchQuery = await rewriteQuery(state.userMessage, state.conversationHistory);
   const allChunks = await similaritySearch(searchQuery, 6);
-
-  console.log(`\n─── [RAG] Similarity results ────────────────────────────────`);
-  allChunks.forEach((c, i) => {
-    const kept = (c.score ?? 0) >= MIN_SIMILARITY_SCORE;
-    console.log(`  [${i + 1}] score=${c.score?.toFixed(4)} kept=${kept} section="${c.metadata.section}"`);
-  });
-
   const chunks = allChunks.filter((c) => (c.score ?? 0) >= MIN_SIMILARITY_SCORE);
-  console.log(`  → Kept ${chunks.length}/${allChunks.length} chunks\n`);
 
   return { ...state, retrievedChunks: chunks, agentUsed: "rag_agent" };
 }
 
 // ─── Step 3: Answer Generation ───────────────────────────────────────────────
 
-async function generateAnswer(
-  state: ChatbotGraphState,
-): Promise<ChatbotGraphState> {
+async function generateAnswer(state: ChatbotGraphState): Promise<ChatbotGraphState> {
   const llm = getLlm(0.3);
   const context = buildContextFromChunks(state.retrievedChunks);
   const systemPrompt = buildRagSystemPrompt();
-  const userPrompt = buildRagUserPrompt(
-    state.userMessage,
-    context,
-    state.conversationHistory,
-  );
+  const userPrompt = buildRagUserPrompt(state.userMessage, context, state.conversationHistory);
 
-  const messages = [
-    new SystemMessage(systemPrompt),
-    new HumanMessage(userPrompt),
-  ];
+  const messages = [new SystemMessage(systemPrompt), new HumanMessage(userPrompt)];
 
   const response = await llm.invoke(messages);
   const answer =
-    typeof response.content === "string"
-      ? response.content
-      : JSON.stringify(response.content);
+    typeof response.content === "string" ? response.content : JSON.stringify(response.content);
 
   return { ...state, answer };
 }

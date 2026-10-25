@@ -33,19 +33,20 @@ async function buildQueryPlan(
 
   const raw = typeof response.content === "string" ? response.content.trim() : "{}";
 
-  console.log(`\n─── [ANALYTICS] Query plan ──────────────────────────────────`);
-  console.log(raw.slice(0, 300));
-
   return parsePlan(raw);
 }
 
 function parsePlan(raw: string): QueryPlan {
   try {
     // Strip markdown code fences if the LLM adds them
-    const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+    const cleaned = raw
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/\s*```$/, "")
+      .trim();
     const parsed = JSON.parse(cleaned) as QueryPlan;
     return {
-      isRecommendation: typeof parsed.isRecommendation === "boolean" ? parsed.isRecommendation : undefined,
+      isRecommendation:
+        typeof parsed.isRecommendation === "boolean" ? parsed.isRecommendation : undefined,
       directAnswer: parsed.directAnswer ?? undefined,
       intents: Array.isArray(parsed.intents) ? parsed.intents : [],
     };
@@ -69,9 +70,7 @@ async function generateAnswer(
     new HumanMessage(buildAnalyticsAnswerUserPrompt(question, results, history)),
   ]);
 
-  return typeof response.content === "string"
-    ? response.content
-    : JSON.stringify(response.content);
+  return typeof response.content === "string" ? response.content : JSON.stringify(response.content);
 }
 
 // ─── Node Export ─────────────────────────────────────────────────────────────
@@ -82,10 +81,6 @@ export const analyticsAgentNode = async (
   try {
     // 1. Resolve the user's effective permissions from the shared cache
     const grantedPermissions = await getUserPermissions(state.userId);
-
-    console.log(
-      `\n─── [ANALYTICS] User ${state.userId} — ${grantedPermissions.length} permissions granted`,
-    );
 
     // 2. Ask the LLM to produce a query plan adapted to these permissions
     const plan = await buildQueryPlan(
@@ -108,11 +103,7 @@ export const analyticsAgentNode = async (
         };
       }
 
-      const answer = await generateAnswer(
-        state.userMessage,
-        results,
-        state.conversationHistory,
-      );
+      const answer = await generateAnswer(state.userMessage, results, state.conversationHistory);
       return {
         answer,
         analyticsResults: results,
@@ -142,8 +133,7 @@ export const analyticsAgentNode = async (
     const message = err instanceof Error ? err.message : String(err);
     console.error(`[ANALYTICS] Error: ${message}`);
     return {
-      answer:
-        "Une erreur s'est produite lors de l'analyse des données. Veuillez réessayer.",
+      answer: "Une erreur s'est produite lors de l'analyse des données. Veuillez réessayer.",
       agentUsed: "analytics_agent",
       error: message,
     };

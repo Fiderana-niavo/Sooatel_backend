@@ -51,14 +51,10 @@ export async function getUserPermissions(idUser: string): Promise<string[]> {
   const entry = cache.get(idUser);
 
   if (entry && entry.expiresAt > now) {
-    console.log(`[CACHE] 🟢 Permissions de l'utilisateur ${idUser} récupérées depuis le CACHE.`);
     return entry.permissions;
   }
 
   const permissions = await resolveFromDb(idUser);
-  console.log(
-    `[CACHE] 🟡 Permissions de l'utilisateur ${idUser} récupérées depuis la BASE DE DONNÉES.`,
-  );
   cache.set(idUser, { permissions, expiresAt: now + TTL_MS });
   return permissions;
 }

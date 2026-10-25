@@ -15,16 +15,10 @@ function isSafeQuery(sql: string): boolean {
 
 // ─── Single Query Executor ────────────────────────────────────────────────────
 
-async function executeIntent(
-  userId: string,
-  intent: QueryIntent,
-): Promise<QueryResult> {
+async function executeIntent(userId: string, intent: QueryIntent): Promise<QueryResult> {
   // 1. Permission check
   const granted = await checkPermission(userId, intent.requiredPermission);
   if (!granted) {
-    console.log(
-      `[ANALYTICS] ⛔ Permission denied: "${intent.requiredPermission}" for user ${userId}`,
-    );
     return { label: intent.label, rows: [], denied: true };
   }
 
@@ -36,11 +30,10 @@ async function executeIntent(
 
   // 3. Execute with parameterized query
   try {
-    const rows = (await AppDataSource.query(
-      intent.sql,
-      intent.params,
-    )) as Record<string, unknown>[];
-    console.log(`[ANALYTICS] ✅ "${intent.label}" → ${rows.length} rows`);
+    const rows = (await AppDataSource.query(intent.sql, intent.params)) as Record<
+      string,
+      unknown
+    >[];
     return { label: intent.label, rows, denied: false };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

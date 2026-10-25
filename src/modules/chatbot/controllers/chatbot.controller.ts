@@ -4,11 +4,7 @@ import { getChatbotGraph } from "../graph/chatbot.graph";
 import { indexAllDocuments, indexDocument } from "../services/indexing.service";
 import { ChatRequest } from "../types/chatbot.type";
 import { sanitizeChatInput } from "../utils/chatSanitizer.util";
-import {
-  getHistory,
-  appendTurn,
-  clearSession,
-} from "../services/conversation.memory";
+import { getHistory, appendTurn, clearSession } from "../services/conversation.memory";
 
 // ─── Chat Handler ─────────────────────────────────────────────────────────────
 
@@ -23,6 +19,7 @@ async function chat(req: Request, res: Response, next: NextFunction): Promise<vo
 
     const finalState = await graph.invoke({
       userId: req.userId,
+      employeeId: req.idEmployee,
       sessionId,
       userMessage: cleanMessage,
       conversationHistory: history,

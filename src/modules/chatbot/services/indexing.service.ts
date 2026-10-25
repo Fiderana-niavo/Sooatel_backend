@@ -18,10 +18,7 @@ function resolveDocPath(filename: string): string {
   return path.join(DOCS_DIR, filename);
 }
 
-export async function indexDocument(
-  filename: string,
-  overwrite = true,
-): Promise<IndexingResult> {
+export async function indexDocument(filename: string, overwrite = true): Promise<IndexingResult> {
   await initVectorTable();
 
   const filePath = resolveDocPath(filename);
@@ -43,7 +40,6 @@ export async function indexDocument(
     try {
       const stored = await storeChunks(batch);
       indexed += stored;
-      console.log(`   ↳ Indexed ${indexed}/${chunks.length} chunks...`);
     } catch (err) {
       console.error(`❌ Batch [${i}–${i + batch.length - 1}] failed:`, err);
       failed += batch.length;
@@ -56,9 +52,7 @@ export async function indexDocument(
 export async function indexAllDocuments(overwrite = true): Promise<IndexingResult> {
   await initVectorTable();
 
-  const files = fs
-    .readdirSync(DOCS_DIR)
-    .filter((f) => f.endsWith(".md") || f.endsWith(".txt"));
+  const files = fs.readdirSync(DOCS_DIR).filter((f) => f.endsWith(".md") || f.endsWith(".txt"));
 
   let total = 0;
   let indexed = 0;

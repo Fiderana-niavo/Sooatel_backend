@@ -68,14 +68,12 @@ export const pdfIntentNode = async (
     const hasPrevious = state.conversationHistory.some((t) => t.role === "assistant");
     const intent: PdfIntent =
       detected.mode === "only" && !hasPrevious ? { ...detected, mode: "append" } : detected;
-    console.log(`\n─── [PDF] Intent: ${intent.mode} — "${intent.title}"`);
 
     return {
       pdfMode: intent.mode,
       pdfTitle: intent.title,
       // Downstream agents answer the request without the PDF wording
-      userMessage:
-        intent.mode === "append" && intent.request ? intent.request : state.userMessage,
+      userMessage: intent.mode === "append" && intent.request ? intent.request : state.userMessage,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

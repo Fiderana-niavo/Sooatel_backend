@@ -14,6 +14,12 @@ export const ChatbotStateAnnotation = Annotation.Root({
     default: () => "",
   }),
 
+  // Employee linked to the user — operator recorded on write actions (productions)
+  employeeId: Annotation<string>({
+    reducer: (_prev, next) => next,
+    default: () => "",
+  }),
+
   sessionId: Annotation<string>({
     reducer: (_prev, next) => next,
     default: () => "",

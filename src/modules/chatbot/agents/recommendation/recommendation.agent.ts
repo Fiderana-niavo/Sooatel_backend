@@ -10,26 +10,18 @@ export const recommendationAgentNode = async (
   state: ChatbotGraphState,
 ): Promise<Partial<ChatbotGraphState>> => {
   try {
-    console.log(`\n─── [RECOMMENDATION] Generating strategic recommendation ───`);
-
     const llm = getLlm(0.3);
     const results = state.analyticsResults ?? [];
 
     const response = await llm.invoke([
       new SystemMessage(buildRecommendationSystemPrompt()),
       new HumanMessage(
-        buildRecommendationUserPrompt(
-          state.userMessage,
-          results,
-          state.conversationHistory,
-        ),
+        buildRecommendationUserPrompt(state.userMessage, results, state.conversationHistory),
       ),
     ]);
 
     const answer =
-      typeof response.content === "string"
-        ? response.content
-        : JSON.stringify(response.content);
+      typeof response.content === "string" ? response.content : JSON.stringify(response.content);
 
     return {
       answer,

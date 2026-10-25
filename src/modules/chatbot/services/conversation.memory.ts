@@ -3,7 +3,7 @@
 // Automatically purged by a background job every 30 minutes.
 
 const SESSION_TTL_MS = 30 * 60 * 1000; // 30 minutes
-const MAX_HISTORY_TURNS = 6;            // Keep last 6 exchanges (user + assistant)
+const MAX_HISTORY_TURNS = 6; // Keep last 6 exchanges (user + assistant)
 const PURGE_INTERVAL_MS = 30 * 60 * 1000;
 
 export interface ConversationTurn {
@@ -29,9 +29,6 @@ setInterval(() => {
       purged++;
     }
   }
-  if (purged > 0) {
-    console.log(`[MEMORY] 🗑  Purged ${purged} expired session(s). Active: ${sessions.size}`);
-  }
 }, PURGE_INTERVAL_MS);
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -55,5 +52,4 @@ export function appendTurn(sessionId: string, turn: ConversationTurn): void {
 
 export function clearSession(sessionId: string): void {
   sessions.delete(sessionId);
-  console.log(`[MEMORY] 🗑  Session "${sessionId}" cleared`);
 }

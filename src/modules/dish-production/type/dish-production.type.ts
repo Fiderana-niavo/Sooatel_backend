@@ -1,4 +1,4 @@
-﻿export interface DishProductionDto {
+export interface DishProductionDto {
   idItem: string;
   quantity: number;
   productionDate?: string;
@@ -12,4 +12,15 @@ export interface DishProductionSearchOptions {
   startDate?: string;
   endDate?: string;
   status?: number;
+}
+
+export interface StockShortage {
+  ingredient: string;
+  required: number;
+  available: number;
+}
+
+export interface StockCheck {
+  shortages: StockShortage[];
+  issue: string | null;
 }
