@@ -109,13 +109,13 @@ export async function similaritySearch(
     );
 
     return result.rows.map((row: Record<string, unknown>) => ({
-      id: row.id as string,
-      content: row.content as string,
-      score: row.score as number,
+      id: row["id"] as string,
+      content: row["content"] as string,
+      score: Number(row["score"] ?? 0),
       metadata: {
-        source: row.source as string,
-        section: row.section as string | undefined,
-        chunkIndex: row.chunk_index as number,
+        source: row["source"] as string,
+        section: row["section"] as string | undefined,
+        chunkIndex: row["chunk_index"] as number,
       },
     }));
   } finally {

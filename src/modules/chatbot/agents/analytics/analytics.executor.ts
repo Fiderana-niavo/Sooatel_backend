@@ -1,6 +1,18 @@
 import AppDataSource from "../../../../database/data-source";
 import { QueryIntent, QueryResult } from "./analytics.types";
-import { checkPermission } from "../../../../shared/permissions/permission.checker";
+import { getUserPermissions } from "../../../../shared/services/UserPermissionCache";
+
+import { checkTableGuards } from "./analytics.guards";
+
+async function isAllowed(userId: string, sql: string, claimedPerm: string): Promise<boolean> {
+  const userPerms = await getUserPermissions(userId);
+
+  if (!userPerms.includes(claimedPerm)) {
+    return false;
+  }
+
+  return checkTableGuards(sql, userPerms);
+}
 
 // ─── SQL Safety Guard ─────────────────────────────────────────────────────────
 // Rejects any query that is not a pure SELECT statement.
@@ -16,8 +28,8 @@ function isSafeQuery(sql: string): boolean {
 // ─── Single Query Executor ────────────────────────────────────────────────────
 
 async function executeIntent(userId: string, intent: QueryIntent): Promise<QueryResult> {
-  // 1. Permission check
-  const granted = await checkPermission(userId, intent.requiredPermission);
+  // 1. Permission check with table guard
+  const granted = await isAllowed(userId, intent.sql, intent.requiredPermission);
   if (!granted) {
     return { label: intent.label, rows: [], denied: true };
   }

@@ -6,9 +6,7 @@ import { SCHEMA_SUMMARY } from "./analytics.constants";
 
 // ─── Exported Prompt Builders ─────────────────────────────────────────────────
 
-export function buildAnalyticsPlanSystemPrompt(
-  grantedPermissions: string[],
-): string {
+export function buildAnalyticsPlanSystemPrompt(grantedPermissions: string[]): string {
   const permissionList = grantedPermissions
     .map((p) => PERMISSION_LABELS[p as PermissionKey] ?? `[${p}]`)
     .join(", ");
@@ -23,7 +21,20 @@ ${SCHEMA_SUMMARY}
 
 REGLES ABSOLUES :
 1. Ne genere QUE des requetes SELECT. Jamais de INSERT, UPDATE, DELETE, DROP, CREATE, ALTER, TRUNCATE.
-2. Chaque requete doit porter la permission requise parmi : ${Object.keys(PERMISSION_LABELS).join(", ")}.
+2. Chaque requete doit porter la STRICTE permission requise correspondant a son domaine :
+   - Performance des ventes, marges, benefices bruts et classement/CA des vendeurs (v_sellers, v_menu_sales) : requiert OBLIGATOIREMENT "sale.manage".
+   - Ventes courantes, caisses, tickets, factures et encaissements (sales, sale_items, invoice, payment, cash_journal, cash_movement) : requiert "sales.pos" (ou "sale.manage", "restaurant.pos"). La permission "restaurant.access" NE PERMET PAS d'acceder aux ventes ni a la caisse !
+   - Dettes fournisseurs, avoirs, reliquats et paiements bancaires (v_supplier_debts, supplier_balance, supplier_payment) : requiert OBLIGATOIREMENT "restaurant.purchases".
+   - Bons d'achats, commandes et livraisons physiques fournisseurs (purchases, purchase_details, product_delivery, delivery_details, supplier_products, v_supplier_catalog) : requiert "stock.manage", "supplier.manage" ou "restaurant.purchases".
+   - Salaires de base (base_salary) : requiert OBLIGATOIREMENT "hr.access" ou "security.access".
+   - Conges, soldes et transactions de conges (leaves, leave_types, employee_leave_balances) : requiert OBLIGATOIREMENT "hr.access" ou "security.access".
+   - Plannings, horaires de travail et presences (schedules, shift_type, attendances) : requiert "hr.manage", "hr.access" ou "security.access".
+   - Dossiers et effectifs employes (employees, v_employees_active, internship, schools, employees_job) : requiert "employee.manage", "hr.access" ou "security.access".
+   - Recettes et fiches techniques (recipes, recipe_details, v_recipes, v_recipe_ingredients) : requiert "stock.read", "stock.manage" ou "stock.access".
+   - Mouvements de stock internes et productions (stock_movement, dish_production, v_stock_alerts) : requiert "stock.read", "stock.manage" ou "stock.access".
+   - Securite, comptes et roles (users, user_role, role_permission, user_permission, audit_logs) : requiert OBLIGATOIREMENT "security.access".
+   - Chambres hotel (room, room_type) : requiert OBLIGATOIREMENT "hotel.access".
+   Ne tente JAMAIS d'assigner une permission generique (comme "restaurant.access") a une requete protegee pour contourner les droits de l'utilisateur.
 3. Si la question necessite des donnees de la base, mets OBLIGATOIREMENT "directAnswer": null et definis les requetes dans "intents". Ne mets JAMAIS de texte d'introduction (comme "Je vais verifier...") dans directAnswer si des requetes SQL sont a executer. N'utilise "directAnswer" que si AUCUNE requete SQL n'est necessaire (ex: question purement theorique ou salutation).
 4. Utilise des parametres positionnels ($1, $2...) pour les valeurs variables - jamais de string interpolation.
 5. Limite chaque requete a 100 lignes maximum (ajoute LIMIT 100).
@@ -162,6 +173,7 @@ REGLE ABSOLUE DE CONFIDENTIALITE TECHNIQUE & VOCABULAIRE METIER (STRICTE) :
 - Ne mentionne JAMAIS de termes techniques de base de donnees dans tes reponses :
   * AUCUN nom de table (ex: "employees", "users", "employees_job", "sales", "invoice", "leaves").
   * AUCUN nom de colonne ou de champ (ex: "status", "active_status", "job_status", "id_employee", "created_date", etc.).
+  * AUCUN nom technique de permission (ex: "stock.manage", "manager.info", "sales.pos"). Dis simplement que l'utilisateur n'a pas la permission d'accéder à ces informations.
   * AUCUNE valeur brute ou code numerique (ex: "0", "1", "5", "-1", "-3").
   * EVITE toute formulation robotique ou technique telle que "le statut est...", "statut employe :", "le statut du compte :", "le champ...", "dans la table...", "selon la base de donnees", "les donnees indiquent".
 - Exprime TOUJOURS la situation en francais (ou malgache) courant et naturel pour un utilisateur non-technique :

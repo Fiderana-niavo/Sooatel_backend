@@ -5,6 +5,6 @@ export function getLlm(temperature = 0): ChatOpenAI {
     model: "deepseek-chat",
     apiKey: process.env["DEEPSEEK_KEY"] as string,
     temperature,
-    configuration: { baseURL: "https://api.deepseek.com" },
+    configuration: { baseURL: process.env["DEEPSEEK_BASE_URL"] ?? "https://api.deepseek.com" },
   });
 }

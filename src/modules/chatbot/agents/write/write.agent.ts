@@ -7,10 +7,10 @@ import { handleCompanyWrite } from "./company.handler";
 
 export type WriteTarget = "production" | "company";
 
-const DISPATCH_SYSTEM = `Tu détermines la cible d'une demande d'écriture/insertion dans un ERP de restaurant.
+const DISPATCH_SYSTEM = `Tu détermines la cible d'une demande d'écriture/insertion ou de gestion dans un ERP de restaurant.
 Cibles possibles :
 - "production" : déclaration, préparation ou enregistrement d'une production de plats
-- "company"    : consultation, ajout ou modification des coordonnées / informations de l'entreprise (nom, adresse, téléphone, mail, etc.)
+- "company"    : consultation, affichage, ajout ou modification des coordonnées / informations de l'entreprise, de l'établissement ou de Sooatel (nom, adresse, téléphone, mail, contact, etc.)
 
 Si le message est une réponse courte (confirmation, précision, valeur seule), base-toi sur le CONTEXTE PRÉCÉDENT pour déduire la cible.
 Réponds UNIQUEMENT par "production" ou "company", sans aucun autre texte.`;

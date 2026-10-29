@@ -57,21 +57,28 @@ Les unités de mesure définissent les unités de base pour le stock (ex: kg, li
 
 ---
 
-### 1.3 Articles (Items)
+### 1.3 Articles (Items) — Ingrédients, Plats et Fournitures
 
-Les articles sont la brique fondamentale de l'application. Tout — ingrédient, plat produit, matériel — est un article.
+Les articles sont la brique fondamentale de l'application. Tout — ingrédient, matière première, plat produit, boisson, matériel — est un article.
+
+#### Comment créer un ingrédient ou un article ?
+Dans Sooatel ERP, **il n'existe pas de menu séparé nommé "Ingrédient"** : un ingrédient se crée et se gère comme un **Article** (généralement avec le type d'article "Matière première" ou "Ingrédient").
 
 **Prérequis :**
-- Au moins un type d'article doit exister.
-- Au moins une unité de mesure doit exister.
+- Au moins un type d'article doit exister (ex : Matière première, Ingrédient, Boisson).
+- Au moins une unité de mesure doit exister (ex : kg, litre, pièce).
 
-**Étapes :**
-1. Accéder à Catalogue > Articles.
-2. Cliquer sur Nouvel article.
-3. Remplir : libellé, référence, type d'article, unité de mesure de base.
+**Étapes pour créer un ingrédient ou article :**
+1. Accéder à **Catalogue > Articles**.
+2. Cliquer sur **Nouvel article**.
+3. Remplir les champs :
+   - **Libellé :** Le nom de l'ingrédient (ex : Farine, Tomate, Fromage Mozzarella, Huile).
+   - **Référence :** Le code ou la référence interne de l'ingrédient (ex : ING001, ART001).
+   - **Type d'article :** Sélectionner "Matière première" ou "Ingrédient".
+   - **Unité de mesure de base :** Choisir l'unité de stock (kg, litre, pièce).
 4. Enregistrer.
 
-IMPORTANT : Sans article, il est impossible de créer un menu, une recette, un produit fournisseur ou de gérer le stock.
+IMPORTANT : Sans article, il est impossible de créer un menu, de composer une recette (les ingrédients d'une recette sont des articles), un produit fournisseur ou de gérer le stock.
 
 ---
 

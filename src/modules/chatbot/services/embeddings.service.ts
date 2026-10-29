@@ -1,23 +1,59 @@
-import { OllamaEmbeddings } from "@langchain/ollama";
+import { pipeline, env, FeatureExtractionPipeline, Tensor } from "@xenova/transformers";
 
-let embeddingsInstance: OllamaEmbeddings | null = null;
+// Optional custom cache directory for Docker / offline production
+if (process.env["TRANSFORMERS_CACHE"]) {
+  env.cacheDir = process.env["TRANSFORMERS_CACHE"];
+}
 
-function getEmbeddingsModel(): OllamaEmbeddings {
-  if (!embeddingsInstance) {
-    embeddingsInstance = new OllamaEmbeddings({
-      model: "nomic-embed-text",
-      baseUrl: process.env["OLLAMA_BASE_URL"] ?? "http://localhost:11434",
-    });
+const MODEL = "Xenova/nomic-embed-text-v1";
+let modelPromise: Promise<FeatureExtractionPipeline> | null = null;
+
+function getModel(): Promise<FeatureExtractionPipeline> {
+  if (!modelPromise) {
+    const pipelineOptions: Record<string, unknown> = {
+      quantized: true,
+    };
+
+    const embedThreadsStr = process.env["EMBED_THREADS"];
+    if (embedThreadsStr) {
+      const threads = parseInt(embedThreadsStr, 10);
+      if (!isNaN(threads) && threads > 0) {
+        pipelineOptions["session_options"] = {
+          intraOpNumThreads: threads,
+          interOpNumThreads: 1,
+        };
+      }
+    }
+
+    modelPromise = pipeline(
+      "feature-extraction",
+      MODEL,
+      pipelineOptions as Parameters<typeof pipeline>[2],
+    ) as Promise<FeatureExtractionPipeline>;
   }
-  return embeddingsInstance;
+  return modelPromise;
 }
 
 export async function embedTexts(texts: string[]): Promise<number[][]> {
-  const model = getEmbeddingsModel();
-  return model.embedDocuments(texts);
+  const extractor = await getModel();
+  const results: number[][] = [];
+
+  for (const text of texts) {
+    const output = (await extractor("search_document: " + text, {
+      pooling: "mean",
+      normalize: true,
+    })) as Tensor;
+    results.push(Array.from(output.data as Float32Array));
+  }
+
+  return results;
 }
 
 export async function embedQuery(text: string): Promise<number[]> {
-  const model = getEmbeddingsModel();
-  return model.embedQuery(text);
+  const extractor = await getModel();
+  const output = (await extractor("search_query: " + text, {
+    pooling: "mean",
+    normalize: true,
+  })) as Tensor;
+  return Array.from(output.data as Float32Array);
 }

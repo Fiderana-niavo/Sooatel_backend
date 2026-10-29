@@ -3,8 +3,7 @@ import { CreatedEntry, InsertOutcome } from "./production.types";
 
 // ─── User-facing Messages (French) ───────────────────────────────────────────
 
-export const NO_PERMISSION =
-  "⛔ Vous n'avez pas la permission d'enregistrer une production (permission `stock.manage` requise).";
+export const NO_PERMISSION = "⛔ Vous n'avez pas la permission d'enregistrer une production.";
 export const NO_EMPLOYEE =
   "⛔ Votre compte n'est pas lié à un employé. Impossible d'enregistrer une production.";
 export const GENERIC_ERROR =

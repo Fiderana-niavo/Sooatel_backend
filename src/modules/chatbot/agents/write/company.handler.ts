@@ -25,7 +25,7 @@ const LABELS: Record<keyof CompanyInfo, string> = {
 };
 
 const NO_PERMISSION =
-  "⛔ Vous n'avez pas la permission de modifier les informations de l'entreprise (permission `manager.info` requise).";
+  "⛔ Vous n'avez pas la permission de modifier les informations de l'entreprise.";
 
 function parsePlan(raw: string): CompanyPlan {
   try {

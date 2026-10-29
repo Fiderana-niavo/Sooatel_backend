@@ -9,6 +9,8 @@ import {
   buildQueryRewritePrompt,
 } from "../utils/prompt.util";
 
+import { DocumentChunk } from "../types/chatbot.type";
+
 const MIN_SIMILARITY_SCORE = 0.35;
 
 // ─── Step 1: Query Rewriting ─────────────────────────────────────────────────
@@ -32,7 +34,25 @@ async function rewriteQuery(
 
 async function retrieveChunks(state: ChatbotGraphState): Promise<ChatbotGraphState> {
   const searchQuery = await rewriteQuery(state.userMessage, state.conversationHistory);
-  const allChunks = await similaritySearch(searchQuery, 6);
+
+  const [rewrittenChunks, rawChunks] = await Promise.all([
+    similaritySearch(searchQuery, 8),
+    similaritySearch(state.userMessage, 8),
+  ]);
+
+  const chunkMap = new Map<string, DocumentChunk>();
+  for (const chunk of [...rewrittenChunks, ...rawChunks]) {
+    const key = chunk.id ?? `${chunk.metadata.source}-${chunk.metadata.chunkIndex}`;
+    const existing = chunkMap.get(key);
+    if (!existing || (chunk.score ?? 0) > (existing.score ?? 0)) {
+      chunkMap.set(key, chunk);
+    }
+  }
+
+  const allChunks = Array.from(chunkMap.values())
+    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+    .slice(0, 8);
+
   const chunks = allChunks.filter((c) => (c.score ?? 0) >= MIN_SIMILARITY_SCORE);
 
   return { ...state, retrievedChunks: chunks, agentUsed: "rag_agent" };

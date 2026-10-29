@@ -14,6 +14,7 @@ export async function checkPermission(
   return permissions.includes(permission);
 }
 
+
 /**
  * Asserts that a user holds a given permission.
  * Throws a structured error if the check fails — agents can catch it cleanly.

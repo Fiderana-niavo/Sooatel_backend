@@ -8,10 +8,10 @@ const schoolRouter = Router();
 
 schoolRouter.use(authMiddleware);
 
-schoolRouter.get("/", authorize("employee.read"), schoolController.findAll);
-schoolRouter.get("/:id", authorize("employee.read"), schoolController.getOne);
-schoolRouter.post("/", authorize("employee.update"), schoolController.save); // assuming employee.update handles creation
-schoolRouter.put("/:id", authorize("employee.update"), schoolController.update);
+schoolRouter.get("/", authorize("employee.manage"), schoolController.findAll);
+schoolRouter.get("/:id", authorize("employee.manage"), schoolController.getOne);
+schoolRouter.post("/", authorize("employee.manage"), schoolController.save);
+schoolRouter.put("/:id", authorize("employee.manage"), schoolController.update);
 schoolRouter.delete("/:id", authorize("security.access"), schoolController.remove);
 
 export default schoolRouter;

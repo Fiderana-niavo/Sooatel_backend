@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { employeeController } from "../controllers/employee.controller";
-import { generateCrudRoutes } from "../../../shared/crud/routes/crudRoutes";
 import { authMiddleware } from "../../../shared/middlewares/auth.middleware";
 import { authorize } from "../../../shared/middlewares/authorize.middleware";
 
@@ -9,31 +8,35 @@ const employeeRouter = Router();
 // All employee routes require authentication
 employeeRouter.use(authMiddleware);
 
-employeeRouter.get("/salers", employeeController.getSalers);
+employeeRouter.get(
+  "/salers",
+  authorize("sales.pos"),
+  employeeController.getSalers,
+);
 employeeRouter.get(
   "/recent-deactivations",
-  authorize("employee.read"),
+  authorize("employee.manage"),
   employeeController.recentDeactivations,
 );
 
-employeeRouter.get("/", authorize("employee.read"), employeeController.getAllEmployees);
+employeeRouter.get("/", authorize("employee.manage"), employeeController.getAllEmployees);
 
 employeeRouter.get("/me/profile", employeeController.getMyProfile);
 employeeRouter.put("/me/profile", employeeController.updateMyProfile);
 
-employeeRouter.get("/:id", authorize("employee.read"), employeeController.getById);
+employeeRouter.get("/:id", authorize("employee.manage"), employeeController.getById);
 
-employeeRouter.post("/:id/change-job", authorize("employee.update"), employeeController.changeJob);
+employeeRouter.post("/:id/change-job", authorize("employee.manage"), employeeController.changeJob);
 employeeRouter.post(
   "/:id/renew-contract",
-  authorize("employee.update"),
+  authorize("employee.manage"),
   employeeController.renewContract,
 );
-employeeRouter.post("/:id/end-job", authorize("employee.update"), employeeController.endJob);
-employeeRouter.post("/:id/team", authorize("employee.update"), employeeController.setTeam);
+employeeRouter.post("/:id/end-job", authorize("employee.manage"), employeeController.endJob);
+employeeRouter.post("/:id/team", authorize("employee.manage"), employeeController.setTeam);
 employeeRouter.post(
   "/:id/availabilities",
-  authorize("employee.update"),
+  authorize("employee.manage"),
   employeeController.setAvailabilities,
 );
 employeeRouter.post(
@@ -42,6 +45,8 @@ employeeRouter.post(
   employeeController.confirmJob,
 );
 
-generateCrudRoutes(employeeRouter, employeeController);
+employeeRouter.post("/", authorize("employee.manage"), employeeController.save);
+employeeRouter.put("/:id", authorize("employee.manage"), employeeController.update);
+employeeRouter.delete("/:id", authorize("employee.manage"), employeeController.remove);
 
 export default employeeRouter;

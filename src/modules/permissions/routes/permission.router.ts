@@ -43,6 +43,8 @@ permissionRouter.delete(
   permissionController.remove,
 );
 
+permissionCategoryRouter.use(authorize("security.access"));
+
 // Permission categories CRUD
 generateCrudRoutes(permissionCategoryRouter, permissionCategoryController);
 
