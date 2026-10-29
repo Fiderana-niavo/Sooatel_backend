@@ -1,10 +1,12 @@
 import { Router } from "express";
 import { scheduleController } from "../controllers/schedule.controller";
 import { authMiddleware } from "../../../shared/middlewares/auth.middleware";
+import { authorize } from "../../../shared/middlewares/authorize.middleware";
 
 const scheduleRouter = Router();
 
 scheduleRouter.use(authMiddleware);
+scheduleRouter.use(authorize("hr.manage"));
 
 // Specific routes first (before generic /)
 scheduleRouter.get("/last-rotation", scheduleController.getLastRotationInfo);

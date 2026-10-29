@@ -139,7 +139,6 @@ export class RecipeService {
           idIngredient: d.idIngredient,
           quantity: d.quantity,
           idItemUnit: d.idItemUnit ?? undefined,
-          version: newVersion,
         }),
       );
       await queryRunner.manager.save(RecipeDetail, details);
@@ -199,7 +198,6 @@ export class RecipeService {
           idIngredient: d.idIngredient,
           quantity: d.quantity,
           idItemUnit: d.idItemUnit ?? undefined,
-          version: recipe.version,
         }),
       );
       await queryRunner.manager.save(RecipeDetail, details);
@@ -319,7 +317,6 @@ export class RecipeService {
           idIngredient: d.idIngredient,
           quantity: d.quantity,
           idItemUnit: d.idItemUnit ?? undefined,
-          version: newVersion,
         }),
       );
       await queryRunner.manager.save(RecipeDetail, newDetails);

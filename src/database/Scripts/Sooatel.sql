@@ -1,7 +1,24 @@
+-- =========================================================================
+-- DIAGNOSTIC : VERSION & EXTENSIONS
+-- Run these queries first to confirm compatibility before executing the schema.
+-- =========================================================================
+
+SELECT version();
+
+SELECT name, default_version, installed_version
+FROM pg_available_extensions
+WHERE name = 'vector';
+
+-- =========================================================================
+-- DATABASE SETUP
+-- =========================================================================
+
 create database sooatel;
 \c sooatel
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS vector;
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 -- =========================================================================
 -- CONFIGURATIONS ET PARAMÈTRES 
@@ -137,6 +154,7 @@ CREATE TABLE Employees(
    phone_number VARCHAR(20) ,
    notes VARCHAR(255) ,
    active_status INTEGER DEFAULT 0,
+   base_salary NUMERIC(15,2),
    PRIMARY KEY(id_employee),
    UNIQUE(employee_code),
    UNIQUE(email_contact),
@@ -252,6 +270,8 @@ CREATE TABLE Purchases(
    purchase_date DATE NOT NULL,
    total_amount NUMERIC(15,2) CHECK (total_amount >= 0),
    balance_due NUMERIC(15,2),
+   status INTEGER DEFAULT 0,
+   lifecycle_status INTEGER DEFAULT 0,
    id_supplier UUID NOT NULL,
    id_purchaser UUID NOT NULL,
    PRIMARY KEY(id_purchase), --the employee in charge of the purchase
@@ -534,6 +554,9 @@ CREATE TABLE Employees_job(
    assignment_date DATE,
    end_date DATE,
    has_fixed_schedule BOOLEAN,
+   status INTEGER DEFAULT 5,
+   confirmed_date TIMESTAMPTZ,
+   base_salary NUMERIC(15,2),
    id_employment_type UUID NOT NULL,
    id_employee UUID NOT NULL,
    id_job_title UUID NOT NULL,
@@ -584,7 +607,6 @@ CREATE TABLE Recipe_details(
    id_item_unit UUID,
    id_ingredient UUID NOT NULL,
    id_recipe UUID NOT NULL,
-   version INT NOT NULL DEFAULT 1,
    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
    PRIMARY KEY(id_recipe_detail),
    FOREIGN KEY(id_item_unit) REFERENCES Item_unit(id_item_unit),
@@ -626,7 +648,7 @@ CREATE TABLE Menu_Items(
    ref VARCHAR(20) NOT NULL DEFAULT 'MNU' || to_char(nextval('menu_item_ref_seq'), 'fm0000'),
    id_item UUID NOT NULL,
    sale_price NUMERIC(10,2)   NOT NULL,
-   recipe_cost NUMERIC(10,2)  ,
+   unit_cost NUMERIC(15,2),
    id_category UUID NOT NULL, --breakfast? Lunch ?
    PRIMARY KEY(id_menu),
    UNIQUE(ref),
@@ -801,3 +823,21 @@ CREATE TABLE IF NOT EXISTS payment_method_balance (
     CONSTRAINT fk_payment_method_balance_payment_method FOREIGN KEY (id_payment_method) REFERENCES payment_method(id_payment_method),
     CONSTRAINT UQ_journal_payment UNIQUE (id_journal, id_payment_method)
 );
+
+-- =========================================================================
+-- CHATBOT & BASE DE CONNAISSANCES (RAG)
+-- =========================================================================
+
+CREATE TABLE IF NOT EXISTS chatbot_chunks (
+    id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    content     TEXT NOT NULL,
+    source      TEXT NOT NULL,
+    section     TEXT,
+    chunk_index INTEGER,
+    embedding   vector(768)
+);
+
+CREATE INDEX IF NOT EXISTS idx_chatbot_chunks_embedding
+ON chatbot_chunks USING hnsw (embedding vector_cosine_ops);
+
+

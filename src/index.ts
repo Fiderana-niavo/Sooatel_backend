@@ -51,12 +51,33 @@ import employeeRequirementRouter from "./modules/employee-requirements/routes/em
 import leaveRouter from "./modules/leaves/routes/leave.router";
 import settingsRouter from "./modules/settings/routes/settings.router";
 import scheduleRouter from "./modules/schedules/routes/schedule.router";
+import chatbotRouter from "./modules/chatbot/routes/chatbot.router";
 
 configDotenv();
 
 const app = express();
 
-app.use(cors());
+const allowedOrigins = [
+  process.env["FRONTEND_URL"],
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://127.0.0.1:5173",
+].filter(Boolean) as string[];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  }),
+);
 app.use(express.json());
 
 app.get("/", (_req, res) => {
@@ -109,6 +130,7 @@ AppDataSource.initialize()
     app.use("/api/leaves", leaveRouter);
     app.use("/api/settings", settingsRouter);
     app.use("/api/schedules", scheduleRouter);
+    app.use("/api/chatbot", chatbotRouter);
 
     app.use(globalErrorMiddleware);
 

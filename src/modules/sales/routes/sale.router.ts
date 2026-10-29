@@ -19,17 +19,42 @@ import { authorize } from "../../../shared/middlewares/authorize.middleware";
 const saleRouter = Router();
 const revenueController = new RevenueController();
 
-saleRouter.get("/revenue", authMiddleware, revenueController.getRevenue.bind(revenueController));
+saleRouter.get(
+  "/revenue",
+  authMiddleware,
+  authorize("sales.pos"),
+  revenueController.getRevenue.bind(revenueController),
+);
 saleRouter.post(
   "/revenue/journalize",
   authMiddleware,
   authorize("sales.pos"),
   revenueController.journalizeSales.bind(revenueController),
 );
-saleRouter.get("/", authMiddleware, findAll);
-saleRouter.get("/:id", authMiddleware, getSaleById);
-saleRouter.post("/", authMiddleware, authorize("sales.pos"), createSale);
-saleRouter.put("/:id", authMiddleware, authorize("sales.pos"), updateSale);
+saleRouter.get(
+  "/",
+  authMiddleware,
+  authorize("sales.pos"),
+  findAll,
+);
+saleRouter.get(
+  "/:id",
+  authMiddleware,
+  authorize("sales.pos"),
+  getSaleById,
+);
+saleRouter.post(
+  "/",
+  authMiddleware,
+  authorize("sales.pos"),
+  createSale,
+);
+saleRouter.put(
+  "/:id",
+  authMiddleware,
+  authorize("sales.pos"),
+  updateSale,
+);
 saleRouter.patch("/:id/cancel", authMiddleware, authorize("sale.manage"), cancelSale);
 saleRouter.patch("/:id/reopen", authMiddleware, authorize("sale.manage"), reopenSale);
 saleRouter.patch("/:id/close", authMiddleware, authorize("sale.manage"), closeSale);

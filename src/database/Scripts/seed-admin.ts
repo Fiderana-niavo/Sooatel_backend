@@ -8,14 +8,8 @@ import { RolePermission } from "../Entities/RolePermission";
 import { UserRole } from "../Entities/UserRole";
 
 const PERMISSIONS = [
-  { code: "employee.read", name: "Voir les employés", category: "Ressources Humaines" },
-  { code: "employee.create", name: "Créer un employé", category: "Ressources Humaines" },
-  { code: "employee.update", name: "Modifier un employé", category: "Ressources Humaines" },
-  { code: "employee.delete", name: "Supprimer un employé", category: "Ressources Humaines" },
-  { code: "job.read", name: "Voir les postes", category: "Ressources Humaines" },
-  { code: "job.create", name: "Créer un poste", category: "Ressources Humaines" },
-  { code: "job.update", name: "Modifier un poste", category: "Ressources Humaines" },
-  { code: "job.delete", name: "Supprimer un poste", category: "Ressources Humaines" },
+  { code: "employee.manage", name: "Gérer les employés", category: "Ressources Humaines" },
+  { code: "hr.manage", name: "Gérer les RH (Postes, Équipes)", category: "Ressources Humaines" },
   { code: "role.read", name: "Voir les rôles", category: "Sécurité" },
   { code: "role.create", name: "Créer un rôle", category: "Sécurité" },
   { code: "role.update", name: "Modifier un rôle", category: "Sécurité" },
@@ -44,7 +38,6 @@ const PERMISSIONS = [
   { code: "stock.audit", name: "Audits & Alertes", category: "Logistique" },
   { code: "stock.forecast", name: "Prévisions IA", category: "Logistique" },
   { code: "hr.access", name: "Accès Ressources Humaines", category: "Ressources Humaines" },
-  { code: "hr.schedule", name: "Plannings", category: "Ressources Humaines" },
   { code: "hr.welfare", name: "Bien-être de l'équipe", category: "Ressources Humaines" },
   { code: "settings.access", name: "Accès Paramètres", category: "Configuration" },
 ];

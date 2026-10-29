@@ -11,7 +11,20 @@ import {
   STOCK_MOVEMENT_TYPE,
   STOCK_MOVEMENT_DIRECTION,
 } from "../../items/constants/stock.constants";
-import type { DishProductionDto, DishProductionSearchOptions } from "../type/dish-production.type";
+import type {
+  DishProductionDto,
+  DishProductionSearchOptions,
+  StockCheck,
+  StockShortage,
+} from "../type/dish-production.type";
+
+const requiredQuantity = (detail: RecipeDetail, ratio: number): number => {
+  const base = Number(detail.quantity) * ratio;
+  if (detail.itemUnit && detail.itemUnit.toStockRatio) {
+    return base / Number(detail.itemUnit.toStockRatio);
+  }
+  return base;
+};
 
 export class DishProductionService {
   private repository = AppDataSource.getRepository(DishProduction);
@@ -76,6 +89,35 @@ export class DishProductionService {
     });
 
     return this.repository.save(prod);
+  }
+
+  // Read-only: lists the ingredients that would block the validation of a production.
+  async checkStock(idItem: string, quantity: number): Promise<StockCheck> {
+    const recipe = await AppDataSource.getRepository(Recipe).findOne({
+      where: { idItem, isActive: true },
+    });
+    if (!recipe) return { shortages: [], issue: "Aucune recette active trouvée pour cet article." };
+
+    const details = await AppDataSource.getRepository(RecipeDetail).find({
+      where: { idRecipe: recipe.idRecipe },
+      relations: { ingredient: true, itemUnit: true },
+    });
+    if (details.length === 0)
+      return { shortages: [], issue: "La recette ne contient aucun ingrédient." };
+
+    const yieldQty = Number(recipe.yieldQuantity);
+    if (yieldQty <= 0) return { shortages: [], issue: "Le rendement de la recette est invalide." };
+
+    const ratio = quantity / yieldQty;
+    const shortages: StockShortage[] = [];
+    for (const detail of details) {
+      const required = requiredQuantity(detail, ratio);
+      const available = Number(detail.ingredient.quantity ?? 0);
+      if (available < required) {
+        shortages.push({ ingredient: detail.ingredient.label, required, available });
+      }
+    }
+    return { shortages, issue: null };
   }
 
   async update(id: string, dto: DishProductionDto): Promise<void> {
@@ -148,10 +190,7 @@ export class DishProductionService {
       const stockMovements: StockMovement[] = [];
 
       for (const detail of recipeDetails) {
-        let requiredQty = Number(detail.quantity) * ratio;
-        if (detail.itemUnit && detail.itemUnit.toStockRatio) {
-          requiredQty = requiredQty / Number(detail.itemUnit.toStockRatio);
-        }
+        const requiredQty = requiredQuantity(detail, ratio);
         const currentStock = Number(detail.ingredient.quantity ?? 0);
 
         if (currentStock < requiredQty) {

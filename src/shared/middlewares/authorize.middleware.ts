@@ -1,31 +1,23 @@
 import { Request, Response, NextFunction } from "express";
 import { ForbiddenError } from "../errors/AppError";
-import { getUserPermissions } from "../services/UserPermissionCache";
+import { checkPermission } from "../permissions/permission.checker";
 
-/**
- * Authorization middleware factory.
- * Must be placed AFTER authMiddleware in the route chain.
- *
- * Checks the in-memory permission cache (with DB fallback) to verify
- * the authenticated user holds the required permission.
- *
- * Returns 403 Forbidden if the permission is not present.
- *
- * Usage:
- *   router.delete("/:id", authMiddleware, authorize("employee.delete"), controller.delete);
- */
 export const authorize =
   (permission: string) =>
-  async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const permissions = await getUserPermissions(req.userId);
+    async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
+      try {
+        const granted = await checkPermission(req.userId, permission);
 
-      if (!permissions.includes(permission)) {
-        return next(new ForbiddenError(`Access denied: missing permission "${permission}".`));
+        if (!granted) {
+          return next(
+            new ForbiddenError(
+              `Access denied: missing permission "${permission}".`,
+            ),
+          );
+        }
+
+        next();
+      } catch (err) {
+        next(err);
       }
-
-      next();
-    } catch (err) {
-      next(err);
-    }
-  };
+    };

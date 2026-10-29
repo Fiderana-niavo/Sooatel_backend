@@ -7,8 +7,16 @@ const itemUnitRouter = Router();
 
 itemUnitRouter.use(authMiddleware);
 
-itemUnitRouter.get("/", authorize("stock.manage"), itemUnitController.findAll);
-itemUnitRouter.get("/:id", authorize("stock.manage"), itemUnitController.getOne);
+itemUnitRouter.get(
+  "/",
+  authorize("stock.read"),
+  itemUnitController.findAll,
+);
+itemUnitRouter.get(
+  "/:id",
+  authorize("stock.read"),
+  itemUnitController.getOne,
+);
 itemUnitRouter.post("/", authorize("stock.manage"), itemUnitController.save);
 itemUnitRouter.put("/:id", authorize("stock.manage"), itemUnitController.update);
 itemUnitRouter.delete("/:id", authorize("stock.manage"), itemUnitController.remove);
