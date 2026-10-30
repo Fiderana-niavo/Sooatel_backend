@@ -4,6 +4,7 @@ import AppDataSource from "../../../database/data-source";
 import { MenuItem } from "../../../database/Entities/MenuItem";
 import { CrudService } from "../../../shared/crud/services/CrudService";
 import { Paginated } from "../../../shared/types/Paginated";
+import { ConflictError } from "../../../shared/errors/AppError";
 import { MenuItemDto, MenuItemSearchOptions } from "../type/menu-item.type";
 
 export class MenuItemService extends CrudService<MenuItem, MenuItemDto, MenuItemDto> {
@@ -48,6 +49,13 @@ export class MenuItemService extends CrudService<MenuItem, MenuItemDto, MenuItem
   }
 
   async create(dto: MenuItemDto): Promise<MenuItem> {
+    const existing = await this.repository.findOne({
+      where: { idItem: dto.idItem } as FindOptionsWhere<MenuItem>,
+    });
+    if (existing) {
+      throw new ConflictError("Cet article est déjà présent dans le menu.");
+    }
+
     const entity = this.repository.create({
       ref: dto.ref,
       idItem: dto.idItem,
@@ -59,6 +67,15 @@ export class MenuItemService extends CrudService<MenuItem, MenuItemDto, MenuItem
   }
 
   async update(id: string, dto: MenuItemDto): Promise<void> {
+    if (dto.idItem) {
+      const existing = await this.repository.findOne({
+        where: { idItem: dto.idItem } as FindOptionsWhere<MenuItem>,
+      });
+      if (existing && existing.idMenu !== id) {
+        throw new ConflictError("Cet article est déjà présent dans le menu.");
+      }
+    }
+
     await this.repository.update(id, {
       ref: dto.ref,
       idItem: dto.idItem,

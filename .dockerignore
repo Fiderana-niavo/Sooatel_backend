@@ -1,0 +1,8 @@
+node_modules
+dist
+.git
+.env
+*.log
+pgvector_files
+installer_pgvector.bat
+scratch

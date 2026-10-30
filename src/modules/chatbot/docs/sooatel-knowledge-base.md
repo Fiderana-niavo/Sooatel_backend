@@ -5,6 +5,67 @@ Il décrit, pour chaque module, les prérequis, les étapes à suivre et les rè
 
 ---
 
+## 📌 STRUCTURE DU MENU LATÉRAL (SIDEBAR SOOATEL ERP)
+
+Dans Sooatel ERP, l'utilisateur effectue toutes ses actions en passant par le **menu latéral (sidebar à gauche)**. La barre latérale est découpée en 7 sections accordéons principales :
+
+1. **Opérations restaurant** (Espace Restaurant / Utopia) :
+   - **Tableau de bord** : Statistiques et pilotage des ventes.
+   - **Caisse & PDV** : Prise de commande, encaissement direct, ouverture/fermeture du journal de caisse.
+   - **Historique des Ventes** : Consultation des ventes passées, réouvertures et annulations.
+   - **Revenus** : Recettes, suivi financier et bouton "Journaliser les ventes".
+   - **Mouvements de Caisse** : Entrées et sorties exceptionnelles de caisse (hors ventes).
+   - **Catalogue & Menus** :
+     - Onglet **Plats du Menu** : Création et gestion des plats/boissons vendus aux clients.
+     - Onglet **Catégories de Menu** : Entrées, Plats, Desserts, Boissons...
+
+2. **Opérations hôtel** (Espace Hôtel / Sooatel) :
+   - **Chambres & Évènements** :
+     - Onglet **Chambres** : Gestion des chambres et suites.
+     - Onglet **Types de Chambres** : Standard, Suite, VIP...
+     - Onglet **Évènements** : Salles et réservations d'évènements.
+
+3. **Inventaire & Stocks** :
+   - **Gestion des Produits & Inventaire** :
+     - Onglet **Articles** : Ingrédients, matières premières, fournitures et produits finis.
+     - Onglet **Types d'Articles** : Matière première, Produit fini, Boisson...
+     - Onglet **Unités de Mesure** : kg, litre, pièce...
+     - Onglet **Unités Alternatives** : Conditionnements (cartons, packs, sacs) et ratios de conversion.
+   - **Niveaux de Stock** : Consultation des quantités disponibles et seuils d'alerte.
+   - **Mouvements** : Mouvements manuels d'entrée et de sortie de stock.
+   - **Inventaire Physique** : Sessions de comptage physique et ajustement des écarts.
+   - **Audits & Alertes** : Alertes de rupture et audits de stock.
+   - **Prévisions IA** : Analyse prédictive des besoins en réapprovisionnement.
+
+4. **Achats & Fournisseurs** :
+   - **Fournisseurs & Achats** : Fiches des fournisseurs, articles fournis et paiements fournisseurs.
+   - **Commandes Fournisseurs** : Bons de commande d'achat (création, confirmation, modification, annulation).
+   - **Livraisons Fournisseurs** : Réception des marchandises, bons de livraison et validation avec impact direct sur le stock.
+
+5. **Production Cuisine** :
+   - **Recettes** : Fiches techniques des plats (composition en ingrédients et rendement).
+   - **Production de Plats** : Ordres de fabrication, préparation en batch, déduction des ingrédients et entrée en stock du plat préparé.
+
+6. **Administration RH** :
+   - **Annuaire du Personnel** : Liste et fiches des employés, confirmation de période d'essai.
+   - **Bien-être de l'Équipe** : Suivi social et climat d'équipe.
+   - **Gestion des Utilisateurs** : Création des comptes d'accès, attribution des rôles et réinitialisation de mot de passe.
+   - **Rôles et Permissions** : Définition des rôles et permissions associées.
+   - **Gestion des Postes** : Postes de travail (Serveur, Chef, Réceptionniste...).
+   - **Besoins en Personnel** : Recrutements et besoins de poste.
+
+7. **Temps & Planification** :
+   - **Équipes & Quarts** : Constitution des équipes et définition des quarts/shifts (matin, soir, nuit).
+   - **Emploi du Temps** : Planning hebdomadaire des employés.
+   - **Congés & Absences** : Demandes de congés et validations managériales.
+   - **Congés à venir** : Calendrier prévisionnel des congés.
+   - **Types de Congés** : Types de congés (payés, maladie, sans solde...).
+
+8. **Profil Utilisateur (Bas de la barre latérale)** :
+   - Clic sur la carte utilisateur (avatar/nom) pour ouvrir le menu : *Modifier le mot de passe*, *Modifier le profil*, *Déconnexion*.
+
+---
+
 ## TABLE DES MATIÈRES
 
 1. Catalogue / Configuration de Base
@@ -36,10 +97,12 @@ Les types d'articles classifient les articles (ex: Matière première, Produit f
 **Prérequis :** Aucun.
 
 **Étapes :**
-1. Accéder à Catalogue > Types d'articles.
-2. Cliquer sur Nouveau type.
-3. Saisir le libellé du type.
-4. Enregistrer.
+1. Dans le menu latéral (sidebar), ouvrir la section **Inventaire & Stocks**.
+2. Cliquer sur **Gestion des Produits & Inventaire**.
+3. Sélectionner l'onglet **Types d'Articles**.
+4. Cliquer sur **Nouveau type**.
+5. Saisir le libellé du type (ex : Matière première, Produit fini, Boisson).
+6. Enregistrer.
 
 ---
 
@@ -50,10 +113,12 @@ Les unités de mesure définissent les unités de base pour le stock (ex: kg, li
 **Prérequis :** Aucun.
 
 **Étapes :**
-1. Accéder à Catalogue > Unités de mesure.
-2. Cliquer sur Nouvelle unité.
-3. Saisir le nom et l'abréviation.
-4. Enregistrer.
+1. Dans le menu latéral (sidebar), ouvrir la section **Inventaire & Stocks**.
+2. Cliquer sur **Gestion des Produits & Inventaire**.
+3. Sélectionner l'onglet **Unités de Mesure**.
+4. Cliquer sur **Nouvelle unité**.
+5. Saisir le nom et l'abréviation (ex : Kilogramme / kg, Litre / l, Pièce / pce).
+6. Enregistrer.
 
 ---
 
@@ -69,14 +134,16 @@ Dans Sooatel ERP, **il n'existe pas de menu séparé nommé "Ingrédient"** : un
 - Au moins une unité de mesure doit exister (ex : kg, litre, pièce).
 
 **Étapes pour créer un ingrédient ou article :**
-1. Accéder à **Catalogue > Articles**.
-2. Cliquer sur **Nouvel article**.
-3. Remplir les champs :
-   - **Libellé :** Le nom de l'ingrédient (ex : Farine, Tomate, Fromage Mozzarella, Huile).
-   - **Référence :** Le code ou la référence interne de l'ingrédient (ex : ING001, ART001).
+1. Dans le menu latéral (sidebar), ouvrir la section **Inventaire & Stocks**.
+2. Cliquer sur **Gestion des Produits & Inventaire**.
+3. Sélectionner l'onglet **Articles**.
+4. Cliquer sur **Nouvel article**.
+5. Remplir les champs :
+   - **Libellé :** Le nom de l'ingrédient ou plat (ex : Farine, Tomate, Mozzarella, Huile).
+   - **Référence :** Le code ou la référence interne (ex : ING001, ART001).
    - **Type d'article :** Sélectionner "Matière première" ou "Ingrédient".
    - **Unité de mesure de base :** Choisir l'unité de stock (kg, litre, pièce).
-4. Enregistrer.
+6. Enregistrer.
 
 IMPORTANT : Sans article, il est impossible de créer un menu, de composer une recette (les ingrédients d'une recette sont des articles), un produit fournisseur ou de gérer le stock.
 
@@ -117,12 +184,14 @@ Grâce à ce mécanisme, lors d'une commande fournisseur ou d'une réception de 
 - L'unité de mesure alternative (ex: Carton, Pack, Sac, Boîte) doit exister dans la liste des unités de mesure.
 
 **Étapes :**
-1. Accéder à Catalogue > Unités d'article.
-2. Cliquer sur Nouvelle unité alternative.
-3. Sélectionner l'article concerné.
-4. Choisir l'unité alternative souhaitée dans la liste des unités.
-5. Saisir le ratio de conversion vers le stock (ex: saisir `24` pour un carton contenant 24 canettes).
-6. Enregistrer.
+1. Dans le menu latéral (sidebar), ouvrir la section **Inventaire & Stocks**.
+2. Cliquer sur **Gestion des Produits & Inventaire**.
+3. Sélectionner l'onglet **Unités Alternatives**.
+4. Cliquer sur **Nouvelle unité alternative**.
+5. Sélectionner l'article concerné.
+6. Choisir l'unité alternative souhaitée dans la liste des unités.
+7. Saisir le ratio de conversion vers le stock (ex : saisir `24` pour un carton contenant 24 canettes).
+8. Enregistrer.
 
 ---
 
@@ -133,10 +202,12 @@ Les catégories regroupent les plats du menu (ex: Entrées, Plats, Desserts, Boi
 **Prérequis :** Aucun.
 
 **Étapes :**
-1. Accéder à Catalogue > Catégories de menu.
-2. Cliquer sur Nouvelle catégorie.
-3. Saisir le libellé.
-4. Enregistrer.
+1. Dans le menu latéral (sidebar), ouvrir la section **Opérations restaurant**.
+2. Cliquer sur **Catalogue & Menus**.
+3. Sélectionner l'onglet **Catégories de Menu**.
+4. Cliquer sur **Nouvelle catégorie**.
+5. Saisir le libellé (ex : Entrées, Plats, Desserts, Boissons).
+6. Enregistrer.
 
 ---
 
@@ -145,8 +216,8 @@ Les catégories regroupent les plats du menu (ex: Entrées, Plats, Desserts, Boi
 **Prérequis :** Aucun.
 
 **Étapes :**
-1. Accéder à Configuration > Modes de paiement.
-2. Créer les modes (espèces, carte bancaire, virement, etc.).
+1. Dans le menu latéral (sidebar), accéder à la configuration des paiements (section **Opérations restaurant** > **Mouvements de Caisse** ou paramètres de l'établissement).
+2. Configurer les modes (espèces, carte bancaire, Mobile Money Mvola/Orange/Airtel, virement, etc.).
 
 ---
 
@@ -155,8 +226,10 @@ Les catégories regroupent les plats du menu (ex: Entrées, Plats, Desserts, Boi
 **Prérequis :** Un type de chambre doit exister avant de créer une chambre.
 
 **Étapes :**
-1. Créer d'abord un type de chambre (Standard, Suite, etc.).
-2. Puis créer la chambre en lui associant un type.
+1. Dans le menu latéral (sidebar), basculer dans l'espace Hôtel (Sooatel) si nécessaire et ouvrir la section **Opérations hôtel**.
+2. Cliquer sur **Chambres & Évènements**.
+3. Pour les types de chambres : aller dans l'onglet **Types de Chambres** et cliquer sur **Nouveau type** (Standard, Suite, VIP...).
+4. Pour les chambres : aller dans l'onglet **Chambres** et cliquer sur **Nouvelle chambre** en lui associant son type.
 
 ---
 
@@ -171,13 +244,15 @@ Le menu contient les plats vendus aux clients. Chaque élément du menu est lié
 2. Une catégorie de menu doit exister.
 
 **Étapes :**
-1. Accéder à Menu > Éléments de menu.
-2. Cliquer sur Nouvel élément.
-3. Sélectionner l'article correspondant au plat.
-4. Sélectionner la catégorie.
-5. Définir le prix de vente et le coût unitaire.
-6. Optionnellement, saisir une référence.
-7. Enregistrer.
+1. Dans le menu latéral (sidebar), ouvrir la section **Opérations restaurant**.
+2. Cliquer sur **Catalogue & Menus**.
+3. Sélectionner l'onglet **Plats du Menu**.
+4. Cliquer sur **Nouvel élément** (ou **Ajouter un plat**).
+5. Sélectionner l'article correspondant au plat (créé au préalable dans le stock).
+6. Sélectionner la catégorie de menu (ex : Entrées, Plats, Boissons).
+7. Définir le prix de vente et le coût unitaire.
+8. Optionnellement, saisir une référence.
+9. Enregistrer.
 
 RÈGLE MÉTIER : Pour qu'un plat puisse être vendu, il doit impérativement être enregistré dans le menu. Créer un article seul ne suffit pas — il faut aussi l'ajouter au menu.
 
@@ -199,8 +274,9 @@ Les recettes définissent la composition d'un plat (quels ingrédients, en quell
 3. Les unités d'article doivent être configurées si l'on veut utiliser des conditionnements (optionnel).
 
 **Étapes :**
-1. Accéder à Recettes.
-2. Cliquer sur Nouvelle recette.
+1. Dans le menu latéral (sidebar), ouvrir la section **Production Cuisine**.
+2. Cliquer sur **Recettes**.
+3. Cliquer sur **Nouvelle recette**.
 3. Sélectionner l'article produit (le plat final).
 4. Définir la quantité produite (rendement / yield).
 5. Ajouter les lignes d'ingrédients : pour chaque ingrédient, saisir la quantité et l'unité.
@@ -220,8 +296,9 @@ RÈGLE MÉTIER : La recette est indispensable pour la production de plats — sa
 **Prérequis :** Aucun.
 
 **Étapes :**
-1. Accéder à Fournisseurs.
-2. Cliquer sur Nouveau fournisseur.
+1. Dans le menu latéral (sidebar), ouvrir la section **Achats & Fournisseurs**.
+2. Cliquer sur **Fournisseurs & Achats**.
+3. Cliquer sur **Nouveau fournisseur**.
 3. Saisir le nom, contact, adresse.
 4. Enregistrer.
 
@@ -236,9 +313,10 @@ Les produits fournisseurs représentent ce que chaque fournisseur vend (son cata
 - Un article doit exister.
 
 **Étapes :**
-1. Accéder à la fiche du fournisseur.
-2. Aller dans l'onglet Produits.
-3. Cliquer sur Ajouter un produit.
+1. Dans le menu latéral (sidebar), aller dans **Achats & Fournisseurs** > **Fournisseurs & Achats**.
+2. Ouvrir la fiche du fournisseur concerné.
+3. Aller dans l'onglet **Produits**.
+4. Cliquer sur **Ajouter un produit**.
 4. Lier le produit fournisseur à un article du catalogue.
 5. Saisir le prix d'achat actuel.
 6. Enregistrer.
@@ -275,8 +353,9 @@ Une commande fournisseur passe par les étapes suivantes :
 ### 5.2 Créer une commande
 
 **Étapes :**
-1. Accéder à Achats > Commandes.
-2. Cliquer sur Nouvelle commande.
+1. Dans le menu latéral (sidebar), ouvrir la section **Achats & Fournisseurs**.
+2. Cliquer sur **Commandes Fournisseurs**.
+3. Cliquer sur **Nouvelle commande**.
 3. Sélectionner le fournisseur.
 4. Sélectionner l'acheteur (employé).
 5. Ajouter les lignes de commande : article fourni, quantité, prix unitaire.
@@ -292,8 +371,9 @@ Une commande doit être confirmée avant de pouvoir lui associer une livraison.
 RÈGLE : Seule une commande nouvellement créée (non encore confirmée) peut être confirmée.
 
 **Étapes :**
-1. Ouvrir la commande.
-2. Cliquer sur Confirmer.
+1. Dans le menu latéral (sidebar), aller dans **Achats & Fournisseurs** > **Commandes Fournisseurs**.
+2. Ouvrir la commande concernée (au statut *Créée*).
+3. Cliquer sur **Confirmer**.
 3. La commande est maintenant confirmée et prête à recevoir des livraisons.
 
 ---
@@ -355,8 +435,8 @@ Une livraison passe par deux étapes :
 ### 6.2 Créer une livraison
 
 **Étapes :**
-1. Accéder à la commande concernée.
-2. Cliquer sur Nouvelle livraison.
+1. Dans le menu latéral (sidebar), aller dans **Achats & Fournisseurs** > **Livraisons Fournisseurs** (ou depuis **Commandes Fournisseurs** sur la commande confirmée).
+2. Cliquer sur **Nouvelle livraison** (ou ouvrir la commande confirmée et cliquer sur *Nouvelle livraison*).
 3. Saisir les quantités reçues par article.
 4. Optionnellement saisir un acompte/paiement lié à la livraison.
 5. Enregistrer. La livraison est maintenant en cours (le stock n'est pas encore modifié).
@@ -368,8 +448,9 @@ IMPORTANT : Le stock n'est PAS encore mis à jour à la création de la livraiso
 ### 6.3 Valider une livraison
 
 **Étapes :**
-1. Ouvrir la livraison.
-2. Cliquer sur Valider.
+1. Dans le menu latéral (sidebar), aller dans **Achats & Fournisseurs** > **Livraisons Fournisseurs**.
+2. Ouvrir la livraison *En cours*.
+3. Vérifier les quantités reçues et cliquer sur **Valider**.
 3. Le stock des articles reçus est mis à jour automatiquement.
 4. Le prix de revient moyen des articles est recalculé.
 5. La commande passe au statut Livrée ou Partiellement livrée selon les quantités.
@@ -390,8 +471,9 @@ Types de mouvements :
 **Prérequis :** Un article doit exister.
 
 **Étapes pour un mouvement manuel :**
-1. Accéder à Stock > Mouvements.
-2. Cliquer sur Nouveau mouvement.
+1. Dans le menu latéral (sidebar), ouvrir la section **Inventaire & Stocks**.
+2. Cliquer sur **Mouvements**.
+3. Cliquer sur **Nouveau mouvement**.
 3. Sélectionner l'article, la direction (entrée/sortie), la quantité, la raison.
 4. Enregistrer.
 
@@ -402,8 +484,9 @@ Types de mouvements :
 **Prérequis :** Des articles avec un stock existant doivent être présents.
 
 **Étapes :**
-1. Accéder à Stock > Inventaire.
-2. Lancer un nouveau comptage.
+1. Dans le menu latéral (sidebar), ouvrir la section **Inventaire & Stocks**.
+2. Cliquer sur **Inventaire Physique**.
+3. Lancer une nouvelle session de comptage (**Nouveau comptage**).
 3. Saisir les quantités physiquement comptées.
 4. Valider les écarts pour ajuster le stock.
 
@@ -456,8 +539,9 @@ Une production passe par deux étapes :
 ### 8.4 Créer une production
 
 **Étapes :**
-1. Accéder à **Production > Productions**.
-2. Cliquer sur **Nouvelle production**.
+1. Dans le menu latéral (sidebar), ouvrir la section **Production Cuisine**.
+2. Cliquer sur **Production de Plats**.
+3. Cliquer sur **Nouvelle production**.
 3. Sélectionner l'article produit (le plat ou le semi-fini à préparer).
 4. Saisir la quantité à produire.
 5. Optionnellement saisir des notes (ex : "Batch du matin").
@@ -475,8 +559,9 @@ Une production passe par deux étapes :
 - Une production déjà **validée ne peut PAS être modifiée ni supprimée**.
 
 **Étapes :**
-1. Ouvrir la production en brouillon.
-2. Cliquer sur **Valider**.
+1. Dans le menu latéral (sidebar), aller dans **Production Cuisine** > **Production de Plats**.
+2. Ouvrir la production en brouillon.
+3. Cliquer sur **Valider**.
 3. Le système vérifie les stocks et effectue les mouvements automatiquement.
 
 ---
@@ -495,7 +580,9 @@ Le module Ventes permet d'enregistrer et de gérer les commandes clients du rest
 - Si le client paie directement sur place : un journal de caisse doit être ouvert.
 
 **Étapes de saisie générale :**
-1. Accéder à **Ventes > Nouvelle vente**.
+1. Dans le menu latéral (sidebar), ouvrir la section **Opérations restaurant**.
+2. Cliquer sur **Caisse & PDV** (ou **Historique des Ventes**).
+3. Cliquer sur **Nouvelle vente** (ou démarrer une commande).
 2. Renseigner le **numéro de facture** et la **date de vente**.
 3. Sélectionner le **vendeur / serveur** responsable de la commande.
 4. Choisir le **lieu de consommation** :
@@ -596,8 +683,9 @@ Au début de sa prise de poste, le caissier ouvre le journal pour son service.
 - Aucun calcul manuel n'est nécessaire pour définir le fond de caisse initial : la continuité financière est garantie.
 
 **Étapes :**
-1. Accéder à **Caisse > Journal de caisse**.
-2. Cliquer sur **Ouvrir un journal**.
+1. Dans le menu latéral (sidebar), ouvrir la section **Opérations restaurant**.
+2. Cliquer sur **Caisse & PDV** (ou **Mouvements de Caisse**).
+3. Cliquer sur **Ouvrir un journal de caisse**.
 3. Sélectionner le caissier responsable du service.
 4. Vérifier les soldes de départ repris automatiquement.
 5. Enregistrer pour ouvrir le journal.
@@ -642,7 +730,8 @@ Dans les restaurants et bars très actifs, attendre la toute fin du service pour
 3. Pour permettre au caissier du service suivant d'ouvrir son propre journal.
 
 **Étapes de fermeture :**
-1. Accéder au journal de caisse actif et cliquer sur **Fermer le journal**.
+1. Dans le menu latéral (sidebar), ouvrir la section **Opérations restaurant** > **Caisse & PDV** (ou **Mouvements de Caisse**).
+2. Cliquer sur **Fermer le journal**.
 2. **Comptage physique réel :** Compter les billets et pièces dans le tiroir-caisse et vérifier les soldes sur les téléphones/comptes Mobile Money.
 3. Saisir le **solde réel constaté** dans le formulaire de clôture.
 4. **Calcul automatique des écarts :** Le système compare le montant réel saisi avec le montant théorique attendu et affiche immédiatement l'écart (excédent ou manquant).
@@ -655,7 +744,7 @@ Dans les restaurants et bars très actifs, attendre la toute fin du service pour
 - **Mouvements manuels :** Permettent d'enregistrer des entrées ou sorties de caisse hors vente (ex: menues dépenses de dépannage, pourboires, appoint).
 - **Paiements fournisseurs :**
   - **Prérequis :** Fournisseur avec solde débiteur + Journal de caisse ouvert.
-  - **Étapes :** Aller dans *Fournisseurs > Paiements*, choisir le fournisseur, saisir le montant et le mode de règlement, valider pour réduire le solde dû.
+  - **Étapes :** Dans le menu latéral (sidebar), aller dans **Achats & Fournisseurs** > **Fournisseurs & Achats**, ouvrir la fiche du fournisseur concerné, aller dans l'onglet **Paiements**, saisir le montant et le mode de règlement, puis valider pour réduire le solde dû.
 
 ---
 
@@ -668,8 +757,10 @@ Dans les restaurants et bars très actifs, attendre la toute fin du service pour
 - Un type d'emploi doit exister (CDI, CDD, Stage...).
 
 **Étapes :**
-1. Accéder à Employés > Nouveau.
-2. Saisir : nom, prénom, date de naissance, etc.
+1. Dans le menu latéral (sidebar), ouvrir la section **Administration RH**.
+2. Cliquer sur **Annuaire du Personnel**.
+3. Cliquer sur **Nouvel employé**.
+4. Saisir : nom, prénom, date de naissance, etc.
 3. Assigner un poste et un type d'emploi.
 4. Enregistrer. L'employé est créé avec le statut "En attente de confirmation".
 
@@ -682,8 +773,9 @@ La confirmation est une étape OBLIGATOIRE pour qu'un employé bénéficie des c
 RÈGLE : Seul un employé en attente de confirmation peut être confirmé.
 
 **Étapes :**
-1. Ouvrir la fiche de l'employé.
-2. Cliquer sur Confirmer l'employé.
+1. Dans le menu latéral (sidebar), aller dans **Administration RH** > **Annuaire du Personnel**.
+2. Ouvrir la fiche de l'employé (au statut *En attente de confirmation*).
+3. Cliquer sur **Confirmer l'employé**.
 3. L'employé est maintenant confirmé.
 4. Dès ce moment, l'employé commence à accumuler 2,5 jours de congé payé par mois lors de l'allocation mensuelle.
 
@@ -700,8 +792,10 @@ RÈGLE MÉTIER : Un employé non encore confirmé peut prendre des congés, mais
 - Avoir les permissions d'administration ou de gestion des accès.
 
 **Étapes :**
-1. Ouvrir la fiche de l'employé dans le module RH.
-2. Aller dans l'onglet Compte utilisateur / Droits d'accès.
+1. Dans le menu latéral (sidebar), ouvrir la section **Administration RH**.
+2. Cliquer sur **Gestion des Utilisateurs** (ou ouvrir la fiche de l'employé dans **Annuaire du Personnel** > onglet Droits d'accès / Compte).
+3. Cliquer sur **Nouvel utilisateur** (ou Activer l'accès).
+4. Renseigner l'identifiant (login) et sélectionner l'employé associé.
 3. Renseigner un nom d'utilisateur (login).
 4. Le système ou le manager génère un mot de passe initial temporaire.
 5. Assigner les rôles métier et d'éventuelles permissions individuelles.
@@ -714,8 +808,9 @@ RÈGLE MÉTIER : Un employé non encore confirmé peut prendre des congés, mais
 **Prérequis :** Des employés doivent exister.
 
 **Étapes :**
-1. Accéder à RH > Équipes.
-2. Créer une nouvelle équipe.
+1. Dans le menu latéral (sidebar), ouvrir la section **Temps & Planification**.
+2. Cliquer sur **Équipes & Quarts**.
+3. Cliquer sur **Nouvelle équipe**.
 3. Ajouter des employés à l'équipe.
 
 ---
@@ -725,8 +820,10 @@ RÈGLE MÉTIER : Un employé non encore confirmé peut prendre des congés, mais
 **Prérequis :** Aucun.
 
 **Étapes :**
-1. Accéder à RH > Postes.
-2. Créer un poste (ex : Serveur, Chef de cuisine, Réceptionniste...).
+1. Dans le menu latéral (sidebar), ouvrir la section **Administration RH**.
+2. Cliquer sur **Gestion des Postes**.
+3. Cliquer sur **Nouveau poste**.
+4. Définir le poste (ex : Serveur, Chef de cuisine, Réceptionniste...) et enregistrer.
 
 ---
 
@@ -765,8 +862,10 @@ RÈGLE MÉTIER : Si l'employé n'est pas encore confirmé, l'allocation mensuell
 3. L'employé doit avoir un solde suffisant (ou le type de congé permet les avances).
 
 **Étapes :**
-1. Accéder à Congés > Nouvelle demande.
-2. Sélectionner l'employé et le type de congé.
+1. Dans le menu latéral (sidebar), ouvrir la section **Temps & Planification**.
+2. Cliquer sur **Congés & Absences**.
+3. Cliquer sur **Nouvelle demande**.
+4. Sélectionner l'employé et le type de congé.
 3. Saisir les dates de début et de fin.
 4. Enregistrer.
 
@@ -792,8 +891,9 @@ Si un employé a pris des congés en avance (avant d'être confirmé), on peut e
 **Prérequis :** Aucun.
 
 **Étapes :**
-1. Accéder à Planning > Types de shift.
-2. Créer les shifts (Matin, Soir, Nuit, etc.) avec les horaires de début et de fin.
+1. Dans le menu latéral (sidebar), ouvrir la section **Temps & Planification**.
+2. Cliquer sur **Équipes & Quarts**.
+3. Dans la section des quarts/shifts, créer les plages horaires (Matin, Soir, Nuit, etc.) avec horaires de début et de fin.
 
 ---
 
@@ -805,8 +905,9 @@ Si un employé a pris des congés en avance (avant d'être confirmé), on peut e
 3. Des types de shift doivent exister.
 
 **Étapes :**
-1. Accéder à Planning.
-2. Sélectionner la plage de dates.
+1. Dans le menu latéral (sidebar), ouvrir la section **Temps & Planification**.
+2. Cliquer sur **Emploi du Temps** (ou **Équipes & Quarts**).
+3. Sélectionner la plage de dates.
 3. Générer automatiquement par équipe ou saisir manuellement.
 4. Affecter chaque employé à un shift pour chaque journée.
 5. Enregistrer.
@@ -887,8 +988,9 @@ Si un utilisateur ne parvient pas à réaliser une action ou à voir un menu :
 **Prérequis :** Avoir les droits d'administration du système.
 
 **Étapes :**
-1. Accéder à Administration > Rôles.
-2. Cliquer sur Nouveau rôle.
+1. Dans le menu latéral (sidebar), ouvrir la section **Administration RH**.
+2. Cliquer sur **Rôles et Permissions**.
+3. Cliquer sur **Nouveau rôle**.
 3. Saisir le nom du rôle (ex: Responsable Caisse, Chef Magasinier).
 4. Cocher les permissions à accorder pour ce rôle.
 5. Enregistrer.
@@ -902,8 +1004,9 @@ Si un utilisateur ne parvient pas à réaliser une action ou à voir un menu :
 - Le rôle doit exister.
 
 **Étapes :**
-1. Accéder à la fiche de l'employé (ou dans la gestion des utilisateurs).
-2. Aller dans l'onglet Droits d'accès / Compte utilisateur.
+1. Dans le menu latéral (sidebar), aller dans **Administration RH** > **Gestion des Utilisateurs** (ou la fiche employé dans **Annuaire du Personnel**).
+2. Ouvrir le compte de l'utilisateur concerné.
+3. Aller dans la section des rôles et cocher le ou les rôles attribués.
 3. Cocher le ou les rôles attribués à la personne.
 4. Enregistrer.
 
@@ -962,8 +1065,8 @@ Un utilisateur connecté à sa session peut changer son mot de passe à tout mom
 **Prérequis :** Être connecté à son compte et connaître son mot de passe actuel.
 
 **Étapes :**
-1. Cliquer sur son profil ou accéder aux Paramètres du compte.
-2. Sélectionner l'option Modifier le mot de passe.
+1. Dans le menu latéral (sidebar), tout en bas, cliquer sur la carte de profil utilisateur (votre nom et avatar).
+2. Dans le menu déroulant qui apparaît, cliquer sur **Modifier le mot de passe**.
 3. Saisir son mot de passe actuel (pour confirmer son identité).
 4. Saisir le nouveau mot de passe et le confirmer.
 5. Enregistrer → Le mot de passe est mis à jour immédiatement.
@@ -981,7 +1084,11 @@ Un utilisateur connecté à sa session peut changer son mot de passe à tout mom
 
 ## 16. Tableau de Bord (Dashboard)
 
-Le tableau de bord est l'outil central de pilotage et d'analyse financière de l'établissement. Il permet aux responsables et gérants de suivre la performance économique en temps réel sur une période choisie (par jour, semaine, mois ou période personnalisée).
+Le tableau de bord est l'outil central de pilotage et d'analyse financière de l'établissement.
+
+**Accès :**
+1. Dans le menu latéral (sidebar), ouvrir la section **Opérations restaurant**.
+2. Cliquer sur **Tableau de bord**. Il permet aux responsables et gérants de suivre la performance économique en temps réel sur une période choisie (par jour, semaine, mois ou période personnalisée).
 
 ---
 
