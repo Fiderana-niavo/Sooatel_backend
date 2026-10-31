@@ -2,7 +2,7 @@ import AppDataSource from "../../database/data-source";
 import { UserToken } from "../../database/Entities/UserToken";
 import { LessThan } from "typeorm";
 
-const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 async function purgeExpiredTokens(): Promise<void> {
   try {
@@ -16,8 +16,8 @@ async function purgeExpiredTokens(): Promise<void> {
 }
 
 export function startTokenPurgeJob(): void {
-  // Run once on startup, then repeat every week
+  // Run once on startup, then repeat every 24 hours
   purgeExpiredTokens();
-  setInterval(purgeExpiredTokens, WEEK_MS);
-  console.log("[TokenPurge] Job de nettoyage des tokens démarré (intervalle : 7 jours).");
+  setInterval(purgeExpiredTokens, DAY_MS);
+  console.log("[TokenPurge] Job de nettoyage des tokens démarré (intervalle : 24 heures).");
 }

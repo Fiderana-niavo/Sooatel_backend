@@ -26,8 +26,8 @@ import { Employee } from "../../../database/Entities/Employee";
 import { getJwtSecret } from "../../../shared/config/jwt.config";
 
 const ACCESS_EXPIRY = "1h";
-const REFRESH_EXPIRY = "7d";
-const REFRESH_EXPIRY_DAYS = 7;
+const REFRESH_EXPIRY = "24h";
+const REFRESH_HOURS = 24;
 
 export class AuthService {
   async login(dto: LoginDto): Promise<LoginPayload> {
@@ -147,7 +147,7 @@ export class AuthService {
 
     const hashedToken = await bcrypt.hash(rawToken, 10);
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + REFRESH_EXPIRY_DAYS);
+    expiresAt.setHours(expiresAt.getHours() + REFRESH_HOURS);
 
     const record = tokenRepo.create({
       token: hashedToken,
