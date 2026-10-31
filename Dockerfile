@@ -17,10 +17,12 @@ COPY src ./src
 ENV TRANSFORMERS_CACHE=/app/.cache
 RUN mkdir -p /app/.cache
 
-# Compile TypeScript, preserve chatbot knowledge documents, and pre-cache ONNX model
+# Compile TypeScript, preserve config and chatbot knowledge documents, and pre-cache ONNX model
 RUN npm run build \
   && mkdir -p dist/modules/chatbot/docs \
   && cp -r src/modules/chatbot/docs/. dist/modules/chatbot/docs/ \
+  && mkdir -p dist/shared/config \
+  && cp -r src/shared/config/. dist/shared/config/ \
   && (node -e "const { pipeline, env } = require('@xenova/transformers'); env.cacheDir = '/app/.cache'; pipeline('feature-extraction', 'Xenova/nomic-embed-text-v1');" || echo "Model pre-fetch skipped") \
   && npm prune --omit=dev --legacy-peer-deps --ignore-scripts \
   && node -e "require('fs').writeFileSync('node_modules/sharp/lib/index.js', 'module.exports = {};')"
