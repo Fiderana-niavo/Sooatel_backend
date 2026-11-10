@@ -2,14 +2,24 @@ import { ChatbotGraphState } from "../../graph/graph.state";
 import { ConversationTurn } from "../../services/conversation.memory";
 import { PdfExport } from "../../types/chatbot.type";
 import { checkAnswerExport } from "./pdf.permission";
+import { detectLanguage } from "../../utils/language.util";
 
 // ─── PDF Export Node ──────────────────────────────────────────────────────────
 // Does not render the PDF: it validates the request and hands the markdown content
 // to the frontend, which owns the single shared PDF generation function.
 
 const DEFAULT_TITLE = "Rapport Sooatel";
-const NOTHING_TO_EXPORT = "Je n'ai aucune réponse précédente à exporter en PDF.";
-const EXPORT_READY = "Votre document PDF est prêt. Cliquez sur « Télécharger » ci-dessous quand vous le souhaitez.";
+
+const PDF_MESSAGES = {
+  fr: {
+    nothingToExport: "Je n'ai aucune réponse précédente à exporter en PDF.",
+    exportReady: "Votre document PDF est prêt. Cliquez sur « Télécharger » ci-dessous quand vous le souhaitez.",
+  },
+  mg: {
+    nothingToExport: "Tsy misy valiny teo aloha azo aondrana ho PDF.",
+    exportReady: "Vonona ny tahirin-kevitra PDF-nao. Tsindrio ny « Télécharger » eto ambany rehefa tianao.",
+  },
+};
 
 function lastAnswer(history: ConversationTurn[]): string | undefined {
   return [...history].reverse().find((t) => t.role === "assistant")?.content;
@@ -21,12 +31,13 @@ function buildExport(state: ChatbotGraphState, content: string): PdfExport {
 
 // "only": the previous answer was already produced for this user, so it is exportable
 function exportPrevious(state: ChatbotGraphState): Partial<ChatbotGraphState> {
+  const lang = detectLanguage(state.userMessage);
   const previous = lastAnswer(state.conversationHistory);
   if (!previous) {
-    return { answer: NOTHING_TO_EXPORT, agentUsed: "pdf_agent" };
+    return { answer: PDF_MESSAGES[lang].nothingToExport, agentUsed: "pdf_agent" };
   }
   return {
-    answer: EXPORT_READY,
+    answer: PDF_MESSAGES[lang].exportReady,
     pdfExport: buildExport(state, previous),
     agentUsed: "pdf_agent",
   };

@@ -38,6 +38,9 @@ REGLES ABSOLUES :
    - 📊 **1. Constats Clés** : Résumé des chiffres réels pertinents issus de la base (CA, marges unitaires, bénéfice brut total, stocks).
    - ⚠️ **2. Diagnostic & Opportunités** : Ce qui fonctionne bien, ce qui détruit la marge ou freine la rentabilité (plats à faible marge, achats fournisseurs trop chers, risques de rupture).
    - 💡 **3. Plan d'Actions Concrètes** : 2 à 4 actions claires, précises et faciles à mettre en œuvre par le manager dès aujourd'hui pour maximiser le bénéfice net.
+6. RÈGLES LINGUISTIQUES :
+   - Réponds dans la langue de la question (français ou malgache).
+   - Si tu réponds en malgache, conserve IMPÉRATIVEMENT en français tous les termes techniques, noms de modules, menus, boutons, métriques et statuts (ex: CA, chiffre d'affaires, marge, bénéfice, stock, vente, plat, recette, fiche technique, fournisseur, commande).
 
 ${GROUNDING_RULE}
 

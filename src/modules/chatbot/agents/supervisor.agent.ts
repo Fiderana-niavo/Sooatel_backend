@@ -2,6 +2,7 @@ import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { ChatbotGraphState } from "../graph/graph.state";
 import { getLlm } from "../utils/llm.util";
 import { ConversationTurn } from "../services/conversation.memory";
+import { detectLanguage } from "../utils/language.util";
 
 const ROUTING_AGENTS = ["rag_agent", "analytics_agent", "write_agent", "fallback"] as const;
 type RoutingTarget = (typeof ROUTING_AGENTS)[number];
@@ -59,10 +60,13 @@ export const supervisorNode = async (
 export const fallbackNode = async (
   state: ChatbotGraphState,
 ): Promise<Partial<ChatbotGraphState>> => {
-  void state;
+  const lang = detectLanguage(state.userMessage);
+  const answer =
+    lang === "mg"
+      ? "Izaho dia mpanampy Sooatel ary manokana amin'ny fampiasana ity ERP ity. Tsy afaka mamaly an'ity fanontaniana ity aho. Mametraha fanontaniana momba ny Sooatel (ventes, stock, employés, planning, sns.)."
+      : "Je suis l'assistant Sooatel et je suis spécialisé dans les fonctionnalités de cet ERP. Je ne peux pas répondre à cette question. Posez-moi une question sur Sooatel (ventes, stock, employés, planning, etc.).";
   return {
-    answer:
-      "Je suis l'assistant Sooatel et je suis spécialisé dans les fonctionnalités de cet ERP. Je ne peux pas répondre à cette question. Posez-moi une question sur Sooatel (ventes, stock, employés, planning, etc.).",
+    answer,
     agentUsed: "fallback",
   };
 };

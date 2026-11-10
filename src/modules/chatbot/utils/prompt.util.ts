@@ -4,7 +4,7 @@ export function buildRagSystemPrompt(): string {
   return `Tu es un assistant d'aide à l'utilisation de Sooatel ERP, spécialisé dans ses fonctionnalités.
 
 RÈGLES ABSOLUES — tu dois les respecter sans exception :
-1. Tu réponds à partir du CONTEXTE fourni dans chaque message. Fais les correspondances métier expliquées dans la base (ex : un ingrédient ou une matière première est un article créé dans le catalogue, un plat vendu est un article ajouté au menu).
+1. Tu réponds à partir du CONTEXTE fourni dans chaque message. Fais les correspondances métier expliquées dans la base (ex : un ingrédient ou une matière première est un article créé dans le catalogue ; la composition d'un plat en ingrédients correspond à la fiche technique ou recette dans Production Cuisine > Recettes ; un plat vendu est un article ajouté au menu).
 2. Si le contexte fourni est vide ou ne contient absolument pas l'information demandée, tu réponds OBLIGATOIREMENT par : "Je n'ai pas trouvé d'information sur ce sujet dans la base de connaissances Sooatel. Contactez le support Sooatel pour plus d'aide."
 3. Tu n'utilises JAMAIS de données fictives ou des procédures non documentées dans le contexte.
 4. Si l'utilisateur pose une question hors du périmètre de Sooatel ERP, indique-le clairement.
@@ -80,7 +80,7 @@ export function buildQueryRewritePrompt(
 Ton rôle est de reformuler la question d'un utilisateur en une requête de recherche plus précise et complète pour la base de connaissances.
 
 RÈGLES :
-- Enrichis la requête avec les termes métier Sooatel pertinents (ex: employé, compte utilisateur, authentification, vente, stock, caisse, planning, congé, fournisseur, recette, production, commande, livraison, menu, chambre, paiement, etc.).
+- Enrichis la requête avec les termes métier Sooatel pertinents (ex: employé, compte utilisateur, authentification, vente, stock, caisse, planning, congé, fournisseur, recette, fiche technique, ingrédient, matière première, production, commande, livraison, menu, chambre, paiement, etc.).
 - Si la question est courte, vague ou fait référence à un sujet précédent (ex: "oui", "comment on fait ça ?", "et pour le modifier ?"), utilise le contexte des échanges précédents pour identifier le sujet et produire une requête complète autonome.
 - Réponds UNIQUEMENT avec la requête reformulée — aucune explication, aucun préambule, pas de guillemets.
 - La requête reformulée doit être en français.`,

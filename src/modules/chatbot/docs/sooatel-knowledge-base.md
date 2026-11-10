@@ -122,30 +122,38 @@ Les unités de mesure définissent les unités de base pour le stock (ex: kg, li
 
 ---
 
-### 1.3 Articles (Items) — Ingrédients, Plats et Fournitures
+### 1.3 Articles (Items) — Ingrédients bruts, Plats et Fournitures
 
 Les articles sont la brique fondamentale de l'application. Tout — ingrédient, matière première, plat produit, boisson, matériel — est un article.
 
-#### Comment créer un ingrédient ou un article ?
-Dans Sooatel ERP, **il n'existe pas de menu séparé nommé "Ingrédient"** : un ingrédient se crée et se gère comme un **Article** (généralement avec le type d'article "Matière première" ou "Ingrédient").
+#### Distinguer la création d'un ingrédient et la fiche technique d'un plat :
+Dans Sooatel ERP et la gestion en cuisine :
+1. **Créer un ingrédient (matière première brute) :** Se fait dans **Inventaire & Stocks > Gestion des Produits & Inventaire > onglet Articles**. On y enregistre l'ingrédient en stock (ex : Farine, Tomate, Mozzarella, Sucre) avec son unité de base (kg, litre, pièce).
+2. **Créer la fiche technique / recette (composer un plat avec ses ingrédients) :** Se fait dans **Production Cuisine > Recettes** (la page s'intitule **Fiches Techniques**). C'est là que l'on sélectionne le plat fini et que l'on ajoute sa liste d'ingrédients avec les quantités nécessaires (ex: 250g de pâte, 100g de sauce, 150g de fromage).
+
+#### Comment créer un ingrédient (matière première en stock) ?
+Dans Sooatel ERP, **il n'existe pas de menu séparé nommé "Ingrédient"** : un ingrédient physique se crée et se gère comme un **Article** (généralement avec le type d'article "Matière première" ou "Ingrédient").
+
+📍 **Emplacement :** Menu latéral (sidebar) > **Inventaire & Stocks** > **Gestion des Produits & Inventaire** > onglet **Articles** (Espace Restaurant / Utopia).
 
 **Prérequis :**
 - Au moins un type d'article doit exister (ex : Matière première, Ingrédient, Boisson).
 - Au moins une unité de mesure doit exister (ex : kg, litre, pièce).
 
-**Étapes pour créer un ingrédient ou article :**
+**Étapes pour créer un ingrédient :**
 1. Dans le menu latéral (sidebar), ouvrir la section **Inventaire & Stocks**.
 2. Cliquer sur **Gestion des Produits & Inventaire**.
 3. Sélectionner l'onglet **Articles**.
 4. Cliquer sur **Nouvel article**.
 5. Remplir les champs :
-   - **Libellé :** Le nom de l'ingrédient ou plat (ex : Farine, Tomate, Mozzarella, Huile).
+   - **Libellé :** Le nom de l'ingrédient (ex : Farine, Tomate, Mozzarella, Huile).
    - **Référence :** Le code ou la référence interne (ex : ING001, ART001).
    - **Type d'article :** Sélectionner "Matière première" ou "Ingrédient".
    - **Unité de mesure de base :** Choisir l'unité de stock (kg, litre, pièce).
+   - **Produit interne :** Laisser décoché pour un ingrédient acheté chez un fournisseur (à cocher uniquement s'il s'agit d'une préparation intermédiaire ou d'un plat produit en cuisine).
 6. Enregistrer.
 
-IMPORTANT : Sans article, il est impossible de créer un menu, de composer une recette (les ingrédients d'une recette sont des articles), un produit fournisseur ou de gérer le stock.
+IMPORTANT : Sans article ingrédient, il est impossible de composer une fiche technique / recette (les ingrédients d'une recette sont des articles), de commander auprès d'un fournisseur ou de suivre le stock.
 
 ---
 
@@ -262,30 +270,42 @@ Les prix des produits peuvent être historisés dans le module Prix produits, pe
 
 ---
 
-## 3. Recettes
+## 3. Recettes & Fiches Techniques (Composition des Plats en Ingrédients)
 
-Les recettes définissent la composition d'un plat (quels ingrédients, en quelles quantités).
+Dans Sooatel ERP et en restauration, les **fiches techniques** (nommées **Recettes** dans le menu latéral) définissent la composition exacte d'un plat cuisiné : la liste des **ingrédients**, leurs quantités et unités, ainsi que le rendement.
 
-### 3.1 Créer une recette
+---
+
+### 3.1 Créer une fiche technique / recette (Associer les ingrédients à un plat)
+
+Une fiche technique permet de lier un plat produit (ex : Pizza, Salade composée, Omelette) à ses différents ingrédients composants (ex : Farine, Tomate, Fromage, Œufs) pour déduire automatiquement le stock lors de la production ou de la vente.
+
+📍 **Emplacement :** Menu latéral (sidebar) > **Production Cuisine** > **Recettes** *(la page s'intitule **Fiches Techniques** dans l'interface)*.
 
 **Prérequis :**
-1. Un article de type "plat produit" doit exister (c'est le résultat de la recette).
-2. Les ingrédients (autres articles) doivent exister.
-3. Les unités d'article doivent être configurées si l'on veut utiliser des conditionnements (optionnel).
+1. **L'article du plat fini :** Un article représentant le plat cuisiné doit exister dans le catalogue (`Inventaire & Stocks > Gestion des Produits & Inventaire > onglet Articles`) avec la case **"Produit interne"** cochée (`isProduced`).
+2. **Les articles ingrédients :** Tous les ingrédients qui composent la recette doivent déjà exister en tant qu'articles (avec le type "Matière première" ou "Ingrédient").
+3. Les unités de mesure des ingrédients (kg, litre, gramme, pièce, ou conditionnements personnalisés) doivent être créées.
 
-**Étapes :**
+**Procédure pas à pas pour créer une fiche technique / recette :**
 1. Dans le menu latéral (sidebar), ouvrir la section **Production Cuisine**.
-2. Cliquer sur **Recettes**.
-3. Cliquer sur **Nouvelle recette**.
-3. Sélectionner l'article produit (le plat final).
-4. Définir la quantité produite (rendement / yield).
-5. Ajouter les lignes d'ingrédients : pour chaque ingrédient, saisir la quantité et l'unité.
-6. Activer la recette (une seule recette active par article à la fois).
-7. Enregistrer.
+2. Cliquer sur le sous-menu **Recettes** (sur la page, le titre affiché est **Fiches Techniques**).
+3. Cliquer sur le bouton **« + Nouvelle recette »** en haut à droite.
+4. **Sélectionner le plat :** Dans le champ "Article produit", choisir le plat cuisiné concerné dans la liste déroulante.
+5. **Définir le rendement (Yield) :** Renseigner la quantité produite par cette recette (ex : 1 portion, 10 parts, 5 litres).
+6. **Ajouter la liste des ingrédients :**
+   - Cliquer sur le bouton pour insérer une nouvelle ligne d'ingrédient.
+   - Sélectionner l'ingrédient souhaité dans la liste des matières premières.
+   - Indiquer la **quantité** nécessaire (ex : 0.25, 100, 2).
+   - Choisir l'**unité de mesure** associée (ex : kg, g, litre, pièce).
+   - Cliquer à nouveau sur ajouter pour chaque ingrédient supplémentaire composant la recette.
+7. **Activer et Enregistrer :**
+   - Cliquer sur **Enregistrer**.
+   - Activer la recette : une seule fiche technique/recette peut être active par plat à la fois.
 
-RÈGLE MÉTIER : Une seule recette peut être active par article. Pour modifier, désactiver l'ancienne et activer la nouvelle.
-
-RÈGLE MÉTIER : La recette est indispensable pour la production de plats — sans recette active, la production ne peut pas être validée.
+**RÈGLES MÉTIER :**
+- Une seule recette/fiche technique peut être active par article à la fois. Pour mettre à jour des proportions ou des ingrédients, on peut créer une nouvelle version ou modifier la version existante.
+- La fiche technique est indispensable pour la production de plats : sans recette active, aucun ordre de fabrication ne peut être validé.
 
 ---
 
@@ -572,23 +592,41 @@ Le module Ventes permet d'enregistrer et de gérer les commandes clients du rest
 
 ---
 
-### 9.1 Créer et configurer une vente
+### 9.1 Créer et enregistrer une vente (Procédure pas à pas)
 
 **Prérequis :**
-- Des éléments de menu doivent être configurés (les plats et boissons vendus).
+- Disposer de la permission d'accès **Caisse & PDV** (`sales.pos`).
+- Des plats ou boissons doivent être configurés dans le menu (**Opérations restaurant > Catalogue & Menus**).
 - Un serveur ou vendeur (employé) doit être désigné.
 - Si le client paie directement sur place : un journal de caisse doit être ouvert.
 
-**Étapes de saisie générale :**
-1. Dans le menu latéral (sidebar), ouvrir la section **Opérations restaurant**.
-2. Cliquer sur **Caisse & PDV** (ou **Historique des Ventes**).
-3. Cliquer sur **Nouvelle vente** (ou démarrer une commande).
-2. Renseigner le **numéro de facture** et la **date de vente**.
-3. Sélectionner le **vendeur / serveur** responsable de la commande.
-4. Choisir le **lieu de consommation** :
-   - **Consommation au Restaurant :** Saisir le numéro de table (ex: Table 12).
-   - **Service en Chambre (Room Service) :** Sélectionner le numéro de la chambre du client.
-5. Optionnellement : saisir une consigne ou remarque (ex: "Sans piment", "Viande bien cuite").
+📍 **Emplacement :** Menu latéral (sidebar) > **Opérations restaurant** > **Caisse & PDV** (Espace Restaurant / Utopia).
+
+**Étapes pour créer et enregistrer une vente :**
+1. **Accéder à l'interface de vente :**
+   - Dans le menu latéral (sidebar), cliquer sur la section **Opérations restaurant**.
+   - Cliquer sur le sous-menu **Caisse & PDV**. L'interface de saisie d'une vente s'affiche directement.
+2. **Renseigner les informations générales de la commande :**
+   - **Numéro de facture :** Saisir la référence de la facture (ex: `FAC-001`).
+   - **Date de vente :** Vérifier ou ajuster la date et l'heure (pré-remplie par défaut avec l'heure actuelle).
+   - **Vendeur / Serveur :** Sélectionner dans la liste déroulante l'employé responsable du service.
+   - **Lieu de consommation :**
+     - Cocher **Consommation au Restaurant** et renseigner le numéro de table (ex: `Table 12`), OU
+     - Cocher **Service en Chambre (Room Service)** et sélectionner la chambre du client.
+   - **Commentaire / Consigne (optionnel) :** Saisir les instructions spécifiques de préparation (ex: "Sans piment", "Viande bien cuite").
+3. **Ajouter les plats et boissons à la commande :**
+   - Cliquer sur le bouton **"+"** ou **"Ajouter"** pour insérer une nouvelle ligne.
+   - Dans la liste déroulante, sélectionner le plat ou la boisson souhaité(e) issu(e) du menu. Le prix unitaire s'affiche automatiquement.
+   - Indiquer la **quantité** commandée.
+   - Pour chaque nouvel article de la commande, cliquer à nouveau sur **Ajouter**. Le montant total se recalcule en temps réel.
+   - Pour retirer un plat erroné, cliquer sur l'icône corbeille (supprimer).
+4. **Définir le mode de règlement (immédiat ou différé) :**
+   - **Option 1 - Imputation chambre :** Cocher la case **"Payer à la caisse de l'hôtel (Imputer sur la chambre)"** et sélectionner la chambre. Aucun paiement immédiat n'est requis au restaurant : la note sera réglée au départ du client (check-out) à la caisse de l'hôtel.
+   - **Option 2 - Paiement direct :** Choisir le mode de paiement (Espèces / Cash, Mobile Money Mvola/Orange/Airtel, Carte bancaire). Le client peut régler la totalité ou un acompte.
+   - **Option 3 - Note ouverte :** Laisser sans règlement immédiat si le client consomme encore.
+5. **Enregistrer la vente :**
+   - Cliquer sur le bouton **Enregistrer** (icône de disquette) en bas de la page.
+   - La vente est créée avec le statut **Ouverte / En cours**. Elle apparaît désormais dans l'**Historique des Ventes** et peut encore être modifiée tant qu'elle n'est pas clôturée.
 
 ---
 

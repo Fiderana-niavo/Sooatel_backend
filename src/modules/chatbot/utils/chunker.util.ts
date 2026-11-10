@@ -3,8 +3,8 @@ import { DocumentChunk } from "../types/chatbot.type";
 // ─── Text Chunking Utility ──────────────────────────────────────────────────
 // Splits a large markdown/text document into coherent passages.
 
-const CHUNK_SIZE = 800;
-const CHUNK_OVERLAP = 150;
+const CHUNK_SIZE = 1200;
+const CHUNK_OVERLAP = 200;
 
 function splitBySection(text: string): string[] {
   // Split on markdown headers (##, ###) to get semantically coherent sections

@@ -21,3 +21,4 @@ export function startTokenPurgeJob(): void {
   setInterval(purgeExpiredTokens, DAY_MS);
   console.log("[TokenPurge] Job de nettoyage des tokens démarré (intervalle : 24 heures).");
 }
+

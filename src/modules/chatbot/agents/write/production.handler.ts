@@ -14,16 +14,17 @@ import {
 } from "../../utils/production.util";
 import { buildProductionSystemPrompt, buildProductionUserPrompt } from "./production.prompts";
 import {
-  GENERIC_ERROR,
-  INVALID_DATE,
-  NO_EMPLOYEE,
-  NO_ENTRIES,
-  NO_PERMISSION,
+  getGenericError,
+  getInvalidDate,
+  getNoEmployee,
+  getNoEntries,
+  getNoPermission,
   buildClarification,
   buildSuccess,
 } from "./production.messages";
 import { DishOption, InsertOutcome, ProductionPlan, ResolvedEntry } from "./production.types";
 import type { StockCheck } from "../../../dish-production/type/dish-production.type";
+import { detectLanguage, SupportedLanguage } from "../../utils/language.util";
 
 const DEFAULT_NOTE = "Saisie via l'assistant Sooatel";
 const MAX_NOTE_LENGTH = 500;
@@ -103,38 +104,40 @@ function reply(answer: string, error?: string): Partial<ChatbotGraphState> {
   return { answer, agentUsed: "write_agent", error };
 }
 
-async function checkAccess(state: ChatbotGraphState): Promise<string | null> {
-  if (!state.employeeId) return NO_EMPLOYEE;
+async function checkAccess(state: ChatbotGraphState, lang: SupportedLanguage): Promise<string | null> {
+  if (!state.employeeId) return getNoEmployee(lang);
   const granted = await checkPermission(state.userId, PERMISSIONS.STOCK_MANAGE);
-  return granted ? null : NO_PERMISSION;
+  return granted ? null : getNoPermission(lang);
 }
 
 export async function handleProductionWrite(
   state: ChatbotGraphState,
 ): Promise<Partial<ChatbotGraphState>> {
+  const lang = detectLanguage(state.userMessage);
+
   try {
-    const denied = await checkAccess(state);
+    const denied = await checkAccess(state, lang);
     if (denied) return reply(denied);
 
     const now = new Date();
     const plan = await extractPlan(state.userMessage, state.conversationHistory, now);
-    if (plan.entries.length === 0) return reply(NO_ENTRIES);
+    if (plan.entries.length === 0) return reply(getNoEntries(lang));
 
     const date = resolveProductionDate(plan, now);
-    if (!date) return reply(INVALID_DATE);
+    if (!date) return reply(getInvalidDate(lang));
 
     const dishes = await loadDishes();
     const check = validateEntries(plan.entries, dishes);
     if (check.issues.length > 0) {
       const labels = check.notFound ? dishes.map((dish) => dish.label) : [];
-      return reply(buildClarification(check.issues, labels));
+      return reply(buildClarification(check.issues, labels, lang));
     }
 
     const outcome = await insertEntries(check.resolved, date, plan, state.employeeId);
-    return reply(buildSuccess(outcome, date));
+    return reply(buildSuccess(outcome, date, lang));
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`[WRITE:PRODUCTION] Error: ${message}`);
-    return reply(GENERIC_ERROR, message);
+    return reply(getGenericError(lang), message);
   }
 }
