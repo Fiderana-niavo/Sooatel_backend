@@ -55,10 +55,10 @@ export const TABLE_GUARDS: TableGuard[] = [
     permissions: ["hr.access", "security.access"],
   },
 
-  // 7. HR: Schedules, Shifts & Attendances
+  // 7. HR: Schedules & Shifts
   {
     name: "hr_schedules",
-    pattern: /\b(attendances|schedules|shift_type)\b/i,
+    pattern: /\b(schedules|shift_type)\b/i,
     permissions: ["hr.manage", "hr.access", "security.access"],
   },
 

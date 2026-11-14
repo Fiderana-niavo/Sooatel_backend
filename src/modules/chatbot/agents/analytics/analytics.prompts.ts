@@ -28,7 +28,7 @@ REGLES ABSOLUES :
    - Bons d'achats, commandes et livraisons physiques fournisseurs (purchases, purchase_details, product_delivery, delivery_details, supplier_products, v_supplier_catalog) : requiert "stock.manage", "supplier.manage" ou "restaurant.purchases".
    - Salaires de base (base_salary) : requiert OBLIGATOIREMENT "hr.access" ou "security.access".
    - Conges, soldes et transactions de conges (leaves, leave_types, employee_leave_balances) : requiert OBLIGATOIREMENT "hr.access" ou "security.access".
-   - Plannings, horaires de travail et presences (schedules, shift_type, attendances) : requiert "hr.manage", "hr.access" ou "security.access".
+   - Plannings et horaires de travail (schedules, shift_type) : requiert "hr.manage", "hr.access" ou "security.access".
    - Dossiers et effectifs employes (employees, v_employees_active, internship, schools, employees_job) : requiert "employee.manage", "hr.access" ou "security.access".
    - Recettes et fiches techniques (recipes, recipe_details, v_recipes, v_recipe_ingredients) : requiert "stock.read", "stock.manage" ou "stock.access".
    - Mouvements de stock internes et productions (stock_movement, dish_production, v_stock_alerts) : requiert "stock.read", "stock.manage" ou "stock.access".

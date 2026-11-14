@@ -50,7 +50,6 @@ TABLES DE BASE (a utiliser si la vue ne suffit pas ou pour des requetes croisees
   leaves(id_leave, ref, id_employee, id_leave_type, start_date, end_date, status [integer: 5=en attente, 0=validé, -1=rejeté, -3=annulé]) -- joindre employees e et leave_types lt (lt.label)
   leave_types(id_leave_type, label, is_paid, deduction_mode)
   employee_leave_balances(id_employee_leave_balance, id_employee, id_leave_type, allocated_days, used_days)
-  attendances(id_attendance, id_employee, id_schedule, clock_in, clock_out) -- joindre employees e
   schedules(id_schedule, id_employee, id_shift_type, schedule_date) -- joindre employees e et shift_type st (st.label)
   shift_type(id_shift_type, label, start_time, end_time)
 

@@ -954,12 +954,6 @@ RÈGLE : Si un employé est en congé sur une journée, le planning tient compte
 
 ---
 
-### 13.3 Pointage (Attendance)
-
-**Prérequis :** Un planning doit exister pour la période.
-
----
-
 ## 14. Rôles & Permissions
 
 ### 14.1 Principe fondamental : "Pas de permission, pas d'action"

@@ -496,17 +496,6 @@ CREATE TABLE Employee_requirements(
    FOREIGN KEY(id_job_title) REFERENCES Job_titles(id_job_title)
 );
 
-CREATE TABLE Attendances(
-   id_attendance UUID DEFAULT uuid_generate_v4(),
-   clock_in TIMESTAMPTZ NOT NULL,
-   clock_out TIMESTAMPTZ,
-   id_schedule UUID NOT NULL,
-   id_employee UUID NOT NULL,
-   PRIMARY KEY(id_attendance),
-   FOREIGN KEY(id_schedule) REFERENCES Schedules(id_schedule),
-   FOREIGN KEY(id_employee) REFERENCES Employees(id_employee)
-);
-
 CREATE SEQUENCE leave_ref_seq;
 CREATE TABLE Leaves(
    id_leave UUID DEFAULT uuid_generate_v4(),

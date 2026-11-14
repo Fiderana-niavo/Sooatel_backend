@@ -1,5 +1,4 @@
 import { BaseEntity, Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
-import { Attendance } from "./Attendance";
 import { EmployeeJob } from "./EmployeeJob";
 import { EmployeeLeaveBalance } from "./EmployeeLeaveBalance";
 import { EmployeeTeam } from "./EmployeeTeam";
@@ -68,9 +67,6 @@ export class Employee extends BaseEntity {
 
   @OneToMany(() => EmployeeLeaveBalance, (elb) => elb.employee)
   leaveBalances: EmployeeLeaveBalance[];
-
-  @OneToMany(() => Attendance, (a) => a.employee)
-  attendances: Attendance[];
 
   @OneToMany(() => Schedule, (s) => s.employee)
   schedules: Schedule[];
