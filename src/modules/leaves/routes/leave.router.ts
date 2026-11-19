@@ -12,6 +12,11 @@ leaveRouter.post("/", authorize("hr.welfare"), leaveController.createLeave);
 leaveRouter.delete("/:id", authorize("hr.welfare"), leaveController.deleteLeave);
 leaveRouter.post("/allocate-monthly", authorize("hr.welfare"), leaveController.allocateMonthly);
 leaveRouter.post("/confirm/:idEmployee", authorize("hr.welfare"), leaveController.confirmJob);
+leaveRouter.post(
+  "/reset-advance/:idEmployee",
+  authorize("hr.welfare"),
+  leaveController.resetAdvance,
+);
 leaveRouter.post("/salary-deduction", authorize("hr.welfare"), leaveController.salaryDeduction);
 leaveRouter.get("/types", authorize("hr.welfare"), leaveController.getLeaveTypes);
 leaveRouter.post("/types", authorize("hr.welfare"), leaveController.createLeaveType);

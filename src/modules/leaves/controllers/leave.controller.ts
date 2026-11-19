@@ -64,6 +64,16 @@ export class LeaveController {
     }
   };
 
+  resetAdvance = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const idEmployee = req.params["idEmployee"] as string;
+      await this.service.resetAdvance(idEmployee);
+      res.json(ApiResponse.success({ message: "Dette de congés réinitialisée." }));
+    } catch (error) {
+      next(error);
+    }
+  };
+
   getBalance = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const idEmployee = req.params["idEmployee"] as string;

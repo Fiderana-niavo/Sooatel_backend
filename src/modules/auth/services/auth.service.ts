@@ -24,6 +24,12 @@ import { PermissionItem } from "../../permissions/type/permission.type";
 import { MailerService } from "../../../shared/mailer/mailer.service";
 import { Employee } from "../../../database/Entities/Employee";
 import { getJwtSecret } from "../../../shared/config/jwt.config";
+import {
+  BadRequestError,
+  ForbiddenError,
+  NotFoundError,
+  UnauthorizedError,
+} from "../../../shared/errors/AppError";
 
 const ACCESS_EXPIRY = "1h";
 const REFRESH_EXPIRY = "24h";
@@ -40,18 +46,18 @@ export class AuthService {
       .orWhere("employee.email_contact = :identifier", { identifier: dto.username })
       .getOne();
 
-    if (!user) throw new Error("Identifiants invalides.");
+    if (!user) throw new UnauthorizedError("Identifiants invalides.");
 
     if (user.activeStatus === -1 || (user.employee && user.employee.activeStatus === -1)) {
-      throw new Error("Compte désactivé, contactez l'administrateur.");
+      throw new ForbiddenError("Compte désactivé, contactez l'administrateur.");
     }
 
     if (user.activeStatus === 0) {
-      throw new Error("Compte en attente d'activation.");
+      throw new ForbiddenError("Compte en attente d'activation.");
     }
 
     const match = await bcrypt.compare(dto.password, user.passwordHash);
-    if (!match) throw new Error("Identifiants invalides.");
+    if (!match) throw new UnauthorizedError("Identifiants invalides.");
 
     const payload: TokenPayload = {
       idUser: user.idUser,
@@ -90,7 +96,7 @@ export class AuthService {
       const verified = await jwtVerify(token, getJwtSecret());
       payload = verified.payload as Record<string, unknown>;
     } catch {
-      throw new Error("Refresh token expiré ou invalide.");
+      throw new UnauthorizedError("Refresh token expiré ou invalide.");
     }
 
     // 2. Check token exists in DB and is not used/revoked
@@ -108,8 +114,8 @@ export class AuthService {
       }
     }
 
-    if (!validRecord) throw new Error("Refresh token invalide ou révoqué.");
-    if (validRecord.expiresAt < new Date()) throw new Error("Refresh token expiré.");
+    if (!validRecord) throw new UnauthorizedError("Refresh token invalide ou révoqué.");
+    if (validRecord.expiresAt < new Date()) throw new UnauthorizedError("Refresh token expiré.");
 
     // 2.5. Check if the user is still active
     const user = await AppDataSource.getRepository(User).findOne({
@@ -118,7 +124,7 @@ export class AuthService {
     });
 
     if (!user || user.activeStatus === -1 || (user.employee && user.employee.activeStatus === -1)) {
-      throw new Error("Ce compte a été désactivé.");
+      throw new ForbiddenError("Ce compte a été désactivé.");
     }
 
     // 3. Rotate: revoke old token and issue a new pair
@@ -165,7 +171,7 @@ export class AuthService {
     const tokenRepo = AppDataSource.getRepository(UserToken);
 
     const user = await userRepo.findOne({ where: { idUser } });
-    if (!user) throw new Error("Utilisateur introuvable.");
+    if (!user) throw new NotFoundError("Utilisateur introuvable.");
 
     // Invalidate existing unused tokens of this type
     await tokenRepo
@@ -210,7 +216,7 @@ export class AuthService {
       .orWhere("employee.email_contact = :identifier", { identifier: dto.username })
       .getOne();
 
-    if (!user) throw new Error("Utilisateur introuvable.");
+    if (!user) throw new NotFoundError("Utilisateur introuvable.");
 
     // Invalidate previous unused PWD_RESET tokens for this user
     await tokenRepo
@@ -261,7 +267,7 @@ export class AuthService {
       .orWhere("employee.email_contact = :identifier", { identifier: dto.username })
       .getOne();
 
-    if (!user) throw new Error("Utilisateur introuvable.");
+    if (!user) throw new NotFoundError("Utilisateur introuvable.");
 
     const records = await tokenRepo.find({
       where: { idUser: user.idUser, tokenType: "PWD_RESET", used: false },
@@ -276,8 +282,8 @@ export class AuthService {
       }
     }
 
-    if (!validRecord) throw new Error("Clé incorrecte ou déjà utilisée.");
-    if (validRecord.expiresAt < new Date()) throw new Error("Cette clé a expiré.");
+    if (!validRecord) throw new BadRequestError("Clé incorrecte ou déjà utilisée.");
+    if (validRecord.expiresAt < new Date()) throw new BadRequestError("Cette clé a expiré.");
   }
 
   async changePassword(dto: ChangePasswordDto): Promise<void> {
@@ -291,7 +297,7 @@ export class AuthService {
       .orWhere("employee.email_contact = :identifier", { identifier: dto.username })
       .getOne();
 
-    if (!user) throw new Error("Utilisateur introuvable.");
+    if (!user) throw new NotFoundError("Utilisateur introuvable.");
 
     const records = await tokenRepo.find({
       where: { idUser: user.idUser, tokenType: "PWD_RESET", used: false },
@@ -306,8 +312,8 @@ export class AuthService {
       }
     }
 
-    if (!validRecord) throw new Error("Clé incorrecte ou déjà utilisée.");
-    if (validRecord.expiresAt < new Date()) throw new Error("Cette clé a expiré.");
+    if (!validRecord) throw new BadRequestError("Clé incorrecte ou déjà utilisée.");
+    if (validRecord.expiresAt < new Date()) throw new BadRequestError("Cette clé a expiré.");
 
     const hashed = await bcrypt.hash(dto.newPassword, 12);
 
@@ -321,10 +327,10 @@ export class AuthService {
     const userRepo = AppDataSource.getRepository(User);
 
     const user = await userRepo.findOne({ where: { idUser: dto.idUser } });
-    if (!user) throw new Error("Utilisateur introuvable.");
+    if (!user) throw new NotFoundError("Utilisateur introuvable.");
 
     const match = await bcrypt.compare(dto.currentPassword, user.passwordHash);
-    if (!match) throw new Error("Mot de passe actuel incorrect.");
+    if (!match) throw new BadRequestError("Mot de passe actuel incorrect.");
 
     const hashed = await bcrypt.hash(dto.newPassword, 12);
     await userRepo.update({ idUser: dto.idUser }, { passwordHash: hashed });

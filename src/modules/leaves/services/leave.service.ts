@@ -144,11 +144,17 @@ export class LeaveService {
       const transactions = await manager.find(LeaveTransaction, { where: { idLeave } });
 
       for (const tx of transactions) {
-        if (tx.transactionType === LEAVE_TRANSACTION_TYPE.USAGE) {
+        if (
+          tx.transactionType === LEAVE_TRANSACTION_TYPE.USAGE ||
+          tx.transactionType === "USAGE"
+        ) {
           await this.updateBalance(manager, tx.idEmployee, tx.idLeaveType, {
             usedDays: -Number(tx.amount),
           });
-        } else if (tx.transactionType === LEAVE_TRANSACTION_TYPE.ADVANCE) {
+        } else if (
+          tx.transactionType === LEAVE_TRANSACTION_TYPE.ADVANCE ||
+          tx.transactionType === "ADVANCE"
+        ) {
           await this.updateBalance(manager, tx.idEmployee, tx.idLeaveType, {
             advanceDays: -Number(tx.amount),
           });
@@ -231,6 +237,41 @@ export class LeaveService {
       await this.updateBalance(manager, dto.idEmployee, dto.idLeaveType, {
         advanceDays: -dto.advanceDays,
       });
+    });
+  }
+
+  async resetAdvance(idEmployee: string): Promise<void> {
+    return AppDataSource.transaction(async (manager) => {
+      const balanceRepo = manager.getRepository(EmployeeLeaveBalance);
+      const balances = await balanceRepo.find({
+        where: { idEmployee },
+      });
+
+      const totalAdvance = balances.reduce((sum, b) => sum + (Number(b.advanceDays) || 0), 0);
+
+      if (totalAdvance <= 0) {
+        throw new AppError("Cet employé n'a aucune dette de congés à réinitialiser.");
+      }
+
+      for (const balance of balances) {
+        const debt = Number(balance.advanceDays) || 0;
+        if (debt > 0) {
+          balance.advanceDays = 0;
+          await balanceRepo.save(balance);
+
+          await manager.save(
+            LeaveTransaction,
+            manager.create(LeaveTransaction, {
+              transactionType: LEAVE_TRANSACTION_TYPE.ADJUSTMENT,
+              amount: debt,
+              createdAt: new Date(),
+              idLeave: null,
+              idLeaveType: balance.idLeaveType,
+              idEmployee,
+            }),
+          );
+        }
+      }
     });
   }
 
@@ -491,9 +532,14 @@ export class LeaveService {
   }
 
   private toTransactionResponse(tx: LeaveTransaction): LeaveTransactionResponse {
+    let txType = tx.transactionType;
+    if (txType === "AVANCE") txType = "ADVANCE";
+    else if (txType === "UTILISATION") txType = "USAGE";
+    else if (txType === "DEDUCTION_SALAIRE") txType = "SALARY_DEDUCTION";
+
     return {
       idTransaction: tx.idTransaction,
-      transactionType: tx.transactionType,
+      transactionType: txType,
       amount: Number(tx.amount),
       createdAt: tx.createdAt?.toISOString() ?? "",
       idLeave: tx.idLeave,
