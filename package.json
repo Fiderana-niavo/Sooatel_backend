@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon --watch src --ext ts --exec ts-node src/index.ts",
+    "dev": "nodemon --watch src --watch .env --ext ts --exec ts-node src/index.ts",
     "start": "ts-node src/index.ts",
     "build": "tsc --outDir dist --rootDir src --declaration false --declarationMap false --sourceMap false",
     "index": "ts-node src/scripts/index-docs.ts",
