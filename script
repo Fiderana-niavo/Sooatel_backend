@@ -1,0 +1,8 @@
+docker compose exec backend npm run migration:run
+
+
+# 1. Injecter les rôles et permissions à l'intérieur du conteneur backend
+docker compose exec backend npm run seed:roles-permissions
+
+# 2. Injecter les données métier de simulation
+docker compose exec backend npm run seed:test
