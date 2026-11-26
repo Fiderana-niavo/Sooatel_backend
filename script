@@ -6,3 +6,8 @@ docker compose exec backend npm run seed:roles-permissions
 
 # 2. Injecter les données métier de simulation
 docker compose exec backend npm run seed:test
+
+Manager : manager.test / Password123!
+Caisse / Serveur : serveur.test / Password123!
+Cuisine : chef.test / Password123!
+Admin : malalani04 / Password123!
