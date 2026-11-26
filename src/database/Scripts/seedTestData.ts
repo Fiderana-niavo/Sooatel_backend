@@ -59,17 +59,43 @@ async function getInitialContext(client: PoolClient): Promise<{
     }
   }
 
-  const malalaUser = allUsers.rows.find((u: { username: string; id_user: string }) =>
+  let malalaUser = allUsers.rows.find((u: { username: string; id_user: string }) =>
     u.username.trim().toLowerCase().includes("04") ||
+    u.username.trim().toLowerCase().includes("malala") ||
     u.id_user === "d39d9390-dc22-4cda-8ea0-242da65e1ada"
   );
 
-  if (!malalaUser) {
-    throw new Error("L'utilisateur malalani04 n'a pas été trouvé dans la base de données.");
-  }
+  let malalaUserId = "";
+  let malalaEmpId = "";
 
-  const malalaUserId = malalaUser.id_user as string;
-  const malalaEmpId = malalaUser.id_employee as string;
+  if (!malalaUser) {
+    console.log("Compte administrateur non trouvé, création automatique de Malala (Admin)...");
+    const empRes = await client.query(
+      `INSERT INTO employees (name, lastname, email_contact, phone_number, address, active_status, base_salary)
+       VALUES ('Andrianarivo', 'Malala Niriana', 'malala.andrianarivo@sooatel.mg', '034 07 566 22', 'Lot VT 22 E Manjakaray, Antananarivo', 0, 2500000)
+       RETURNING id_employee`
+    );
+    malalaEmpId = empRes.rows[0].id_employee;
+    const pwdHash = await bcrypt.hash("Password123!", 10);
+    const userRes = await client.query(
+      `INSERT INTO users (username, password_hash, active_status, id_employee)
+       VALUES ('malalani04', $1, 0, $2)
+       RETURNING id_user`,
+      [pwdHash, malalaEmpId]
+    );
+    malalaUserId = userRes.rows[0].id_user;
+
+    const adminRoleId = roles["Admin"];
+    if (adminRoleId) {
+      await client.query(
+        "INSERT INTO user_role (id_user, id_role) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+        [malalaUserId, adminRoleId]
+      );
+    }
+  } else {
+    malalaUserId = malalaUser.id_user as string;
+    malalaEmpId = malalaUser.id_employee as string;
+  }
 
   return { malalaUserId, malalaEmpId, roles };
 }
@@ -88,7 +114,6 @@ async function cleanExistingData(client: PoolClient, malalaUserId: string, malal
   await client.query("DELETE FROM user_tokens");
 
   // 2. Sales, POS & Invoicing
-  await client.query("DELETE FROM sales_payment");
   await client.query("DELETE FROM sale_items");
   await client.query("DELETE FROM payment");
   await client.query("DELETE FROM sales");
@@ -593,8 +618,8 @@ async function seedShiftsAndSchedules(
   const shiftsMap: Record<string, string> = {};
   for (const sh of shiftsData) {
     const res = await client.query(
-      `INSERT INTO shift_type (label, custom_start_time, custom_end_time, description)
-       VALUES ($1, $2, $3, $4) RETURNING id_shift_type`,
+      `INSERT INTO shift_type (label, custom_start_time, custom_end_time, start_time, end_time, description)
+       VALUES ($1, $2, $3, $2, $3, $4) RETURNING id_shift_type`,
       [sh.label, sh.start, sh.end, sh.desc]
     );
     shiftsMap[sh.label] = res.rows[0].id_shift_type as string;
@@ -1410,10 +1435,15 @@ async function seedSuppliersAndPurchases(
     `INSERT INTO supplier (name, address, description, provides_delivery, delivery_delay, notes, phone_number, email)
      VALUES ('STAR Madagascar Distribution', 'Andranomahery, Antananarivo', 'Brasserie, bières THB et boissons gazeuses', true, 24, 'Dépôt principal', '020 22 201 11', 'commandes@star.mg') RETURNING id_supplier`
   );
+  const sup4 = await client.query(
+    `INSERT INTO supplier (name, address, description, provides_delivery, delivery_delay, notes, phone_number, email)
+     VALUES ('Épicerie 67Ha', '67Ha Nord-Est, Antananarivo', 'Épicerie générale, riz, condiments, épices et produits de base', true, 12, 'Livraison rapide proximité', '034 55 667 88', 'contact@epicerie67ha.mg') RETURNING id_supplier`
+  );
 
   const supMeatId = sup1.rows[0].id_supplier as string;
   const supAgriId = sup2.rows[0].id_supplier as string;
   const supDrinkId = sup3.rows[0].id_supplier as string;
+  const supGroceryId = sup4.rows[0].id_supplier as string;
 
   // Supplier balances
   await client.query("INSERT INTO supplier_balance (id_supplier, credit, debit) VALUES ($1, 0, 0)", [
@@ -1425,6 +1455,9 @@ async function seedSuppliersAndPurchases(
   await client.query("INSERT INTO supplier_balance (id_supplier, credit, debit) VALUES ($1, 0, 0)", [
     supDrinkId,
   ]);
+  await client.query("INSERT INTO supplier_balance (id_supplier, credit, debit) VALUES ($1, 0, 0)", [
+    supGroceryId,
+  ]);
 
   // Supplier products & prices
   const catalog = [
@@ -1434,6 +1467,11 @@ async function seedSuppliersAndPurchases(
     { supId: supAgriId, item: "Pommes de terre fraîches", name: "Pommes de terre calibre 1", price: 2500 },
     { supId: supDrinkId, item: "Bière THB Pilsener 65cl", name: "THB Pilsener Casier 12 btl", price: 3600 },
     { supId: supDrinkId, item: "Eau Vive 1.5L", name: "Eau Vive Pack 6 btl", price: 1400 },
+    { supId: supGroceryId, item: "Huile végétale de tournesol", name: "Huile de Tournesol Bidon 5L", price: 38000 },
+    { supId: supGroceryId, item: "Farine de blé T55", name: "Farine de Blé T55 Sac 25kg", price: 95000 },
+    { supId: supGroceryId, item: "Ail frais", name: "Ail blanc Filet 5kg", price: 38000 },
+    { supId: supGroceryId, item: "Oignons rouges", name: "Oignons rouges Filet 10kg", price: 28000 },
+    { supId: supGroceryId, item: "Poivre vert en saumure", name: "Poivre vert de Madagascar Bocal 1kg", price: 24000 },
   ];
 
   const supProductsMap: Record<string, { spId: string; suppliedItemId: string; price: number }> = {};
@@ -2274,6 +2312,37 @@ async function seedMenuAndRecipes(
 }
 
 /**
+ * Seeds Dish Productions
+ */
+async function seedDishProductions(
+  client: PoolClient,
+  itemsMap: Record<string, string>,
+  employeesMap: Record<string, string>
+): Promise<void> {
+  console.log("🍲 Insertion des productions culinaires (dish_production)...");
+
+  const chefId = employeesMap["chef"] as string;
+
+  const productions = [
+    { item: "Steak de Zébu Sauce Poivre Vert & Frites", qty: 15, status: 0, notes: "Production du jour - Service midi" },
+    { item: "Romazava Traditionnel Royal & Riz Blanc", qty: 20, status: 0, notes: "Marmite Romazava royal du chef" },
+    { item: "Burger Gourmet Sooatel au Steak de Zébu", qty: 12, status: 0, notes: "Préparation steaks et burgers" },
+    { item: "Poulet Fermier Grillé & Purée Maison", qty: 8, status: 5, notes: "En cours de cuisson / Service du soir" },
+  ];
+
+  for (const p of productions) {
+    const itemId = itemsMap[p.item];
+    if (itemId) {
+      await client.query(
+        `INSERT INTO dish_production (id_item, production_date, quantity, status, id_operator, notes)
+         VALUES ($1, CURRENT_TIMESTAMP, $2, $3, $4, $5)`,
+        [itemId, p.qty, p.status, chefId, p.notes]
+      );
+    }
+  }
+}
+
+/**
  * Seeds Payment Methods, Cash Journal, and Cash Movements
  */
 async function seedPaymentMethodsAndCash(
@@ -2438,13 +2507,6 @@ async function seedSalesAndPOS(
       `INSERT INTO payment (id_invoice, amount, id_payment_method, payment_date)
        VALUES ($1, $2, $3, $4)`,
       [invId, totalAmount, paymentMethodsMap[pmLabel], saleDate]
-    );
-
-    // 5. Sales Payment record
-    await client.query(
-      `INSERT INTO sales_payment (id_sale, payment_date, amount, id_payment_method, type)
-       VALUES ($1, $2, $3, $4, 'FULL')`,
-      [saleId, saleDate.split(" ")[0], totalAmount, paymentMethodsMap[pmLabel]]
     );
   }
 
@@ -2716,6 +2778,9 @@ async function runSeed(): Promise<void> {
 
     // 13. Seed Menu & Recipes (Fiches techniques)
     const menuItemsMap = await seedMenuAndRecipes(client, itemsMap);
+
+    // 13.b Seed Dish Productions
+    await seedDishProductions(client, itemsMap, employeesMap);
 
     // 14. Seed Sales & POS
     await seedSalesAndPOS(client, employeesMap, usersMap, menuItemsMap, roomsMap, paymentMethods);

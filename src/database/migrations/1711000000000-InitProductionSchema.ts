@@ -1225,6 +1225,7 @@ ON CONFLICT DO NOTHING;
 
 -- 15.13 Types de shifts de travail
 INSERT INTO shift_type (id_shift_type, label, custom_start_time, custom_end_time, start_time, end_time, description) VALUES
+  (uuid_generate_v4(), 'Shift 24h', '08:00:00', '08:00:00', '08:00:00', '08:00:00', 'Garde continue 24 heures / Astreinte, sécurité et permanence technique'),
   (uuid_generate_v4(), 'Shift Matin', '06:00:00', '14:30:00', '06:00:00', '14:30:00', 'Service petit-déjeuner et préparation du midi'),
   (uuid_generate_v4(), 'Shift Continu Jour', '08:00:00', '16:30:00', '08:00:00', '16:30:00', 'Administration, économat, stocks et maintenance'),
   (uuid_generate_v4(), 'Shift Après-midi', '12:00:00', '20:30:00', '12:00:00', '20:30:00', 'Renfort déjeuner et préparation du dîner'),

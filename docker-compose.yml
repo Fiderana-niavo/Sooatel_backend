@@ -1,0 +1,66 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: sooatel_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres16}
+      POSTGRES_DB: ${DB_NAME:-sooatel}
+    ports:
+      - "${DB_PORT:-5433}:5432"
+    volumes:
+      - sooatel_pgdata:/var/lib/postgresql/data
+      - ./src/database/Scripts/001_init_prod_sooatel.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
+      - ./src/database/Scripts/sooatel_vues.sql:/docker-entrypoint-initdb.d/02_vues.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-sooatel}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sooatel_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres16}
+      DB_NAME: ${DB_NAME:-sooatel}
+      JWT_SECRET: ${JWT_SECRET:-a8f5f167f44f4964e6c998dee827110c3f8b8e3e8f8b8e3e8f8b8e3e8f8b8e3e}
+      REFRESH_SECRET: ${REFRESH_SECRET:-b9g6g278g55g5075f7d109eff938221d4g9c9f4f9g9c9f4f9g9c9f4f9g9c9f4f}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      DEEPSEEK_KEY: ${DEEPSEEK_KEY:-sk-232b714fb1964e45bf71d9a254a97e13}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-sooateldeveloppement@gmail.com}
+      SMTP_PASS: ${SMTP_PASS:-sstd izhu dpqa ttmr}
+      SMTP_FROM: ${SMTP_FROM:-sooateldeveloppement@gmail.com}
+      TRANSFORMERS_CACHE: /app/.cache
+    ports:
+      - "3000:3000"
+
+  frontend:
+    build:
+      context: ../Sooatel_frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api
+    container_name: sooatel_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+
+volumes:
+  sooatel_pgdata:
