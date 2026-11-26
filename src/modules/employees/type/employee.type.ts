@@ -1,0 +1,163 @@
+export interface EmployeeResponse {
+  idEmployee: string;
+  employeeCode: string;
+  name: string | null;
+  lastname: string | null;
+  birthdate: string | null;
+  address: string | null;
+  emailContact: string | null;
+  phoneNumber: string | null;
+  notes: string | null;
+}
+
+export interface EmployeeListItem {
+  idEmployee: string;
+  employeeCode: string;
+  name: string | null;
+  lastname: string | null;
+  jobTitle: string | null;
+  isInternship: boolean;
+  hasAccount: boolean;
+  status: number;
+}
+
+export interface InternshipInfo {
+  idInternship: string;
+  idSchool: string | null;
+  schoolName: string | null; // Keep for backwards compatibility or easy read
+  academicSupervisorName: string | null;
+  academicSupervisorEmail: string | null;
+  academicSupervisorNumber: string | null;
+  professionnalSupervisorName: string | null;
+}
+
+export interface EmployeeJobInfo {
+  idEmpJob: string;
+  idJobTitle: string | null;
+  idEmploymentType: string | null;
+  assignmentDate: string | null;
+  endDate: string | null;
+  hasFixedSchedule: boolean | null;
+  status: number;
+  jobTitle: string | null;
+  baseSalary: number | null;
+}
+
+export interface EmployeeTeamDto {
+  idTeam: string | null;
+}
+
+export interface EmployeeTeamInfo {
+  idEmployeeTeam: string;
+  idTeam: string;
+  teamName: string | null;
+}
+
+export interface EmployeeAvailabilityDto {
+  dayOfWeek: number;
+  idShiftType: string;
+}
+
+export interface EmployeeAvailabilityInfo {
+  idAvailability: string;
+  dayOfWeek: number;
+  idShiftType: string;
+  shiftLabel: string | null;
+}
+
+export interface EmployeeDetail {
+  idEmployee: string;
+  employeeCode: string;
+  name: string | null;
+  lastname: string | null;
+  birthdate: string | null;
+  address: string | null;
+  emailContact: string | null;
+  phoneNumber: string | null;
+  notes: string | null;
+  baseSalary: number | null;
+  job: EmployeeJobInfo | null;
+  internship: InternshipInfo | null;
+  team: EmployeeTeamInfo | null;
+  availabilities: EmployeeAvailabilityInfo[];
+  userAccount?: any;
+}
+
+export interface EmployeeDto {
+  name?: string;
+  lastname?: string;
+  birthdate?: string;
+  address?: string;
+  emailContact?: string;
+  phoneNumber?: string;
+  notes?: string;
+  baseSalary?: number | null;
+}
+
+export interface EmployeeJobDto {
+  idJobTitle: string;
+  idEmploymentType: string;
+  assignmentDate: string;
+  endDate: string | null;
+  hasFixedSchedule: boolean;
+  baseSalary?: number | null;
+}
+
+export interface EmployeeInternshipDto {
+  idSchool: string | null;
+  academicSupervisorName: string | null;
+  academicSupervisorEmail: string | null;
+  academicSupervisorNumber: string | null;
+  professionnalSupervisorName: string | null;
+}
+
+export interface UserAccountDto {
+  username: string;
+  password?: string;
+  roles: string[];
+  permissionsOverrides: Array<{
+    idPermission: string;
+    overrideType: "grant" | "deny" | "default";
+  }>;
+}
+
+export interface EmployeeCreateOrUpdateDto {
+  name: string;
+  lastname: string;
+  birthdate?: string;
+  address?: string;
+  emailContact?: string;
+  phoneNumber?: string;
+  notes?: string;
+  baseSalary?: number | null;
+  job?: EmployeeJobDto | null;
+  internship?: EmployeeInternshipDto | null;
+  userAccount?: UserAccountDto | null;
+}
+
+export interface ChangeJobDto {
+  idJobTitle: string;
+  idEmploymentType: string;
+  assignmentDate: string;
+  endDate: string | null;
+  hasFixedSchedule: boolean;
+  baseSalary?: number | null;
+  lastJobEndDate?: string;
+  reactivateAccount?: boolean;
+}
+
+export interface EndJobDto {
+  endDate: string;
+}
+
+export interface EmployeeSearchOptions {
+  page?: number;
+  limit?: number;
+  search?: string;
+  idJobTitle?: string;
+  hasUserAccount?: "yes" | "no";
+  isInternship?: "yes" | "no";
+  sortBy?: "name" | "lastname" | "employeeCode";
+  sortOrder?: "ASC" | "DESC";
+  status?: "active" | "former";
+}

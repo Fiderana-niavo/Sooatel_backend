@@ -1,0 +1,33 @@
+import {
+  BaseEntity,
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from "typeorm";
+import { Employee } from "./Employee";
+import { ShiftType } from "./ShiftType";
+
+@Entity("schedules")
+export class Schedule extends BaseEntity {
+  @PrimaryGeneratedColumn("uuid", { name: "id_schedule" })
+  idSchedule: string;
+
+  @Column({ type: "date", name: "schedule_date" })
+  scheduleDate: Date;
+
+  @Column({ type: "uuid", name: "id_shift_type" })
+  idShiftType: string;
+
+  @Column({ type: "uuid", name: "id_employee" })
+  idEmployee: string;
+
+  @ManyToOne(() => ShiftType, (st) => st.schedules)
+  @JoinColumn({ name: "id_shift_type" })
+  shiftType: ShiftType;
+
+  @ManyToOne(() => Employee, (e) => e.schedules)
+  @JoinColumn({ name: "id_employee" })
+  employee: Employee;
+}

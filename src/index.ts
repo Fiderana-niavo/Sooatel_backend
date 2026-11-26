@@ -1,0 +1,149 @@
+import "reflect-metadata";
+import express from "express";
+import cors from "cors";
+import { configDotenv } from "dotenv";
+import AppDataSource from "./database/data-source";
+import employeeRouter from "./modules/employees/routes/employee.router";
+import schoolRouter from "./modules/schools/routes/school.routes";
+import roleRouter from "./modules/roles/routes/role.router";
+import {
+  permissionRouter,
+  permissionCategoryRouter,
+} from "./modules/permissions/routes/permission.router";
+import teamRouter from "./modules/teams/routes/team.router";
+import shiftTypeRouter from "./modules/shift-types/routes/shift-type.router";
+import authRouter from "./modules/auth/routes/auth.router";
+import jobTitleRouter from "./modules/job-titles/routes/job-title.router";
+import employmentTypeRouter from "./modules/job-titles/routes/employment-type.router";
+import eventRouter from "./modules/events/routes/event.router";
+import roomRouter from "./modules/rooms/routes/room.router";
+import roomTypeRouter from "./modules/rooms/routes/room-type.router";
+import itemRouter from "./modules/items/routes/item.router";
+import itemTypeRouter from "./modules/items/routes/item-type.router";
+import itemUnitRouter from "./modules/items/routes/item-unit.router";
+import unitOfMeasureRouter from "./modules/items/routes/unit-of-measure.router";
+import menuItemRouter from "./modules/menus/routes/menu-item.router";
+import menuCategoryRouter from "./modules/menus/routes/menu-category.router";
+import productPriceRouter from "./modules/menus/routes/product-price.router";
+import saleRouter from "./modules/sales/routes/sale.router";
+import saleDashboardRouter from "./modules/dashboard/saledashboard/routes/saledashboard.router";
+import paymentMethodRouter from "./modules/payment-methods/routes/payment-method.router";
+import paymentRouter from "./modules/payment/routes/payment.route";
+import cashMovementCategoryRouter from "./modules/cash_movement/category/routes/cash-movement-category.route";
+import cashMovementRouter from "./modules/cash_movement/movement/routes/cash-movement.route";
+import cashJournalRouter from "./modules/cash_movement/cash_journal/routes/cash-journal.route";
+import supplierRouter from "./modules/suppliers/routes/supplier.router";
+import supplierPaymentRouter from "./modules/supplier-payment/routes/supplier-payment.routes";
+import { startTokenPurgeJob } from "./shared/jobs/tokenPurge.job";
+import { startSupplierPriceJob } from "./modules/suppliers/jobs/supplier-price.job";
+import { initContractExpirationJob } from "./modules/employees/jobs/contract-expiration.job";
+import { initLeaveAccrualJob } from "./modules/leaves/jobs/leave-accrual.job";
+import { globalErrorMiddleware } from "./shared/middlewares/error.middleware";
+import recipeRouter from "./modules/recipes/routes/recipe.routes";
+import supplierProductRouter from "./modules/suppliers/routes/supplier-product.router";
+import suppliedItemRouter from "./modules/suppliers/routes/supplied-item.router";
+import purchaseRouter from "./modules/purchases/routes/purchase.routes";
+import deliveryRouter from "./modules/delivery/routes/delivery.routes";
+import stockMovementRouter from "./modules/stock-movement/routes/stock-movement.routes";
+import dishProductionRouter from "./modules/dish-production/routes/dish-production.routes";
+import inventoryRouter from "./modules/inventory/routes/inventory.routes";
+import employeeRequirementRouter from "./modules/employee-requirements/routes/employee-requirement.router";
+import leaveRouter from "./modules/leaves/routes/leave.router";
+import settingsRouter from "./modules/settings/routes/settings.router";
+import scheduleRouter from "./modules/schedules/routes/schedule.router";
+import chatbotRouter from "./modules/chatbot/routes/chatbot.router";
+
+configDotenv();
+
+const app = express();
+
+const allowedOrigins = [
+  process.env["FRONTEND_URL"],
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://127.0.0.1:5173",
+].filter(Boolean) as string[];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  }),
+);
+app.use(express.json());
+
+app.get("/", (_req, res) => {
+  res.json({ message: "Sooatel API running" });
+});
+
+AppDataSource.initialize()
+  .then(() => {
+    console.log("Database connected.");
+
+    app.use("/api/employees", employeeRouter);
+    app.use("/api/schools", schoolRouter);
+    app.use("/api/roles", roleRouter);
+    app.use("/api/permissions", permissionRouter);
+    app.use("/api/permission-categories", permissionCategoryRouter);
+    app.use("/api/teams", teamRouter);
+    app.use("/api/shift-types", shiftTypeRouter);
+    app.use("/api/auth", authRouter);
+    app.use("/api/job-titles", jobTitleRouter);
+    app.use("/api/employment-types", employmentTypeRouter);
+
+    app.use("/api/events", eventRouter);
+    app.use("/api/rooms", roomRouter);
+    app.use("/api/room-types", roomTypeRouter);
+    app.use("/api/items", itemRouter);
+    app.use("/api/item-types", itemTypeRouter);
+    app.use("/api/item-units", itemUnitRouter);
+    app.use("/api/unit-of-measures", unitOfMeasureRouter);
+    app.use("/api/menu-items", menuItemRouter);
+    app.use("/api/menu-categories", menuCategoryRouter);
+    app.use("/api/product-prices", productPriceRouter);
+    app.use("/api/sales", saleRouter);
+    app.use("/api/dashboard/saledashboard", saleDashboardRouter);
+    app.use("/api/payments", paymentRouter);
+    app.use("/api/payment-methods", paymentMethodRouter);
+    app.use("/api/cash-movement-categories", cashMovementCategoryRouter);
+    app.use("/api/cash-movements", cashMovementRouter);
+    app.use("/api/cash-journals", cashJournalRouter);
+    app.use("/api/suppliers", supplierRouter);
+    app.use("/api/supplier-products", supplierProductRouter);
+    app.use("/api/supplied-items", suppliedItemRouter);
+    app.use("/api/purchases", purchaseRouter);
+    app.use("/api/deliveries", deliveryRouter);
+    app.use("/api/stock-movements", stockMovementRouter);
+    app.use("/api/dish-productions", dishProductionRouter);
+    app.use("/api/supplier-payments", supplierPaymentRouter);
+    app.use("/api/recipes", recipeRouter);
+    app.use("/api/inventories", inventoryRouter);
+    app.use("/api/employee-requirements", employeeRequirementRouter);
+    app.use("/api/leaves", leaveRouter);
+    app.use("/api/settings", settingsRouter);
+    app.use("/api/schedules", scheduleRouter);
+    app.use("/api/chatbot", chatbotRouter);
+
+    app.use(globalErrorMiddleware);
+
+    const PORT = Number(process.env["PORT"] ?? 3000);
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+      startTokenPurgeJob();
+      startSupplierPriceJob();
+      initContractExpirationJob();
+      initLeaveAccrualJob();
+    });
+  })
+  .catch((err: Error) => {
+    console.error("Database connection failed:", err.message);
+    process.exit(1);
+  });
