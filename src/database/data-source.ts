@@ -15,7 +15,7 @@ const AppDataSource = new DataSource({
   logging: ["error"],
   // logging: true,
   entities: [__dirname + "/Entities/**/*{.ts,.js}"],
-  migrations: [],
+  migrations: [__dirname + "/migrations/**/*{.ts,.js}"],
   subscribers: [],
 });
 

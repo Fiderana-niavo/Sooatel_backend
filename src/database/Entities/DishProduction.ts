@@ -16,14 +16,14 @@ export class DishProduction extends BaseEntity {
   @Column({ type: "timestamptz", name: "production_date" })
   productionDate: Date;
 
-  @Column({ type: "numeric", precision: 15, scale: 2, nullable: true, name: "quantity" })
+  @Column({ type: "numeric", precision: 15, scale: 2, name: "quantity" })
   quantity: number;
 
   @Column({ type: "integer", default: 5, name: "status" })
   status: number;
 
-  @Column({ type: "uuid", name: "id_operator" })
-  idOperator: string;
+  @Column({ type: "uuid", nullable: true, name: "id_operator" })
+  idOperator: string | null;
 
   @Column({ type: "varchar", length: 500, nullable: true, name: "notes" })
   notes: string | null;
@@ -32,7 +32,7 @@ export class DishProduction extends BaseEntity {
   @JoinColumn({ name: "id_item" })
   item: Item;
 
-  @ManyToOne(() => Employee)
+  @ManyToOne(() => Employee, { nullable: true })
   @JoinColumn({ name: "id_operator" })
-  operator: Employee;
+  operator: Employee | null;
 }

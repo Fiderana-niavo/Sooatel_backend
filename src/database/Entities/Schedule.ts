@@ -14,7 +14,7 @@ export class Schedule extends BaseEntity {
   @PrimaryGeneratedColumn("uuid", { name: "id_schedule" })
   idSchedule: string;
 
-  @Column({ type: "date", nullable: true, name: "schedule_date" })
+  @Column({ type: "date", name: "schedule_date" })
   scheduleDate: Date;
 
   @Column({ type: "uuid", name: "id_shift_type" })
