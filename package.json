@@ -8,6 +8,7 @@
     "start": "ts-node src/index.ts",
     "build": "tsc --outDir dist --rootDir src --declaration false --declarationMap false --sourceMap false",
     "index": "ts-node src/scripts/index-docs.ts",
+    "seed:roles-permissions": "ts-node src/database/Scripts/seedRolesPermissions.ts",
     "seed:test": "ts-node src/database/Scripts/seedTestData.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
