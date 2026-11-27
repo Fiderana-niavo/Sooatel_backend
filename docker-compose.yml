@@ -58,6 +58,7 @@
 #   sooatel_pgdata:
 
 
+
 services:
   db:
     image: pgvector/pgvector:pg16
@@ -95,5 +96,16 @@ services:
     ports:
       - "3000:3000"
 
+  frontend:
+    image: ghcr.io/fiderana-niavo/sooatel_frontend:latest
+    container_name: sooatel_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    volumes:
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/conf:/etc/letsencrypt
+
 volumes:
-  sooatel_pgdata:
