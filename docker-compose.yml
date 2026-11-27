@@ -1,3 +1,63 @@
+# services:
+#   db:
+#     image: pgvector/pgvector:pg16
+#     container_name: sooatel_db
+#     restart: unless-stopped
+#     env_file:
+#       - .env
+#     environment:
+#       POSTGRES_USER: ${DB_USER:-postgres}
+#       POSTGRES_PASSWORD: ${DB_PASSWORD}
+#       POSTGRES_DB: ${DB_NAME:-sooatel}
+#     ports:
+#       - "${DB_PORT:-5433}:5432"
+#     volumes:
+#       - sooatel_pgdata:/var/lib/postgresql/data
+#       - ./src/database/Scripts/001_init_prod_sooatel.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
+#       - ./src/database/Scripts/sooatel_vues.sql:/docker-entrypoint-initdb.d/02_vues.sql:ro
+#     healthcheck:
+#       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-sooatel}"]
+#       interval: 5s
+#       timeout: 5s
+#       retries: 5
+
+#   backend:
+#     build:
+#       context: .
+#       dockerfile: Dockerfile
+#     container_name: sooatel_backend
+#     restart: unless-stopped
+#     depends_on:
+#       db:
+#         condition: service_healthy
+#     env_file:
+#       - .env
+#     environment:
+#       NODE_ENV: production
+#       PORT: 3000
+#       DB_HOST: db
+#       DB_PORT: 5432
+#       TRANSFORMERS_CACHE: /app/.cache
+#     ports:
+#       - "3000:3000"
+
+#   frontend:
+#     build:
+#       context: ../Sooatel_frontend
+#       dockerfile: Dockerfile
+#       args:
+#         VITE_API_URL: /api
+#     container_name: sooatel_frontend
+#     restart: unless-stopped
+#     depends_on:
+#       - backend
+#     ports:
+#       - "5173:80"
+
+# volumes:
+#   sooatel_pgdata:
+
+
 services:
   db:
     image: pgvector/pgvector:pg16
@@ -9,12 +69,8 @@ services:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME:-sooatel}
-    ports:
-      - "${DB_PORT:-5433}:5432"
     volumes:
       - sooatel_pgdata:/var/lib/postgresql/data
-      - ./src/database/Scripts/001_init_prod_sooatel.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
-      - ./src/database/Scripts/sooatel_vues.sql:/docker-entrypoint-initdb.d/02_vues.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-sooatel}"]
       interval: 5s
@@ -22,9 +78,7 @@ services:
       retries: 5
 
   backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/fiderana-niavo/sooatel_backend:latest
     container_name: sooatel_backend
     restart: unless-stopped
     depends_on:
@@ -40,19 +94,6 @@ services:
       TRANSFORMERS_CACHE: /app/.cache
     ports:
       - "3000:3000"
-
-  frontend:
-    build:
-      context: ../Sooatel_frontend
-      dockerfile: Dockerfile
-      args:
-        VITE_API_URL: /api
-    container_name: sooatel_frontend
-    restart: unless-stopped
-    depends_on:
-      - backend
-    ports:
-      - "5173:80"
 
 volumes:
   sooatel_pgdata:
