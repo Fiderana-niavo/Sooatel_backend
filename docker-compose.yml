@@ -9,12 +9,8 @@ services:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME:-sooatel}
-    ports:
-      - "${DB_PORT:-5433}:5432"
     volumes:
       - sooatel_pgdata:/var/lib/postgresql/data
-      - ./src/database/Scripts/001_init_prod_sooatel.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
-      - ./src/database/Scripts/sooatel_vues.sql:/docker-entrypoint-initdb.d/02_vues.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-sooatel}"]
       interval: 5s
@@ -22,9 +18,7 @@ services:
       retries: 5
 
   backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/fiderana-niavo/sooatel_backend:latest
     container_name: sooatel_backend
     restart: unless-stopped
     depends_on:
@@ -42,17 +36,17 @@ services:
       - "3000:3000"
 
   frontend:
-    build:
-      context: ../Sooatel_frontend
-      dockerfile: Dockerfile
-      args:
-        VITE_API_URL: /api
+    image: ghcr.io/fiderana-niavo/sooatel_frontend:latest
     container_name: sooatel_frontend
     restart: unless-stopped
     depends_on:
       - backend
     ports:
-      - "5173:80"
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/conf:/etc/letsencrypt
 
 volumes:
   sooatel_pgdata:
