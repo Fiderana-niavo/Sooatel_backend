@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS Job_titles(
    title VARCHAR(100) NOT NULL,
    PRIMARY KEY(id_job_title)
 );
+CREATE UNIQUE INDEX IF NOT EXISTS uq_job_titles_title ON job_titles (title);
 
 CREATE TABLE IF NOT EXISTS role(
    id_role UUID DEFAULT uuid_generate_v4(),
@@ -93,6 +94,7 @@ CREATE TABLE IF NOT EXISTS Unit_of_measure(
    symbol VARCHAR(10) NOT NULL,
    PRIMARY KEY(id_unit)
 );
+CREATE UNIQUE INDEX IF NOT EXISTS uq_unit_symbol ON unit_of_measure (symbol);
 
 CREATE TABLE IF NOT EXISTS Payment_method(
    id_payment_method UUID DEFAULT uuid_generate_v4(),
@@ -131,6 +133,9 @@ CREATE TABLE IF NOT EXISTS Shift_type(
    description VARCHAR(255),
    PRIMARY KEY(id_shift_type)
 );
+ALTER TABLE shift_type ADD COLUMN IF NOT EXISTS start_time TIME;
+ALTER TABLE shift_type ADD COLUMN IF NOT EXISTS end_time TIME;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_shift_type_label ON shift_type (label);
 
 CREATE TABLE IF NOT EXISTS Team(
    id_team UUID DEFAULT uuid_generate_v4(),
@@ -241,6 +246,7 @@ CREATE TABLE IF NOT EXISTS Supplier_products(
    UNIQUE(ref),
    FOREIGN KEY(id_supplier) REFERENCES Supplier(id_supplier) ON DELETE CASCADE
 );
+ALTER TABLE supplier_products ADD COLUMN IF NOT EXISTS min_purchase_number NUMERIC(10,2) NOT NULL DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS Supplier_products_price(
    id_supplier_product_price UUID DEFAULT uuid_generate_v4(),
@@ -271,6 +277,7 @@ CREATE TABLE IF NOT EXISTS Items(
    FOREIGN KEY(id_product_type) REFERENCES Item_type(id_product_type),
    FOREIGN KEY(id_unit) REFERENCES Unit_of_measure(id_unit)
 );
+ALTER TABLE items ADD COLUMN IF NOT EXISTS weighted_average_cost NUMERIC(15,6) DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS Supplied_Items(
    id_supplied_item UUID DEFAULT uuid_generate_v4(),
@@ -494,6 +501,7 @@ CREATE TABLE IF NOT EXISTS Employment_type(
    PRIMARY KEY(id_employment_type),
    UNIQUE(label)
 );
+CREATE UNIQUE INDEX IF NOT EXISTS uq_employment_type_label ON employment_type (label);
 
 CREATE TABLE IF NOT EXISTS Employee_team(
    id_employee_team UUID DEFAULT uuid_generate_v4(),
@@ -619,6 +627,7 @@ CREATE TABLE IF NOT EXISTS Recipes(
    UNIQUE(id_item, version),
    FOREIGN KEY(id_item) REFERENCES Items(id_item) ON DELETE CASCADE
 );
+CREATE UNIQUE INDEX IF NOT EXISTS uq_recipes_item_version ON recipes (id_item, version);
 
 CREATE TABLE IF NOT EXISTS Recipe_details(
    id_recipe_detail UUID DEFAULT uuid_generate_v4(),
@@ -790,6 +799,8 @@ CREATE TABLE IF NOT EXISTS Role_permission(
    FOREIGN KEY(id_role) REFERENCES role(id_role) ON DELETE CASCADE,
    FOREIGN KEY(id_permission) REFERENCES Permission(id_permission) ON DELETE CASCADE
 );
+ALTER TABLE role_permission ADD COLUMN IF NOT EXISTS is_granted BOOLEAN DEFAULT TRUE;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_role_permission ON role_permission (id_role, id_permission);
 
 CREATE TABLE IF NOT EXISTS User_tokens(
    id_token UUID DEFAULT uuid_generate_v4(),
@@ -1170,7 +1181,7 @@ INSERT INTO unit_of_measure (id_unit, label, symbol) VALUES
   (uuid_generate_v4(), 'Canette', 'can'),
   (uuid_generate_v4(), 'Boîte / Conserve', 'bte'),
   (uuid_generate_v4(), 'Carton', 'ctn')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (symbol) DO NOTHING;
 
 -- 15.9 Catégories de mouvements de caisse
 INSERT INTO cash_movement_category (id_cash_movement_category, label, allowed_direction) VALUES
@@ -1221,7 +1232,7 @@ INSERT INTO job_titles (id_job_title, title) VALUES
   (uuid_generate_v4(), 'Femme / Valet de Chambre'),
   (uuid_generate_v4(), 'Agent de Sécurité & Surveillance'),
   (uuid_generate_v4(), 'Responsable Économat & Stocks')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (title) DO NOTHING;
 
 -- 15.13 Types de shifts de travail
 INSERT INTO shift_type (id_shift_type, label, custom_start_time, custom_end_time, start_time, end_time, description) VALUES
@@ -1232,7 +1243,7 @@ INSERT INTO shift_type (id_shift_type, label, custom_start_time, custom_end_time
   (uuid_generate_v4(), 'Shift Soir', '14:00:00', '22:30:00', '14:00:00', '22:30:00', 'Service dîner, bar et fermeture restaurant'),
   (uuid_generate_v4(), 'Shift Coupure', '10:00:00', '22:30:00', '10:00:00', '22:30:00', 'Coupure service midi (10h-14h30) et soir (18h30-22h30)'),
   (uuid_generate_v4(), 'Shift Nuit', '22:00:00', '06:30:00', '22:00:00', '06:30:00', 'Permanence nocturne hôtel, sécurité et veille de nuit')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (label) DO NOTHING;
 
 -- 15.14 Équipes de travail
 INSERT INTO team (id_team, team_name, description) VALUES
